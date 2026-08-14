@@ -15,5 +15,5 @@ Hacking new musics into Shining Force 2 sound engine comes with a bunch of chall
 - And a lot of other things I forgot :)
 
 ## How to build the project
-This tool is programmed using C# language and runs on .NET 4.8.1 framework.
-Simply open the .sln file in Visual Studio 2022 or 2026 (Community edition will do).
+This tool is programmed using C# language and runs on .NET 4.8.1 framework.  
+Simply open the .sln file in Visual Studio 2022 or 2026 (Community Edition will do).
