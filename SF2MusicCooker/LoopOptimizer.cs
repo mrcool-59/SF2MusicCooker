@@ -8,6 +8,24 @@ namespace SF2MusicCooker
     {
         // This optimization problem is a fun brain teaser!
 
+        /*
+            Given a list of strings, say:
+            A
+            A
+            A
+            A
+            A
+            A
+            A
+            B
+
+            Produce an equivalent list of strings that may save space by adding repetitions, like so:
+            -- REPEAT x7 --
+            A
+            -- END REPEAT --
+            B
+        */
+
         private readonly Func<int, string> _beginMarker;
         private readonly Func<int, string> _endMarker;
         private readonly int _minWeight;

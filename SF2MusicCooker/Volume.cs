@@ -19,7 +19,7 @@ namespace SF2MusicCooker
         {
             ymVolume = (byte)Math.Max(0, Math.Min(0x7F, _remapper(ymVolume)));
             if (_useTable)
-                return yahama2cube[ymVolume];
+                return ym2cube[ymVolume];
             else
                 return (byte)(ymVolume >> 3); // Simpler but subtly different
         }
@@ -50,7 +50,7 @@ namespace SF2MusicCooker
 
         #region Data taken from WizCube
 
-        private static readonly byte[] yahama2cube;
+        private static readonly byte[] ym2cube;
 
         static Volume()
         {
@@ -75,7 +75,7 @@ namespace SF2MusicCooker
                 0x04,
             };
 
-            yahama2cube = new byte[128];
+            ym2cube = new byte[128];
 
             byte index = 0;
             byte current = 0x7F;
@@ -84,7 +84,7 @@ namespace SF2MusicCooker
             {
                 while (volumes[index] <= current)
                 {
-                    yahama2cube[current] = index;
+                    ym2cube[current] = index;
                     current--;
                 }
 
@@ -93,11 +93,11 @@ namespace SF2MusicCooker
 
             while (current != 0xFF)
             {
-                yahama2cube[current] = 0xF;
+                ym2cube[current] = 0xF;
                 current--;
             }
 
-            Array.Reverse(yahama2cube);
+            Array.Reverse(ym2cube);
         }
 
         #endregion

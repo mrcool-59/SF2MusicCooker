@@ -64,22 +64,6 @@ namespace SF2MusicCooker
             return b.ToString();
         }
 
-        /*
-        /// <summary>
-        /// Read a set of numbers from file.
-        /// </summary>
-        public static HashSet<int> ReadNumberSet(string filename, char separator = ' ')
-        {
-            string[] parts = File.ReadAllText(filename).Split(separator);
-            HashSet<int> set = new HashSet<int>(parts.Length);
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (int.TryParse(parts[i], out int number)) set.Add(number);
-            }
-            return set;
-        }
-        */
-
         /// <summary>
         /// Read a map of number=string lines from file. Lines can be ignored by prefixing them with ';'.
         /// </summary>

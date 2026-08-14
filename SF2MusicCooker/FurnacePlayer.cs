@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using static SF2MusicCooker.FurnaceFile;
 
 namespace SF2MusicCooker

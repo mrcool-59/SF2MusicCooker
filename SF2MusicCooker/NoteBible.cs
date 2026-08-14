@@ -10,15 +10,15 @@ namespace SF2MusicCooker
 
         public readonly struct Entry
         {
-            public readonly string Label;
             public readonly byte Value;
             public readonly string Name;
+            public readonly string Label;
 
             public Entry(byte value, string name)
             {
-                Label = name.Replace("#", "s").Replace("-", "");
                 Value = value;
                 Name = name;
+                Label = name.Replace("#", "s").Replace("-", "");
             }
 
             public override string ToString()
@@ -49,7 +49,7 @@ namespace SF2MusicCooker
 
         private static readonly Entry[] entries;
         private static readonly Dictionary<int, Entry> lookupByValue;
-        private static readonly Dictionary<string, Entry> lookupByLabel;
+        private static readonly Dictionary<string, Entry> lookupByName;
 
         /// <summary>
         /// The list of all supported notes.
@@ -76,12 +76,12 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Given an ASM note label, return the associated note entry. Throws an exception if the label is not recognized.
+        /// Given a Furnace note name, return the associated note entry. Throws an exception if the name is not recognized.
         /// </summary>
-        public static Entry GetByLabel(string label)
+        public static Entry GetByName(string name)
         {
-            if (lookupByLabel.TryGetValue(label, out Entry entry)) return entry;
-            throw new NotSupportedException("Note '" + label + "' is invalid, unknown or not in a supported octave");
+            if (lookupByName.TryGetValue(name, out Entry entry)) return entry;
+            throw new NotSupportedException("Note '" + name + "' is invalid, unknown or not in a supported octave");
         }
 
         /// <summary>
@@ -233,12 +233,12 @@ namespace SF2MusicCooker
             };
 
             lookupByValue = new Dictionary<int, Entry>(entries.Length);
-            lookupByLabel = new Dictionary<string, Entry>(entries.Length);
+            lookupByName = new Dictionary<string, Entry>(entries.Length);
 
             foreach (Entry entry in entries)
             {
                 lookupByValue[entry.Value] = entry;
-                lookupByLabel[entry.Label] = entry;
+                lookupByName[entry.Name] = entry;
             }
         }
     }

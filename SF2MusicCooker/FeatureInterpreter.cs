@@ -96,7 +96,7 @@ namespace SF2MusicCooker
                 // Ignore DAM (bits 5~7), DT2 (bits 3~4), WS (bits 0~2)
                 _ = data[OP_BASE + op * 8 + 7]; // Discard
 
-                // Set TL to 0x7F for slot operators since their level will depend on the note being played (it doesn't seem to affect end result however)
+                // Set TL to 0x7F for slot operators since their level will depend on the note being played (FIXME: it doesn't seem to affect end result however)
                 bool isOutput = (outputOperatorsByAlgo[algo] & (1 << op)) != 0;
                 if (isOutput) cubeFmInstrument[1 * 4 + op] = 0x7F;
             }
@@ -105,7 +105,7 @@ namespace SF2MusicCooker
             cubeFmInstrument[28] = (byte)((algo & 0x07) | ((feedback & 0x07) << 3));
 
             // Man I sure hope it's gonna be lit after having to write all that shit.
-            // Thanks SF2DISASM Wiz for lighting up the path ahead, and plutiedev.com for clarifying what's available in YM2616 registers!
+            // Thanks SF2DISASM Wiz for lighting up the path ahead, and plutiedev.com for clarifying what's available in YM2612 registers!
             return cubeFmInstrument;
         }
 
