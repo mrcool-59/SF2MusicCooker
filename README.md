@@ -1,4 +1,4 @@
-# SF2MusicCooker
+# SF2 Music Cooker
 Tool to assemble new musics for Shining Force 2 sound engine from Furnace (.fur) files
 
 ## Purpose of this project
@@ -14,6 +14,14 @@ Hacking new musics into Shining Force 2 sound engine comes with a bunch of chall
 - Complexity of mapping Furnace music patterns to Shining Force 2 sound engine commands
 - And a lot of other things I forgot :)
 
+## How to use SF2 Music Cooker
+- Prepare Furnace music files (.fur) that use the Sega Genesis sound chips (YM2612 and SN76489)
+- Download the latest release zip and extract the binaries (NOTE: no official release is available yet)
+- Read carefully the README.txt file
+- Execute the tool with the correct command line arguments
+
 ## How to build the project
 This tool is programmed using C# language and runs on .NET 4.8.1 framework.  
-Simply open the .sln file in Visual Studio 2022 or 2026 (Community Edition will do).
+Simply open the .sln file in Visual Studio 2022 or 2026 (Community Edition will do).  
+The project has minimal dependencies and can be immediately built.  
+It has only been built and tested on Windows, but it should be able to run on other .NET platforms without too much trouble.

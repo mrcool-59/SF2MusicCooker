@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 
 namespace SF2MusicCooker
 {
@@ -53,19 +53,44 @@ namespace SF2MusicCooker
             }
         }
 
-        public const int DEFAULT_NOTE = 48 + NoteBible.BASE_VALUE; // C-4
+        public const int MAP_LENGTH = NoteBible.LAST_VALUE - NoteBible.BASE_VALUE + 1;
 
         private readonly int _defaultSample;
-        private readonly Dictionary<int, Entry> _note2sample;
+        private readonly Entry[] _note2sample;
 
+        /// <summary>
+        /// Read the sample index and note they should play at for a given input note.
+        /// </summary>
         public Entry Read(int note)
         {
-            if (_note2sample != null && _note2sample.TryGetValue(note, out Entry entry)) return entry;
-            return new Entry(_defaultSample, DEFAULT_NOTE);
+            if (note < NoteBible.BASE_VALUE || note > NoteBible.LAST_VALUE)
+                throw new ArgumentOutOfRangeException(nameof(note), "note must be between " + NoteBible.BASE_VALUE + " and " + NoteBible.LAST_VALUE);
+
+            if (_note2sample != null)
+                return _note2sample[note - NoteBible.BASE_VALUE];
+            else
+                return new Entry(_defaultSample, NoteBible.C4_VALUE);
         }
 
-        public SampleMap(int defaultSample, Dictionary<int, Entry> note2sample = null)
+        /// <summary>
+        /// Get all entries in the sample map that don't play their samples at normal rate (C-4).
+        /// </summary>
+        public Entry[] PitchShiftedEntries
         {
+            get
+            {
+                if (_note2sample != null)
+                    return Array.FindAll(_note2sample, entry => !entry.Invalid && entry.Note != NoteBible.C4_VALUE);
+                else
+                    return Array.Empty<Entry>();
+            }
+        }
+
+        public SampleMap(int defaultSample, Entry[] note2sample = null)
+        {
+            if (note2sample != null && note2sample.Length != MAP_LENGTH)
+                throw new ArgumentException(nameof(note2sample), "must have length " + MAP_LENGTH);
+
             _defaultSample = defaultSample;
             _note2sample = note2sample;
         }

@@ -74,6 +74,9 @@ namespace SF2MusicCooker
                         // Warn the user of unsupported effects the .fur file may have
                         AsmSheetWriter.PrintUnsupportedEffects(file);
 
+                        // Warn the user of unsupported sample maps the .fur file may have
+                        AsmSheetWriter.PrintUnsupportedSampleMaps(file);
+
                         // Complete the global FM instruments by those present in this .fur file
                         instruments.AddMany(file, dumpNotes);
 

@@ -868,7 +868,6 @@ namespace SF2MusicCooker
                                 else if (featureCode == "SM" && type == Instrument.DAC)
                                 {
                                     data = reader.ReadBytes(blockLength);
-                                    _ = FeatureInterpreter.ParseFurnaceSampleInstrument(data); // Verification
                                 }
                                 else
                                 {

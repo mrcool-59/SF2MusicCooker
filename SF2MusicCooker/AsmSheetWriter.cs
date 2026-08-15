@@ -125,6 +125,32 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Verify that all sample notes play their samples at C-4 otherwise print a warning.
+        /// </summary>
+        public static void PrintUnsupportedSampleMaps(FurnaceFile file)
+        {
+            int index = 0;
+            foreach (Instrument instrument in file.Instruments)
+            {
+                if (instrument.Type == Instrument.DAC)
+                {
+                    SampleMap sampleMap = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
+                    SampleMap.Entry[] pitchShiftedEntries = sampleMap.PitchShiftedEntries;
+
+                    if (pitchShiftedEntries.Length > 0)
+                    {
+                        Console.WriteLine("! The song contains sample map instrument #{0} with pitch-shifted samples (i.e: not played at C-4 rate)", index);
+                        Console.WriteLine("  Pitch-shifted samples are unsupported; end result will sound incorrect if you proceed without adjusting sample map");
+
+                        // NOTE: we could silently fix this for the user by duplicating the sample with the pitch-shifted rate and changing the map to point to this new sample at C-4 rate
+                        // But I think if you compose a Furnace track for the Sega Genesis you are probably not gonna pitch-shift your samples anyway
+                    }
+                }
+                index++;
+            }
+        }
+
+        /// <summary>
         /// Outputs an ASM music sheet compatible under SF2DISASM framework.
         /// The generated sheet will definitely be very imperfect when it comes to translating the special effects specified in the source Furnace file.
         /// </summary>
@@ -410,6 +436,8 @@ namespace SF2MusicCooker
                     // - Portamento (?)
                     // - Tremolo (?)
                     // - Set tick rate
+
+                    // https://tildearrow.org/furnace/doc/v0.6.7/3-pattern/effects.html
                 }
                 else
                 {

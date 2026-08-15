@@ -7,6 +7,7 @@ namespace SF2MusicCooker
     {
         public const int BASE_VALUE = 0x3C;
         public const int LAST_VALUE = 0xB3;
+        public const int C4_VALUE = 0x6C;
 
         public readonly struct Entry
         {
@@ -153,7 +154,7 @@ namespace SF2MusicCooker
                 new Entry(0x6A, "A#3"),
                 new Entry(0x6B, "B-3"),
 
-                new Entry(0x6C, "C-4"),
+                new Entry(0x6C, "C-4"), // C4_VALUE
                 new Entry(0x6D, "C#4"),
                 new Entry(0x6E, "D-4"),
                 new Entry(0x6F, "D#4"),

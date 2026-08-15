@@ -117,8 +117,7 @@ namespace SF2MusicCooker
             if (data == null || (data.Length != 4 && data.Length != 484))
                 throw new FormatException("Data payload must contain 4 or 484 bytes");
 
-            Dictionary<int, SampleMap.Entry> note2sample = null;
-            const int SAMPLE_MAP_ENTRIES = 120;
+            SampleMap.Entry[] note2sample = null;
 
             short initialSample = BitConverter.ToInt16(data, 0);
             byte flags = data[2];
@@ -130,14 +129,14 @@ namespace SF2MusicCooker
                 if (data.Length != 484)
                     throw new FormatException("Data payload must contain 484 bytes because sample map is expected");
 
-                note2sample = new Dictionary<int, SampleMap.Entry>(SAMPLE_MAP_ENTRIES);
+                note2sample = new SampleMap.Entry[SampleMap.MAP_LENGTH];
 
-                for (int i = 0; i < SAMPLE_MAP_ENTRIES; i++)
+                for (int i = 0; i < note2sample.Length; i++)
                 {
                     short note = BitConverter.ToInt16(data, 4 + i * 4);
                     short sample = BitConverter.ToInt16(data, 4 + i * 4 + 2);
 
-                    note2sample[i + NoteBible.BASE_VALUE] = new SampleMap.Entry(sample, note + NoteBible.BASE_VALUE);
+                    note2sample[i] = new SampleMap.Entry(sample, note + NoteBible.BASE_VALUE);
                 }
             }
 
