@@ -48,8 +48,8 @@ namespace SF2MusicCooker
         private static string NOTE(byte value)
         {
             // In "The First Battle" test music:
-            // With +0 value offset: some instruments sound correct (noise) but others don't
-            // With +12 value offset: most instruments sound correct but noise and some others breaks
+            // With +0 value offset: instruments do not play at the correct height
+            // With +12 value offset: instruments sound correct but I can't shake the feeling this is way too brittle
 
             // TODO: This requires a more rigorous approach to get the correct notes all the time
             // Take a look at Furnace source code to figure how the frequency register is filled
@@ -57,7 +57,7 @@ namespace SF2MusicCooker
             // Also don't forget to do something like this:
             //      value = (byte)Math.Max(0, Math.Min(0x53, value)); // Cube sound engine has 0x54 notes defined [0..0x53]
 
-            return NoteBible.GetByValue(value).Label; // Verify the note is valid/supported and return the proper ASM label
+            return NoteBible.GetByValue((byte)(value + 12)).Label; // Verify the note is valid/supported and return the proper ASM label
         }
 
         private static byte PAN_F2C(byte pan)
