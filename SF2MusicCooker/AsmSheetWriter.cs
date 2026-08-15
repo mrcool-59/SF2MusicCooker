@@ -205,11 +205,11 @@ namespace SF2MusicCooker
 
             if (file.Orders > 0)
             {
-                Console.WriteLine("Executed {0} beats before ending playback.", beats);
+                Console.WriteLine("> Executed {0} beats before ending playback.", beats);
                 if (loopOrder >= 0)
-                    Console.WriteLine("Music contains a loop at order #{0}.", loopOrder);
+                    Console.WriteLine("> Music contains a loop at order #{0}.", loopOrder);
                 else
-                    Console.WriteLine("Music doesn't contain a loop.");
+                    Console.WriteLine("> Music doesn't contain a loop.");
             }
 
             for (int channel = 0; channel < file.Channels; channel++)
@@ -249,7 +249,7 @@ namespace SF2MusicCooker
             asm = "; MUSIC SIZE = " + AsmSheetEstimator.EstimateBytes(asm) + " (approximately)" + Environment.NewLine + asm;
 
             // Print how much time it took
-            if (file.Orders > 0) Console.WriteLine("Building ASM sheet took {0} ms.", sw.ElapsedMilliseconds);
+            if (file.Orders > 0) Console.WriteLine("> Building ASM sheet took {0} ms.", sw.ElapsedMilliseconds);
 
             // All done!
             return asm;

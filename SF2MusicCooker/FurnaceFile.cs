@@ -283,6 +283,16 @@ namespace SF2MusicCooker
         public readonly float PlaybackRate;
 
         /// <summary>
+        /// A-4 tuning value.
+        /// </summary>
+        public readonly int A4Tuning;
+
+        /// <summary>
+        /// The standard A-4 tuning value.
+        /// </summary>
+        public const int StandardA4Tuning = 440;
+
+        /// <summary>
         /// Number of channels.
         /// </summary>
         public int Channels { get { return KeyByChannelAndOrder.GetLength(0); } }
@@ -370,7 +380,7 @@ namespace SF2MusicCooker
             return removed;
         }
 
-        public FurnaceFile(int formatVersion, int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playbackRate)
+        public FurnaceFile(int formatVersion, int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playbackRate, int a4tuning)
         {
             FormatVersion = formatVersion;
             KeyByChannelAndOrder = keyByChannelAndOrder;
@@ -378,12 +388,13 @@ namespace SF2MusicCooker
             Instruments = instruments;
             Samples = samples;
             PlaybackRate = playbackRate;
+            A4Tuning = a4tuning;
         }
 
         /// <summary>
         /// Gives an empty file.
         /// </summary>
-        public static readonly FurnaceFile Empty = new FurnaceFile(0, new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 59);
+        public static readonly FurnaceFile Empty = new FurnaceFile(0, new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 59, StandardA4Tuning);
 
         private static int ComputeKey(byte channel, short index)
         {
@@ -935,8 +946,9 @@ namespace SF2MusicCooker
                     // --- Compute playback rate ---
 
                     float playbackRate = ticksPerSecond * virtualTempoNumerator / (virtualTempoDenominator * speed1);
+                    int a4tuningRounded = (int)Math.Round(a4tuning);
 
-                    return new FurnaceFile(version, keyByChannelAndOrder, patternByKey, instruments, samples, playbackRate);
+                    return new FurnaceFile(version, keyByChannelAndOrder, patternByKey, instruments, samples, playbackRate, a4tuningRounded);
                 }
             }
             catch (Exception ex)

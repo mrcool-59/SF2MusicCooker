@@ -67,6 +67,9 @@ namespace SF2MusicCooker
                         // We first need to understand the contents of the .fur file
                         FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, dumpUncompressed ? ("UNCOMPRESSED_" + fur.Name) : null);
 
+                        // Verify A-4 tuning value
+                        if (file.A4Tuning != FurnaceFile.StandardA4Tuning) Console.WriteLine("! This tool doesn't support A-4 tuning different from {0} hz, end result will sound incorrect if you proceed", FurnaceFile.StandardA4Tuning);
+                        
                         // Remove notes we don't support in the note bible
                         int removed = file.RemoveUnsupportedNotes();
                         if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
