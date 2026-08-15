@@ -426,6 +426,8 @@ namespace SF2MusicCooker
                         firstNoteTick++;
                     }
 
+                    // TODO: verify if DAC mode is enabled for the song that no FM instrument is used in 6th channel
+
                     // TODO: remaining FM features to implement/review:
                     // - Set Pitch Slides
                     // - Note/Frequency Shifting

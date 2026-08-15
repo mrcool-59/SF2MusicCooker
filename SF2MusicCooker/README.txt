@@ -36,7 +36,7 @@ HOW TO USE
 GOLDEN RULES (this section is especially relevant to music composers)
 ------------
 
-1. Please create custom Genesis songs in Furnace in the most straightforward way: no macros, no extreme octave notes, no exotic effects (see "LIMITATIONS" below for more details).
+1. Please create custom Sega Genesis songs in Furnace in the most basic way: no macros, no extreme octave notes, no exotic effects (see "LIMITATIONS" below for more details).
 2. Your song should rely mostly on the standard 5 FM channels + the 6th channel.
 3. [NOT AVAILABLE YET] You can use samples in channel 6 (but you won't be able to it as FM channel for the *full* song). Samples should be small and you can't have too many of them.
 4. Important instruments should use FM channels 0, 1, 2 because other channels can be borrowed by sound effects during SF2 gameplay.
@@ -53,10 +53,10 @@ Each Music Bank can hold 32768 bytes and SF2 Music Cooker will add a comment int
 The vanilla game comes with Music Bank 0 (musics 1 to 32) and Music Bank 1 (musics 33 to 64). Sadly, these two Music Banks are *almost* full.
 For this reason, REPLACE EXISTING MUSICS feature can be pretty limited if you try to import songs that take more space than their vanilla music counterpart.
 
-Thanks to the people at SF2Central that worked on expanding the game ROM patches, it is now possible to add extra Musics Banks inside the expanded ROM space space.
+Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Musics Banks inside the expanded ROM space space.
 If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 2 extra, fully available Music Banks to host all your custom music needs.
 These are called Music Bank Ext 0 (musics 49 to 56) and Music Bank Ext 1 (musics 57 to 64).
-As you can see, the Music Bank 1 range was cut down. Its range is now 33 to 48.
+As you can see, the Music Bank 1 range was cut down compared to the vanilla game. Its range is now 33 to 48.
 
 The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0 and Music Bank Ext 1.
 
@@ -67,13 +67,13 @@ OPTIONS
 
 SF2 Music Cooker can be run with the following option switches to alter its behavior: (must appear after the 1st argument)
 
---nopause				or		-np				Do not ask to press a key to quit the program.
---autoyes				or		-ay				Automatically confirm to write files to SF2DISASM folder.
---autono				or		-an				Automatically confirm to write files to Output folder (has priority over --autoyes)
---nooptimize			or		-no				Do not reduce the size of the music sheets with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
---dumpnotes				or		-dn				Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers)
---dumpuncompressed		or		-du				Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
---channelN				or		-cN				(N = 0..9) If present disable output of all channels except channel N (only useful for developers)
+--nopause				or		-np		Do not ask to press a key to quit the program
+--autoyes				or		-ay		Automatically confirm to write files to SF2DISASM folder
+--autono				or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
+--nooptimize			or		-no		Do not reduce the size of the music sheets with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
+--dumpnotes				or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
+--dumpuncompressed		or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
+--channelN				or		-cN		(N = 0..9) If present disable output of all channels except channel N (only useful for developers)
 
 
 
@@ -83,13 +83,13 @@ LIMITATIONS
 SF2 Music Cooker currently supports:
 - FM channels 1 to 5 + Channel 6 in FM mode
 - Notes between C-0 and B-9 on Furnace side (120 notes), unsupported notes are suppressed
-- Arbitrary tempo, though it is expected song notes should play between 40 and 80 hz
+- Arbitrary tempo, though it is expected songs will play between 40 and 80 hz
 - New FM instruments, these will get added to the vanilla SF2 instruments
 - Effects supported by the SF2 sound driver, such as volume, panning, vibrato
 - Song loop/end marker effects, as well as "jump to next pattern" effect
 - Song size reduction by detecting "repeated command patterns" and replacing them with counted loops
 - Reasonably long songs that use many FM instruments and notes (as long as it can fit in the assembled ROM)
-- New songs will appear in the Sound Test; it is also improved with better SFX names and circular navigation
+- New songs will appear in the Sound Test; the Sound Test is also improved with better SFX names and circular navigation
 
 SF2 Music Cooker doesn't currently support but will in the future (because I want to do it):
 - Channel 6 in DAC mode (samples) 
@@ -98,7 +98,7 @@ SF2 Music Cooker doesn't currently support but will in the future (because I wan
 
 SF2 Music Cooker doesn't plan to support (unless there is an overwhelming demand for the feature):
 - Furnace features such as "macros" (for FM instruments, PSG instruments or samples), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
-- Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool
+- Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool (the 'vgm2fur' Python tool is promising here)
 - Shining Force 1 (maybe most of the puzzle pieces are already solved and it wouldn't require *that* much effort, but I didn't look at SF1 music engine at all)
 
 Special caveat for replacing music pairs (3, 4) and (13, 14):

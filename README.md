@@ -12,6 +12,7 @@ Hacking new musics into Shining Force 2 sound engine comes with a bunch of chall
 - Limited bank space that the Z80 CPU needs to access for music sheets, samples and FM instruments
 - Complexity of FM synthesis
 - Complexity of mapping Furnace music patterns to Shining Force 2 sound engine commands
+- Make the game rendition of the music sounds as close as possible to the Furnace rendition
 - And a lot of other things I forgot :)
 
 ## How to use SF2 Music Cooker
@@ -24,4 +25,4 @@ Hacking new musics into Shining Force 2 sound engine comes with a bunch of chall
 This tool is programmed using C# language and runs on .NET 4.8.1 framework.  
 Simply open the .sln file in Visual Studio 2022 or 2026 (Community Edition will do).  
 The project has minimal dependencies and can be immediately built.  
-It has only been built and tested on Windows, but it should be able to run on other .NET platforms without too much trouble.
+It has only been built and tested on Windows, but it should run on other .NET platforms without too much trouble.
