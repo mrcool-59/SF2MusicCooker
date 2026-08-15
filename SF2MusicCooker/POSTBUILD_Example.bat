@@ -7,8 +7,8 @@ rem -------------------------------------------------------------------------
 rem This file is an example, you should modify the paths to suit your system!
 rem -------------------------------------------------------------------------
 
-SET BuildPath=C:\Dev\Romhack\SF2DISASM\build
-SET EmuPath=C:\Dev\Romhack\__Emu
+SET BuildPath=C:\Dev\Github\SF2DISASM\build
+SET EmuPath=C:\Dev\Github\__Emu
 
 rem This example assumes you are using EmuHawk emulator, but you can adapt it for other emulators!
 
