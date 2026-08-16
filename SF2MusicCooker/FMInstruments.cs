@@ -7,7 +7,7 @@ namespace SF2MusicCooker
 {
     public sealed class FMInstruments
     {
-        public const byte MAX_INSTRUMENTS = 141; // TODO: FIXME: 80 (0~79) if adhering strictly to DISASM notes, 141 (0~140) if making full use of the 4096 bytes chunk
+        public const byte MAX_INSTRUMENTS = 141;
 
         public sealed class Definition : IEquatable<Definition>
         {
@@ -122,7 +122,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void Clear(byte instrument)
         {
-            if (instrument >= MAX_INSTRUMENTS) throw new ArgumentOutOfRangeException(nameof(instrument));
+            if (instrument >= _used.Length) throw new ArgumentOutOfRangeException(nameof(instrument));
 
             _used[instrument] = 0;
             Definition.Null.Write(_buffer, instrument);
@@ -148,7 +148,7 @@ namespace SF2MusicCooker
         private byte Allocate()
         {
             int instrument = Array.FindIndex(_used, u => u == 0);
-            if (instrument < 0) throw new NotSupportedException("Sorry, it appears all " + MAX_INSTRUMENTS + " instruments are used, there is no free instrument slot!");
+            if (instrument < 0) throw new NotSupportedException("Sorry, it appears all " + _used.Length + " instruments are used, there is no free instrument slot!");
             _used[instrument] = 1;
             return (byte)instrument;
         }
@@ -196,18 +196,27 @@ namespace SF2MusicCooker
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Load the contents of 'yminst.bin' and update instruments data and used slots.
+        /// </summary>
         public void Load(byte[] yminst)
         {
-            if (yminst == null || yminst.Length != 4096) throw new InvalidDataException("Bad 'yminst' data: 4096 bytes expected");
+            if (yminst == null || yminst.Length != 4096) throw new FormatException("Bad 'yminst' data: 4096 bytes expected");
 
             Buffer.BlockCopy(yminst, 0, _buffer, 0, _buffer.Length);
             for (int i = 0; i < _used.Length; i++) _used[i] = (byte)(Definition.Read(_buffer, (byte)i).Equals(Definition.Null) ? 0 : 1);
         }
 
-        public FMInstruments()
+        public FMInstruments(int slots = MAX_INSTRUMENTS)
         {
+            if (slots < 0)
+                throw new ArgumentOutOfRangeException(nameof(slots), "cannot be negative");
+
+            if (slots > MAX_INSTRUMENTS)
+                throw new NotSupportedException(MAX_INSTRUMENTS + " instruments is the absolute maximum limit that can fit in 4096 bytes");
+
             _buffer = new byte[4096];
-            _used = new byte[MAX_INSTRUMENTS];
+            _used = new byte[slots];
         }
     }
 }

@@ -15,7 +15,7 @@ namespace SF2MusicCooker
 
         private Dictionary<int, string> _sfx2name;
 
-        public Output(Bank[] banks, int[] musicPairs = null)
+        public Output(Bank[] banks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null)
         {
             if (musicPairs != null && musicPairs.Length % 2 != 0)
                 throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
@@ -23,7 +23,7 @@ namespace SF2MusicCooker
             _banks = banks ?? throw new ArgumentNullException(nameof(banks));
             _musicPairs = musicPairs;
 
-            Instruments = new FMInstruments();
+            Instruments = new FMInstruments(instrumentSlots);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace SF2MusicCooker
                 };
             }
 
-            return new Output(banks, new int[] { 3, 4, 13, 14 });
+            return new Output(banks, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 });
         }
 
         private Bank Find(int number)
