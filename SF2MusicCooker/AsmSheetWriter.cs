@@ -246,7 +246,10 @@ namespace SF2MusicCooker
             string asm = sb.ToString();
 
             // Count number of bytes it will take in bank and show it on first line as a comment
-            asm = "; MUSIC SIZE = " + AsmSheetEstimator.EstimateBytes(asm) + " (approximately)" + Environment.NewLine + asm;
+            asm = "; MUSIC SIZE = " + AsmSheetEstimator.EstimateBytes(asm, out bool empty) + " (approximately)" + Environment.NewLine + asm;
+
+            // Additional emptiness remark
+            if (empty) asm = "; This is an empty music and it won't produce any sound output" + Environment.NewLine + Environment.NewLine + asm;
 
             // Print how much time it took
             if (file.Orders > 0) Console.WriteLine("> Building ASM sheet took {0} ms.", sw.ElapsedMilliseconds);

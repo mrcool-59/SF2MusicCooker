@@ -89,11 +89,9 @@ namespace SF2MusicCooker
                         number2enum.TryGetValue(number, out string asmName);
                         string sheet = File.ReadAllText(filename);
 
-                        if (number == 64)
-                        {
-                            number = 48; // Because we shrinked the second bank, we need to move the padding music to 48 instead of 64
-                            sheet = sheet.Replace("Music_64", "Music_48"); // This is hackish but whatever!
-                        }
+                        // Don't add unreachable musics (i.e: those who don't have a defined ASM name)
+                        // These pseudo-musics are probably used for adding sentinel values in case sound driver reads out of bounds data
+                        if (asmName == null) continue;
 
                         Song song = new Song(number, name, asmName, sheet);
                         Bank bank = Find(song.Number);

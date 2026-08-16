@@ -105,16 +105,6 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Remove ASM comment from line and return the adjusted line.
-        /// </summary>
-        public static string RemoveASMComment(string line)
-        {
-            int index = line.IndexOf(';');
-            if (index >= 0) line = line.Substring(0, index); // Strip comment
-            return line;
-        }
-
-        /// <summary>
         /// Read all "label: equ value" ASM statements from a file and return a map.
         /// </summary>
         public static Dictionary<string, int> ReadASMEnumMap(string filename)
@@ -132,6 +122,34 @@ namespace SF2MusicCooker
             Dictionary<int, string> map = new Dictionary<int, string>();
             foreach ((string key, int value) in IterateASMEnum(filename)) map.Add(value, key); // Check for no duplicate.
             return map;
+        }
+
+        /// <summary>
+        /// Remove ASM comment from line and return the adjusted line (i.e: "foo bar ; something" becomes "foo bar").
+        /// </summary>
+        public static string RemoveASMComment(string line)
+        {
+            int index = line.IndexOf(';');
+            if (index >= 0)
+            {
+                while (index > 0 && char.IsWhiteSpace(line[index - 1])) index--;
+                line = line.Substring(0, index); // Strip comment
+            }
+            return line;
+        }
+
+        /// <summary>
+        /// Remove ASM label from line and return the adjusted line (i.e: "something: foo bar" becomes "foo bar").
+        /// </summary>
+        public static string RemoveASMLabel(string line)
+        {
+            int index = line.IndexOf(':');
+            if (index >= 0)
+            {
+                while (index < line.Length && char.IsWhiteSpace(line[index])) index++;
+                line = line.Substring(index + 1); // Strip label
+            }
+            return line;
         }
 
         /// <summary>

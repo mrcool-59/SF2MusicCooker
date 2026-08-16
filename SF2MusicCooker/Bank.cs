@@ -231,7 +231,7 @@ namespace SF2MusicCooker
             {
                 if (song.Sheet != null)
                 {
-                    bytes += AsmSheetEstimator.EstimateBytes(song.Sheet);
+                    bytes += AsmSheetEstimator.EstimateBytes(song.Sheet, out _);
                 }
             }
 

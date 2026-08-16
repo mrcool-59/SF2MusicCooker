@@ -9,7 +9,6 @@ namespace SF2MusicCooker
     {
         private static readonly Regex music = new Regex("Music_([0-9]+)\\:");
         private static readonly Regex inst = new Regex("inst[ \t]*([0-9]+)");
-        private static readonly Regex word = new Regex("[a-zA-Z_]+");
 
         private static readonly Dictionary<string, int> map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
@@ -53,34 +52,35 @@ namespace SF2MusicCooker
 
         /// <summary>
         /// Get an estimation of the number of bytes a music .asm file will take when assembled into a music bank.
-        /// The estimation should be "almost" exact but you should not 100% rely on it.
+        /// This will also return if this is an empty music. An empty music basically only has the mandatory 'db' header bytes and 'channel_end' commmand.
+        /// The size estimation should be "almost" exact but you should not 100% rely on it.
         /// </summary>
-        public static int EstimateBytes(string sheet)
+        public static int EstimateBytes(string sheet, out bool empty)
         {
             using (StringReader reader = new StringReader(sheet))
             {
                 int bytes = 0;
+                empty = true;
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    bytes += EstimateLine(line);
+                    bytes += EstimateLine(line, ref empty);
                 }
                 return bytes;
             }
         }
 
-        private static int EstimateLine(string line)
+        private static int EstimateLine(string line, ref bool empty)
         {
             int bytes = 0;
-            line = Tools.RemoveASMComment(line);
-            if (!string.IsNullOrWhiteSpace(line))
+            string command = StripArguments(Tools.RemoveASMLabel(Tools.RemoveASMComment(line)));
+            if (!string.IsNullOrEmpty(command))
             {
-                MatchCollection matches = word.Matches(line);
-                foreach (Match match in matches)
-                {
-                    if (map.TryGetValue(match.Value, out int wordBytes))
-                        bytes += wordBytes;
-                }
+                if (command != "db" && command != "dw" && command != "channel_end")
+                    empty = false;
+
+                if (map.TryGetValue(command, out int wordBytes))
+                    bytes += wordBytes;
             }
             return bytes;
         }
