@@ -14,11 +14,13 @@
 Version 1.0:
 - No playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
+- Jump to next pattern + Jump to combined pour pouvoir sauter à (Order + Row)
 - Support for remaining built-in effects (vibrato...)
 
 Version 1.1:
-- Musique "Power Drift" à composer (avec des samples)
 - DAC support
+- Calculer les instruments FM/samples utilisés *après* avoir retiré les vanilla song pour pouvoir économiser de la place
+- Ignorer les samples des instruments inutilisés et vérifier le canal 6 pour déterminer si le DAC est activé ou non + interdire l'utilisation d'instruments FM si oui
 
 Version 1.2:
 - PSG output in sheet writing

@@ -169,7 +169,7 @@ namespace SF2MusicCooker
             if (originalName == null)
                 return name;
             else
-                return originalName + " -> " + name;
+                return name + " / " + originalName;
         }
 
         /// <summary>

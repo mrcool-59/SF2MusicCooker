@@ -14,6 +14,7 @@ namespace SF2MusicCooker
             bool noPause = Test("--nopause") || Test("-np");
             bool noPostBuild = Test("--nopostbuild") || Test("-npb");
             bool noOptimizeNotes = Test("--nooptimize") || Test("-no");
+            bool includeOriginalNames = Test("--includeoriginalnames") || Test("-ion");
             bool autoYes = Test("--autoyes") || Test("-ay");
             bool autoNo = Test("--autono") || Test("-an");
             bool dumpUncompressed = Test("--dumpuncompressed") || Test("-du");
@@ -103,10 +104,10 @@ namespace SF2MusicCooker
                             if (moveFrom == number)
                             {
                                 // Replace
-                                output.Replace(song);
+                                output.Replace(song, includeOriginalNames);
                                 if (pairNumber > 0)
                                 {
-                                    output.Replace(new Song(pairNumber, name, asmName, null));
+                                    output.Replace(new Song(pairNumber, name, asmName, null), includeOriginalNames);
                                     Console.WriteLine("WARNING: music {0} will also be replaced by music {1} since they are linked in pairs", pairNumber, number);
                                 }
                             }
@@ -120,7 +121,7 @@ namespace SF2MusicCooker
                                 }
                                 else
                                 {
-                                    output.MoveReplace(song, moveFrom);
+                                    output.MoveReplace(song, moveFrom, includeOriginalNames);
                                 }
                             }
                         }

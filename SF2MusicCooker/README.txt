@@ -67,13 +67,14 @@ OPTIONS
 
 SF2 Music Cooker can be run with the following option switches to alter its behavior: (must appear after the 1st argument)
 
---nopause				or		-np		Do not ask to press a key to quit the program
---autoyes				or		-ay		Automatically confirm to write files to SF2DISASM folder
---autono				or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
---nooptimize			or		-no		Do not reduce the size of the music sheets with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
---dumpnotes				or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
---dumpuncompressed		or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
---channelN				or		-cN		(N = 0..9) If present disable output of all channels except channel N (only useful for developers)
+--nopause					or		-np		Do not ask to press a key to quit the program
+--autoyes					or		-ay		Automatically confirm to write files to SF2DISASM folder
+--autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
+--nooptimize				or		-no		Do not reduce the size of the music sheets with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
+--includeoriginalnames		or		-ion	Include original names of replaced musics (in the sound test)
+--dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
+--dumpuncompressed			or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
+--channelN					or		-cN		(N = 0..9) If present disable output of all channels except channel N (only useful for developers)
 
 
 
