@@ -146,14 +146,15 @@ namespace SF2MusicCooker
                     {
                         autoYes = false;
                         autoNo = false;
-                        Console.WriteLine("! Auto Y/N has been turned off because one of the Music Banks is overloaded and requires manual review.");
+                        Console.WriteLine("! Auto Y/N has been turned off because one of the Banks is overloaded and requires manual review.");
                     }
-                    Console.WriteLine("WARNING: At least 1 Music Bank is overloaded, assembling the ROM will probably fail!");
-                    Console.WriteLine("         You should move some musics from that Music Bank to Music Banks that still have remaining space.");
+                    Console.WriteLine("WARNING: At least 1 Bank is overloaded, assembling the ROM will probably fail!");
+                    Console.WriteLine("         For musics: you should move some musics from that Music Bank to Music Banks that still have remaining space.");
                     if (!hasExtraBanks)
                     {
                         Console.WriteLine("         /!\\ We highly recommand you enable 'EXPANDED_MUSIC_BANKS' feature in 'sf2patches.asm' to solve this issue. /!\\");
                     }
+                    Console.WriteLine("         For SFXs: sorry, you have no other option but to sacrifice some of your SFXs to make room.");
                 }
 
                 bool writeToSF2DISASM = autoYes && !autoNo;

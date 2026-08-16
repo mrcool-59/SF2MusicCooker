@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace SF2MusicCooker
 {
-    public static class AsmSheetEstimator
+    public static class AsmSheetToolkit
     {
         private static readonly Regex music = new Regex("Music_([0-9]+)\\:");
         private static readonly Regex inst = new Regex("inst[ \t]*([0-9]+)");
@@ -90,10 +91,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static int[] GetMusicNumbers(string sheet)
         {
-            MatchCollection matches = music.Matches(sheet);
-            int[] results = new int[matches.Count];
-            for (int i = 0; i < results.Length; i++) results[i] = int.Parse(matches[i].Groups[1].Value);
-            return results;
+            return Tools.GetAllElements(sheet, music, int.Parse);
         }
 
         /// <summary>
@@ -101,8 +99,8 @@ namespace SF2MusicCooker
         /// </summary>
         public static void FillInstruments(string sheet, HashSet<int> set)
         {
-            MatchCollection matches = inst.Matches(sheet);
-            foreach (Match match in matches) set.Add(int.Parse(match.Groups[1].Value));
+            int[] instruments = Tools.GetAllElements(sheet, inst, int.Parse);
+            set.UnionWith(instruments);
         }
 
         /// <summary>
@@ -126,6 +124,78 @@ namespace SF2MusicCooker
             while (end < commandAndArgument.Length && !char.IsWhiteSpace(commandAndArgument[end])) end++;
 
             return commandAndArgument.Substring(start, end - start);
+        }
+
+        /// <summary>
+        /// Get a section of a composite sheet, identified by a label, up until the next label or the end of the composite sheet.
+        /// </summary>
+        public static string SplitByLabel(string compositeSheet, Regex labelRegex, string label)
+        {
+            MatchCollection matches = labelRegex.Matches(compositeSheet);
+            for (int i = 0; i < matches.Count; i++)
+            {
+                if (matches[i].Groups[1].Value == label)
+                {
+                    int next = i + 1;
+                    int start = matches[i].Index;
+                    int end = next < matches.Count ? matches[next].Index : compositeSheet.Length;
+
+                    return compositeSheet.Substring(start, end - start);
+                }
+            }
+            throw new FormatException("Unable to find label '" + label + "' in the composite sheet");
+        }
+
+        /// <summary>
+        /// Verify that all SFX channel pointers reference channel labels defined within the SFX bank and return the 'needed by' dependency map.
+        /// This map should be checked whenever the user attempts to replace a vanilla SFX to make sure we end up in a valid state for assembly.
+        /// </summary>
+        public static Dictionary<int, HashSet<int>> VerifyAndGetDependencies(BankSFX[] banks)
+        {
+            Regex channelPointerNameRegex = new Regex("dw[ \t]+(Sfx_[0-9]+_Channel_[0-9]+)");
+            Regex channelPointerNameLabelRegex = new Regex("(Sfx_[0-9]+_Channel_[0-9]+):");
+
+            Dictionary<int, HashSet<int>> neededByMap = new Dictionary<int, HashSet<int>>();
+
+            foreach (BankSFX bank in banks)
+            {
+                Dictionary<string, int> keys = new Dictionary<string, int>();
+
+                SFX[] sfxs = bank.Custom.Concat(bank.Vanilla).ToArray();
+
+                // Pass 1: collect keys provided by every SFX
+                foreach (SFX sfx in sfxs)
+                {
+                    string[] provides = Tools.GetAllStringElements(sfx.Sheet, channelPointerNameLabelRegex);
+
+                    foreach (string key in provides)
+                    {
+                        keys.Add(key, sfx.Number);
+                    }
+                }
+
+                // Pass 2: verify we have a key for every key hole
+                foreach (SFX sfx in sfxs)
+                {
+                    string[] requires = Tools.GetAllStringElements(sfx.Sheet, channelPointerNameRegex);
+
+                    foreach (string key in requires)
+                    {
+                        if (!keys.TryGetValue(key, out int dependencyNumber))
+                            throw new FormatException("SFX '" + sfx.Name + "' has a missing dependency, it needs this pointer label but it can't be found in the bank: " + key);
+
+                        if (!neededByMap.TryGetValue(dependencyNumber, out HashSet<int> neededBy))
+                        {
+                            neededBy = new HashSet<int>();
+                            neededByMap.Add(dependencyNumber, neededBy);
+                        }
+
+                        neededBy.Add(sfx.Number);
+                    }
+                }
+            }
+
+            return neededByMap;
         }
     }
 }

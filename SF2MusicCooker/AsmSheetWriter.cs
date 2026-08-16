@@ -21,8 +21,8 @@ namespace SF2MusicCooker
 
         private static int Weighter(string commandAndArguments)
         {
-            string command = AsmSheetEstimator.StripArguments(commandAndArguments);
-            int size = AsmSheetEstimator.GetCommandSize(command);
+            string command = AsmSheetToolkit.StripArguments(commandAndArguments);
+            int size = AsmSheetToolkit.GetCommandSize(command);
             // We definitely don't want unknown or main loop commands to be part of any loop whatsoever
             if (size == 0 || command == "mainLoopStart" || command == "mainLoopEnd") return short.MinValue;
             return size;
@@ -246,7 +246,7 @@ namespace SF2MusicCooker
             string asm = sb.ToString();
 
             // Count number of bytes it will take in bank and show it on first line as a comment
-            asm = "; MUSIC SIZE = " + AsmSheetEstimator.EstimateBytes(asm, out bool empty) + " (approximately)" + Environment.NewLine + asm;
+            asm = "; MUSIC SIZE = " + AsmSheetToolkit.EstimateBytes(asm, out bool empty) + " (approximately)" + Environment.NewLine + asm;
 
             // Additional emptiness remark
             if (empty) asm = "; This is an empty music and it won't produce any sound output" + Environment.NewLine + Environment.NewLine + asm;

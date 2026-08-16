@@ -23,6 +23,11 @@ namespace SF2MusicCooker
         public readonly string FolderName;
 
         /// <summary>
+        /// Max size of the bank in bytes.
+        /// </summary>
+        public readonly int MaxSize;
+
+        /// <summary>
         /// Length of this bank.
         /// </summary>
         public readonly int Length;
@@ -210,32 +215,33 @@ namespace SF2MusicCooker
         public bool PrintSize()
         {
             int bytes = 0;
-            int maxBytes = 0x8000;
 
             foreach (Song song in _custom.Concat(_vanilla))
             {
                 if (song.Sheet != null)
                 {
-                    bytes += AsmSheetEstimator.EstimateBytes(song.Sheet, out _);
+                    bytes += AsmSheetToolkit.EstimateBytes(song.Sheet, out _);
                 }
             }
 
-            float ratio = (float)bytes / maxBytes;
+            float ratio = (float)bytes / MaxSize;
             bool overloaded = ratio >= 0.999f;
             string suffix = overloaded ? " !!! OVERLOADED !!!" : string.Empty;
             string percentage = (ratio * 100f).ToString("0.00", CultureInfo.InvariantCulture);
 
-            Console.WriteLine("Music Bank '{0}' is using approximately {1} bytes out of {2} [{3}%]{4}", Name, bytes, maxBytes, percentage, suffix);
+            Console.WriteLine("Bank '{0}' is using approximately {1} bytes out of {2} [{3}%]{4}", Name, bytes, MaxSize, percentage, suffix);
             return overloaded;
         }
 
-        public Bank(string name, string folderName, int firstNumber, int length)
+        public Bank(string name, string folderName, int maxSize, int firstNumber, int length)
         {
+            if (maxSize <= 0) throw new ArgumentOutOfRangeException(nameof(maxSize), "cannot be zero or negative");
             if (firstNumber <= 0) throw new ArgumentOutOfRangeException(nameof(firstNumber), "cannot be zero or negative");
             if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length), "cannot be zero or negative");
 
             Name = name ?? throw new ArgumentNullException(nameof(name));
             FolderName = folderName ?? name;
+            MaxSize = maxSize;
             FirstNumber = firstNumber;
             Length = length;
         }

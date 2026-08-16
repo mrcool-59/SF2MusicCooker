@@ -153,6 +153,28 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get all elements that verify the provided regex. The regex must contain exactly 1 capture group.
+        /// </summary>
+        public static T[] GetAllElements<T>(string document, Regex elementRegex, Func<string, T> convertFunc)
+        {
+            if (elementRegex.GetGroupNumbers().Length != 2)
+                throw new ArgumentException("regex must contain exactly 1 capture group", nameof(elementRegex));
+
+            MatchCollection matches = elementRegex.Matches(document);
+            T[] results = new T[matches.Count];
+            for (int i = 0; i < results.Length; i++) results[i] = convertFunc(matches[i].Groups[1].Value);
+            return results;            
+        }
+
+        /// <summary>
+        /// Get all elements that verify the provided regex. The regex must contain exactly 1 capture group.
+        /// </summary>
+        public static string[] GetAllStringElements(string document, Regex elementRegex)
+        {
+            return GetAllElements(document, elementRegex, x => x);
+        }
+
+        /// <summary>
         /// Get the name and version of this program in a user-friendly string.
         /// </summary>
         public static string GetAssemblyNameAndVersion()

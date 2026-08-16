@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -9,19 +10,23 @@ namespace SF2MusicCooker
     public sealed class Output
     {
         private readonly Bank[] _banks;
+        private readonly BankSFX[] _sfxBanks;
         private readonly int[] _musicPairs;
+        private readonly string _soundTestTemplate;
+
+        private Dictionary<int, HashSet<int>> _sfxNeededByMap;
 
         public FMInstruments Instruments { get; }
 
-        private Dictionary<int, string> _sfx2name;
-
-        public Output(Bank[] banks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null)
+        public Output(Bank[] banks, BankSFX[] sfxBanks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (musicPairs != null && musicPairs.Length % 2 != 0)
                 throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
 
             _banks = banks ?? throw new ArgumentNullException(nameof(banks));
+            _sfxBanks = sfxBanks ?? throw new ArgumentNullException(nameof(sfxBanks));
             _musicPairs = musicPairs;
+            _soundTestTemplate = soundTestTemplate;
 
             Instruments = new FMInstruments(instrumentSlots);
         }
@@ -37,22 +42,28 @@ namespace SF2MusicCooker
             {
                 banks = new Bank[4]
                 {
-                    new Bank("musicbank0", "musicbank0-standard", 1, 32),
-                    new Bank("musicbank1", "musicbank1-standard", 33, 16), // Shrinked compared to vanilla
-                    new Bank("musicbankext0", "musicbankext0", 49, 8), // Extra bank 1
-                    new Bank("musicbankext1", "musicbankext1", 57, 8) // Extra bank 1
+                    new Bank("musicbank0", "musicbank0-standard", 0x8000, 1, 32),
+                    new Bank("musicbank1", "musicbank1-standard", 0x8000, 33, 16), // Shrinked compared to vanilla
+                    new Bank("musicbankext0", "musicbankext0-standard", 0x8000, 49, 8), // Extra bank 1
+                    new Bank("musicbankext1", "musicbankext1-standard", 0x8000, 57, 8) // Extra bank 1
                 };
             }
             else
             {
                 banks = new Bank[2]
                 {
-                    new Bank("musicbank0", "musicbank0-standard", 1, 32),
-                    new Bank("musicbank1", "musicbank1-standard", 33, 32)
+                    new Bank("musicbank0", "musicbank0-standard", 0x8000, 1, 32),
+                    new Bank("musicbank1", "musicbank1-standard", 0x8000, 33, 32)
                 };
             }
 
-            return new Output(banks, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 });
+            BankSFX[] sfxBanks = new BankSFX[1]
+            {
+                // Quick calculation of available size for SFX bank: 64k - 44k (PCM bank 0-1) - 4k (FM instruments) - 8k (sound driver) = 8k remaining
+                new BankSFX("sfxbank", "sfxbank-standard", 0x2000)
+            };
+
+            return new Output(banks, sfxBanks, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
         }
 
         private Bank Find(int number)
@@ -75,6 +86,15 @@ namespace SF2MusicCooker
             return allSongs.ToArray();
         }
 
+        private SFX[] GetAllSFXs(bool putCustomFirst)
+        {
+            List<SFX> allSFXs = new List<SFX>();
+            if (putCustomFirst) foreach (BankSFX bank in _sfxBanks) allSFXs.AddRange(bank.Custom);
+            foreach (BankSFX bank in _sfxBanks) allSFXs.AddRange(bank.Vanilla);
+            if (!putCustomFirst) foreach (BankSFX bank in _sfxBanks) allSFXs.AddRange(bank.Custom);
+            return allSFXs.ToArray();
+        }
+
         /// <summary>
         /// Load vanilla music data from the appropriate SF2DISASM folders (numbers, names, sheets, FM instruments).
         /// </summary>
@@ -83,36 +103,40 @@ namespace SF2MusicCooker
             string soundFolder = Path.Combine(rootFolder, "disasm\\data\\sound");
 
             string pathToMusicNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\musics.asm");
+            string pathToSfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
             string[] pathToMusicBankFolders = new string[2]
             {
                 Path.Combine(soundFolder, "musicbank0"),
                 Path.Combine(soundFolder, "musicbank1"),
             };
-            string[] pathToSfxSheetFiles = new string[1]
+            string[] pathToSfxBankFiles = new string[1]
             {
                 Path.Combine(soundFolder, "sfxbank", "sfxbank.asm")
             };
             string pathToYmInstBin = Path.Combine(soundFolder, "yminst.bin");
-            string pathToSfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
             string pathToMusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
 
-            LoadVanilla(pathToMusicNumbersAndAsmNames, pathToMusicBankFolders, pathToSfxSheetFiles, pathToYmInstBin, pathToSfxNumbersAndAsmNames, pathToMusicNamesTxt);
+            LoadVanilla(pathToMusicNumbersAndAsmNames, pathToSfxNumbersAndAsmNames, pathToMusicBankFolders, pathToSfxBankFiles, pathToYmInstBin, pathToMusicNamesTxt);
         }
 
         /// <summary>
         /// Load vanilla music data from specific folders (outside of SF2, this method is able to read data for other Cube games with similar input files).
         /// </summary>
-        public void LoadVanilla(string pathToMusicNumbersAndAsmNames, string[] pathToMusicBankFolders, string[] pathToSfxSheetFiles, string pathToYmInstBin, string pathToSfxNumbersAndAsmNames = null, string pathToMusicNamesTxt = null)
+        public void LoadVanilla(string pathToMusicNumbersAndAsmNames, string pathToSfxNumbersAndAsmNames, string[] pathToMusicBankFolders, string[] pathToSfxBankFiles, string pathToYmInstBin, string pathToMusicNamesTxt = null)
         {
             if (pathToMusicNumbersAndAsmNames == null) throw new ArgumentNullException(nameof(pathToMusicNumbersAndAsmNames));
+            if (pathToSfxNumbersAndAsmNames == null) throw new ArgumentNullException(nameof(pathToSfxNumbersAndAsmNames));
             if (pathToMusicBankFolders == null) throw new ArgumentNullException(nameof(pathToMusicBankFolders));
-            if (pathToSfxSheetFiles == null) throw new ArgumentNullException(nameof(pathToSfxSheetFiles));
+            if (pathToSfxBankFiles == null) throw new ArgumentNullException(nameof(pathToSfxBankFiles));
             if (pathToYmInstBin == null) throw new ArgumentNullException(nameof(pathToYmInstBin));
 
-            Dictionary<int, string> number2name = pathToMusicNamesTxt != null ? Tools.ReadNumberStringMap(pathToMusicNamesTxt) : new Dictionary<int, string>(); // Load names (for sound test)
+            Dictionary<int, string> number2name = pathToMusicNamesTxt != null ? Tools.ReadNumberStringMap(pathToMusicNamesTxt) : new Dictionary<int, string>(); // Load music names (for sound test)
             Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(pathToMusicNumbersAndAsmNames); // Load numbers and ASM names
+            Dictionary<int, string> sfx_number2enum = Tools.ReadASMEnumReverseMap(pathToSfxNumbersAndAsmNames); // Load numbers and ASM names for SFXs
             HashSet<int> usedInstruments = new HashSet<int>();
             Regex regex = new Regex("^music([0-9]+)\\.asm$");
+            Regex sfxPointerNameRegex = new Regex("dw[ \t]+(Sfx_[0-9]+)[ \t\r\n]");
+            Regex sfxPointerNameLabelRegex = new Regex("(Sfx_[0-9]+):");
 
             // Load music sheets from music banks
             foreach (string folder in pathToMusicBankFolders)
@@ -135,7 +159,7 @@ namespace SF2MusicCooker
                         Song song = new Song(number, name, asmName, sheet);
                         Bank bank = Find(song.Number);
                         bank.Add(song, true);
-                        AsmSheetEstimator.FillInstruments(sheet, usedInstruments);
+                        AsmSheetToolkit.FillInstruments(sheet, usedInstruments);
 
                         // Special case for music 4 and 14
                         int pairNumber = GetPairedMusic(number);
@@ -152,24 +176,42 @@ namespace SF2MusicCooker
                 }
             }
 
-            // Also examine FM instruments used by SFXs, otherwise we will have a problem with muted SFXs because we cleared their instruments...
-            foreach (string sfxSheetFilename in pathToSfxSheetFiles)
+            // Load SFX banks (usually only 1)
+            int currentBank = 0;
+            int currentSfx = SFX.FIRST;
+            foreach (string filename in pathToSfxBankFiles)
             {
-                string sfxSheet = File.ReadAllText(sfxSheetFilename);
-                AsmSheetEstimator.FillInstruments(sfxSheet, usedInstruments);
+                string compositeSheet = File.ReadAllText(filename);
+                string[] pointerNames = Tools.GetAllStringElements(compositeSheet, sfxPointerNameRegex);
+                BankSFX bank = _sfxBanks[currentBank];
+
+                foreach (string pointerName in pointerNames)
+                {
+                    int number = currentSfx;
+                    sfx_number2enum.TryGetValue(number, out string asmName);
+
+                    // Don't add unreachable SFXs (i.e: those who don't have a defined ASM name)
+                    if (asmName == null) continue;
+
+                    string sfxSheet = AsmSheetToolkit.SplitByLabel(compositeSheet, sfxPointerNameLabelRegex, pointerName);
+
+                    SFX sfx = new SFX(number, null, asmName, pointerName, sfxSheet);
+                    bank.Add(sfx, true);
+
+                    currentSfx++;
+                }
+
+                AsmSheetToolkit.FillInstruments(compositeSheet, usedInstruments);
+                currentBank++;
             }
+
+            // Verify that all puzzle pieces fit for SFXs (because of their channel pointers that can reference data defined in other SFXs...)
+            _sfxNeededByMap = AsmSheetToolkit.VerifyAndGetDependencies(_sfxBanks);
 
             // Load FM instruments and clear the unused ones
             byte[] yminst = File.ReadAllBytes(pathToYmInstBin);
             Instruments.Load(yminst);
             Instruments.ClearExcept(usedInstruments);
-
-            // Load SFX ASM names (to show them on sound test message box)
-            if (pathToSfxNumbersAndAsmNames != null)
-            {
-                _sfx2name = Tools.ReadASMEnumReverseMap(pathToSfxNumbersAndAsmNames);
-                _sfx2name.Remove(127); // Remove SFX_NONE
-            }
         }
 
         /// <summary>
@@ -237,6 +279,10 @@ namespace SF2MusicCooker
             {
                 if (bank.PrintSize()) anyOverloaded = true;
             }
+            foreach (BankSFX bank in _sfxBanks)
+            {
+                if (bank.PrintSize()) anyOverloaded = true;
+            }
             return anyOverloaded;
         }
 
@@ -253,7 +299,14 @@ namespace SF2MusicCooker
                 bank.Write(bankPath);
                 bank.WriteSheets(bankPath);
             }
+            foreach (BankSFX bank in _sfxBanks)
+            {
+                string bankPath = Path.Combine(path, bank.FolderName);
+                DeleteAndCreateFolder(bankPath);
+                bank.Write(bankPath);
+            }
             WriteASMMusicEnum(path);
+            WriteASMSfxEnum(path);
             WriteASMSoundTest(path);
             WriteFMInstruments(path);
         }
@@ -271,7 +324,14 @@ namespace SF2MusicCooker
                 bank.Write(bankPath);
                 bank.WriteSheets(bankPath);
             }
+            foreach (BankSFX bank in _sfxBanks)
+            {
+                string bankPath = Path.Combine(soundFolder, bank.FolderName);
+                DeleteAndCreateFolder(bankPath);
+                bank.Write(bankPath);
+            }
             WriteASMMusicEnum(Path.Combine(rootFolder, "disasm\\enums"));
+            WriteASMSfxEnum(Path.Combine(rootFolder, "disasm\\enums"));
             WriteASMSoundTest(Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch"));
             WriteFMInstruments(soundFolder);
         }
@@ -296,7 +356,7 @@ namespace SF2MusicCooker
 
             foreach (Song song in GetAllSongs(false))
             {
-                if (song.ASMName != null)
+                if (song.ASMName != null) // Filter out dummy padding songs used as sentinels
                 {
                     sb.AppendFormat("{0}: equ {1}", song.ASMName, song.Number);
                     sb.AppendLine();
@@ -307,70 +367,89 @@ namespace SF2MusicCooker
             Console.WriteLine("> Wrote 'musics-standard.asm' file!");
         }
 
+        private void WriteASMSfxEnum(string path)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (SFX sfx in GetAllSFXs(false))
+            {
+                sb.AppendFormat("{0}: equ {1}", sfx.ASMName, sfx.Number);
+                sb.AppendLine();
+            }
+
+            sb.AppendLine();
+            sb.AppendFormat("{0}: equ {1}", "SFX_NONE", SFX.NONE);
+
+            File.WriteAllText(Path.Combine(path, "sfxs-standard.asm"), sb.ToString());
+            Console.WriteLine("> Wrote 'sfxs-standard.asm' file!");
+        }
+
         private void WriteASMSoundTest(string path)
         {
-            const string filename = "soundtest-standard.asm.tpl";
-            if (File.Exists(filename) && _sfx2name != null)
+            if (_soundTestTemplate == null) return;
+
+            string template = File.ReadAllText(_soundTestTemplate);
+            StringBuilder sb = new StringBuilder(template);
+            StringBuilder indexes = new StringBuilder();
+            StringBuilder names = new StringBuilder();
+            const string padding = "                ";
+
+            Song[] allSongs = GetAllSongs(true);
+            SFX[] allSFXs = GetAllSFXs(false);
+            int maxNumber = 0;
+            int validCount = 0;
+
+            // Get the highest music number
+            foreach (Song song in allSongs) { if (song.Name != null) maxNumber = Math.Max(maxNumber, song.Number); }
+
+            // Get the highest SFX number (should always be above the highest music number in practice)
+            foreach (SFX sfx in allSFXs) maxNumber = Math.Max(maxNumber, sfx.Number);
+
+            // Populate the name table up to the highest number
+            for (int number = 0; number <= maxNumber; number++)
             {
-                string template = File.ReadAllText(filename);
-                StringBuilder sb = new StringBuilder(template);
-                StringBuilder indexes = new StringBuilder();
-                StringBuilder names = new StringBuilder();
-                const string padding = "                ";
+                Song song = Array.Find(allSongs, s => s.Number == number);
+                string name = song?.Name ?? string.Empty;
 
-                Song[] allSongs = GetAllSongs(true);
-                int maxNumber = 0;
-                int validCount = 0;
+                SFX sfx = Array.Find(allSFXs, s => s.Number == number);
+                if (sfx != null) name = "SFX: " + sfx.Name;
 
-                // Get the highest music number;
-                foreach (Song song in allSongs) { if (song.Name != null) maxNumber = Math.Max(maxNumber, song.Number); }
+                // Name entry is added even if the slot is unused
+                if (names.Length > 0) names.Append(padding);
+                names.Append("defineName ");
+                names.Append('"');
+                names.Append(name.Replace("\"", ""));
+                names.Append('"');
+                names.AppendLine();
+            }
 
-                // Also prepare labels for SFXs
-                foreach (var pair in _sfx2name) maxNumber = Math.Max(maxNumber, pair.Key);
-
-                for (int number = 0; number <= maxNumber; number++)
-                {
-                    Song song = Array.Find(allSongs, s => s.Number == number);
-                    string name = song?.Name ?? string.Empty;
-                    if (_sfx2name.TryGetValue(number, out string asmName)) name = "SFX: " + asmName.Replace("SFX_", "");
-
-                    // Name entry is added even if the slot is unused
-                    if (names.Length > 0) names.Append(padding);
-                    names.Append("defineName ");
-                    names.Append('"');
-                    names.Append(name.Replace("\"", ""));
-                    names.Append('"');
-                    names.AppendLine();
-                }
-
-                // Add musics to index list
-                foreach (Song song in allSongs)
-                {
-                    if (song != null && song.Name != null && song.ASMName != null)
-                    {
-                        if (indexes.Length > 0) indexes.Append(padding);
-                        indexes.AppendFormat("dc.b {0}", song.ASMName);
-                        indexes.AppendLine();
-                        validCount++;
-                    }
-                }
-
-                // Add SFXs to index list
-                foreach (var pair in _sfx2name)
+            // Add musics to index list
+            foreach (Song song in allSongs)
+            {
+                if (song != null && song.Name != null && song.ASMName != null)
                 {
                     if (indexes.Length > 0) indexes.Append(padding);
-                    indexes.AppendFormat("dc.b {0}", pair.Value);
+                    indexes.AppendFormat("dc.b {0}", song.ASMName);
                     indexes.AppendLine();
                     validCount++;
                 }
-
-                sb.Replace("{{LAST_INDEX}}", (validCount - 1).ToString());
-                sb.Replace("{{INDEXES}}", indexes.ToString());
-                sb.Replace("{{NAMES}}", names.ToString());
-
-                File.WriteAllText(Path.Combine(path, "soundtest-standard.asm"), sb.ToString());
-                Console.WriteLine("> Wrote 'soundtest-standard.asm' file!");
             }
+
+            // Add SFXs to index list
+            foreach (SFX sfx in allSFXs)
+            {
+                if (indexes.Length > 0) indexes.Append(padding);
+                indexes.AppendFormat("dc.b {0}", sfx.ASMName);
+                indexes.AppendLine();
+                validCount++;
+            }
+
+            sb.Replace("{{LAST_INDEX}}", (validCount - 1).ToString());
+            sb.Replace("{{INDEXES}}", indexes.ToString());
+            sb.Replace("{{NAMES}}", names.ToString());
+
+            File.WriteAllText(Path.Combine(path, "soundtest-standard.asm"), sb.ToString());
+            Console.WriteLine("> Wrote 'soundtest-standard.asm' file!");
         }
 
         private void WriteFMInstruments(string path)
@@ -396,6 +475,32 @@ namespace SF2MusicCooker
                     return _musicPairs[index - 1];
             }
             return 0;
+        }
+
+        /// <summary>
+        /// Verify that given replaced SFX numbers, we will end up in a valid state where all dependencies are still satisfied.
+        /// Otherwise, throw an exception with a friendly explanation message for the user.
+        /// </summary>
+        public void VerifyReplaceSFXAllowed(HashSet<int> replacedSfxNumbers)
+        {
+            if (_sfxNeededByMap == null) return;
+
+            foreach (int replacedNumber in replacedSfxNumbers)
+            {
+                if (_sfxNeededByMap.TryGetValue(replacedNumber, out HashSet<int> neededBy))
+                {
+                    if (!replacedSfxNumbers.IsSupersetOf(neededBy))
+                    {
+                        int[] numbers = neededBy.ToArray();
+                        Array.Sort(numbers);
+
+                        string csv = string.Join(", ", numbers);
+                        throw new NotSupportedException("You are attempting to replace SFX " + replacedNumber + " but other SFXs depend on this SFX: " + csv
+                            + Environment.NewLine + "You must also provide replacements for *all* SFXs in this list before being allowed to proceed."
+                            + Environment.NewLine + "NOTE: these dependencies are purely artificial: SFXs only re-use empty channel data from other SFXs.");
+                    }
+                }
+            }
         }
 
         /// <summary>
