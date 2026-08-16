@@ -9,16 +9,33 @@ namespace SF2MusicCooker
     public sealed class Output
     {
         private readonly Bank[] _banks;
+        private readonly int[] _musicPairs;
 
         public FMInstruments Instruments { get; }
 
-        private Dictionary<int, string> _sfx2name = new Dictionary<int, string>();
+        private Dictionary<int, string> _sfx2name;
 
-        public Output(bool hasExtBanks)
+        public Output(Bank[] banks, int[] musicPairs = null)
         {
+            if (musicPairs != null && musicPairs.Length % 2 != 0)
+                throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
+
+            _banks = banks ?? throw new ArgumentNullException(nameof(banks));
+            _musicPairs = musicPairs;
+
+            Instruments = new FMInstruments();
+        }
+
+        /// <summary>
+        /// Create Output tailored for Shining Force 2 with SF2DISASM.
+        /// </summary>
+        public static Output CreateForSF2DISASM(bool hasExtBanks)
+        {
+            Bank[] banks;
+
             if (hasExtBanks)
             {
-                _banks = new Bank[4]
+                banks = new Bank[4]
                 {
                     new Bank("musicbank0", "musicbank0-standard", 1, 32),
                     new Bank("musicbank1", "musicbank1-standard", 33, 16), // Shrinked compared to vanilla
@@ -28,14 +45,14 @@ namespace SF2MusicCooker
             }
             else
             {
-                _banks = new Bank[2]
+                banks = new Bank[2]
                 {
                     new Bank("musicbank0", "musicbank0-standard", 1, 32),
                     new Bank("musicbank1", "musicbank1-standard", 33, 32)
                 };
             }
 
-            Instruments = new FMInstruments();
+            return new Output(banks, new int[] { 3, 4, 13, 14 });
         }
 
         private Bank Find(int number)
@@ -64,19 +81,41 @@ namespace SF2MusicCooker
         public void LoadVanilla(string rootFolder)
         {
             string soundFolder = Path.Combine(rootFolder, "disasm\\data\\sound");
-            Dictionary<int, string> number2name = Tools.ReadNumberStringMap(Path.Combine(soundFolder, "musicnames.txt")); // Load names
-            Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(Path.Combine(rootFolder, "disasm\\enums\\musics.asm")); // Load numbers
-            HashSet<int> usedInstruments = new HashSet<int>();
-            Regex regex = new Regex("^music([0-9]+)\\.asm$");
 
-            string[] folders = new string[2]
+            string pathToMusicNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\musics.asm");
+            string[] pathToMusicBankFolders = new string[2]
             {
                 Path.Combine(soundFolder, "musicbank0"),
                 Path.Combine(soundFolder, "musicbank1"),
             };
+            string[] pathToSfxSheetFiles = new string[1]
+            {
+                Path.Combine(soundFolder, "sfxbank", "sfxbank.asm")
+            };
+            string pathToYmInstBin = Path.Combine(soundFolder, "yminst.bin");
+            string pathToSfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
+            string pathToMusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
 
-            // Load music sheets
-            foreach (string folder in folders)
+            LoadVanilla(pathToMusicNumbersAndAsmNames, pathToMusicBankFolders, pathToSfxSheetFiles, pathToYmInstBin, pathToSfxNumbersAndAsmNames, pathToMusicNamesTxt);
+        }
+
+        /// <summary>
+        /// Load vanilla music data from specific folders (outside of SF2, this method is able to read data for other Cube games with similar input files).
+        /// </summary>
+        public void LoadVanilla(string pathToMusicNumbersAndAsmNames, string[] pathToMusicBankFolders, string[] pathToSfxSheetFiles, string pathToYmInstBin, string pathToSfxNumbersAndAsmNames = null, string pathToMusicNamesTxt = null)
+        {
+            if (pathToMusicNumbersAndAsmNames == null) throw new ArgumentNullException(nameof(pathToMusicNumbersAndAsmNames));
+            if (pathToMusicBankFolders == null) throw new ArgumentNullException(nameof(pathToMusicBankFolders));
+            if (pathToSfxSheetFiles == null) throw new ArgumentNullException(nameof(pathToSfxSheetFiles));
+            if (pathToYmInstBin == null) throw new ArgumentNullException(nameof(pathToYmInstBin));
+
+            Dictionary<int, string> number2name = pathToMusicNamesTxt != null ? Tools.ReadNumberStringMap(pathToMusicNamesTxt) : new Dictionary<int, string>(); // Load names (for sound test)
+            Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(pathToMusicNumbersAndAsmNames); // Load numbers and ASM names
+            HashSet<int> usedInstruments = new HashSet<int>();
+            Regex regex = new Regex("^music([0-9]+)\\.asm$");
+
+            // Load music sheets from music banks
+            foreach (string folder in pathToMusicBankFolders)
             {
                 foreach (string filename in Directory.GetFiles(folder, "music*.asm", SearchOption.TopDirectoryOnly))
                 {
@@ -114,18 +153,23 @@ namespace SF2MusicCooker
             }
 
             // Also examine FM instruments used by SFXs, otherwise we will have a problem with muted SFXs because we cleared their instruments...
-            string sfxFilename = Path.Combine(soundFolder, "sfxbank", "sfxbank.asm");
-            string sfxSheet = File.ReadAllText(sfxFilename);
-            AsmSheetEstimator.FillInstruments(sfxSheet, usedInstruments);
+            foreach (string sfxSheetFilename in pathToSfxSheetFiles)
+            {
+                string sfxSheet = File.ReadAllText(sfxSheetFilename);
+                AsmSheetEstimator.FillInstruments(sfxSheet, usedInstruments);
+            }
 
             // Load FM instruments and clear the unused ones
-            byte[] yminst = File.ReadAllBytes(Path.Combine(soundFolder, "yminst.bin"));
+            byte[] yminst = File.ReadAllBytes(pathToYmInstBin);
             Instruments.Load(yminst);
             Instruments.ClearExcept(usedInstruments);
 
-            // Load SFX names (to show them on sound test message box)
-            _sfx2name = Tools.ReadASMEnumReverseMap(Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm"));
-            _sfx2name.Remove(127); // Remove SFX_NONE
+            // Load SFX ASM names (to show them on sound test message box)
+            if (pathToSfxNumbersAndAsmNames != null)
+            {
+                _sfx2name = Tools.ReadASMEnumReverseMap(pathToSfxNumbersAndAsmNames);
+                _sfx2name.Remove(127); // Remove SFX_NONE
+            }
         }
 
         /// <summary>
@@ -336,20 +380,21 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Get the music number of the other element of a pair of linked musics in the SF2DISASM.
-        /// If those musics are reorganized properly, it will be possible to remove this hack in the future.
+        /// Get the music number of the other element of a pair of linked musics.
         /// </summary>
         public int GetPairedMusic(int number)
         {
-            if (number == 3)
-                return 4;
-            else if (number == 4)
-                return 3;
-            else if (number == 13)
-                return 14;
-            else if (number == 14)
-                return 13;
+            if (_musicPairs == null)
+                return 0;
 
+            int index = Array.IndexOf(_musicPairs, number);
+            if (index >= 0)
+            {
+                if (index % 2 == 0)
+                    return _musicPairs[index + 1];
+                else
+                    return _musicPairs[index - 1];
+            }
             return 0;
         }
 

@@ -41,7 +41,7 @@ namespace SF2MusicCooker
                 Console.WriteLine("> Expanded music banks are {0}", hasExtraBanks ? "ENABLED" : "DISABLED");
 
                 Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments)...");
-                Output output = new Output(hasExtraBanks);
+                Output output = Output.CreateForSF2DISASM(hasExtraBanks);
                 output.LoadVanilla(rootFolder);
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
