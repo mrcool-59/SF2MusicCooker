@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace SF2MusicCooker
 {
@@ -17,18 +16,14 @@ namespace SF2MusicCooker
             if ((data[0] & 0b00001111) != 4)
                 throw new NotSupportedException("FM instruments must have 4 operators, please adjust your instruments accordingly");
 
-            // We don't know how to deal with disabled operators (bits 4~7)
-            if ((data[0] & 0b11110000) != 0b11110000)
-                Console.WriteLine("WARNING: FM translator code currently doesn't support disabled operators, please adjust your instruments accordingly");
-            
-            // TODO: maybe implement a hackish way to turn OFF certain operators if we receive such FM instruments from input .fur file
-            // Possibly by screwing around with TL
+            // Helper to check if an operator is disabled
+            bool OpDisabled(int op) => (data[0] & (1 << (4 + op))) == 0;
 
             // ALG: bits 4~6, FB: bits 0~2 (UNUSED: bits 3, 7)
             int algo = (data[1] >> 4) & 7;
             int feedback = data[1] & 7;
 
-            // Do not print warnings for Furnace format stuff we clearly can't support on the YM2616
+            // Do not print warnings for Furnace format stuff we clearly can't support on the YM2612
             /*
             // FMS2: bits 5~7, AMS: bits 3~4, FMS: bits 0~2,
             if (data[2] != 0)
@@ -44,11 +39,12 @@ namespace SF2MusicCooker
                 Console.WriteLine("WARNING: FM translator code doesn't support Block");
             */
 
-            // ------------------------------------------------------------------------------------------
+            // -------------------------------------------------------------------------------------------------------
+            // WARNING: this part is tricky and requires utmost focus and knowledge otherwise everything could break!!
+            // -------------------------------------------------------------------------------------------------------
 
             byte[] cubeFmInstrument = new byte[FMInstruments.Definition.LENGTH];
 
-            const bool ssgEg = true;
             const int OP_BASE = 5;
 
             int[] outputOperatorsByAlgo =
@@ -76,7 +72,9 @@ namespace SF2MusicCooker
                 cubeFmInstrument[0 * 4 + op] = (byte)(data[OP_BASE + op * 8 + 0] & 0b01111111); // Mask out KSR part
 
                 // Grab SUS (bit 7), TL (bits 0~6)
-                cubeFmInstrument[1 * 4 + op] = (byte)(data[OP_BASE + op * 8 + 1] & 0b01111111); // Mask out SUS part
+                byte instrumentTL = (byte)(data[OP_BASE + op * 8 + 1] & 0b01111111); // Mask out SUS part
+                if (OpDisabled(op)) instrumentTL = 0x7F; // This will effectively disable the operator
+                cubeFmInstrument[1 * 4 + op] = instrumentTL; // Perfect fit
 
                 // Grab RS (bits 6~7), VIB (bit 5), AR (bits 0~4)
                 cubeFmInstrument[2 * 4 + op] = (byte)(data[OP_BASE + op * 8 + 2] & 0b11011111); // Mask out VIB part
@@ -91,14 +89,18 @@ namespace SF2MusicCooker
                 cubeFmInstrument[5 * 4 + op] = data[OP_BASE + op * 8 + 5]; // Perfect fit
 
                 // Grab DVB (bits 4~7), SSG (bits 0~3)
-                if (ssgEg) cubeFmInstrument[6 * 4 + op] = (byte)(data[OP_BASE + op * 8 + 6] & 0b00001111); // Mask out DVB part
+                cubeFmInstrument[6 * 4 + op] = (byte)(data[OP_BASE + op * 8 + 6] & 0b00001111); // Mask out DVB part
 
                 // Ignore DAM (bits 5~7), DT2 (bits 3~4), WS (bits 0~2)
                 _ = data[OP_BASE + op * 8 + 7]; // Discard
 
-                // Set TL to 0x7F for slot operators since their level will depend on the note being played (FIXME: it doesn't seem to affect end result however)
+                // Output operators special case: TL is volume but flipped
                 bool isOutput = (outputOperatorsByAlgo[algo] & (1 << op)) != 0;
-                if (isOutput) cubeFmInstrument[1 * 4 + op] = 0x7F;
+                if (isOutput)
+                {
+                    byte volume = (byte)(0x7F - instrumentTL); // If we simply wrote 0x7F, we would lose the built-in instrument output volume level
+                    cubeFmInstrument[1 * 4 + op] = volume; // Write the volume into TL (bits 0~6)
+                }
             }
 
             // Write ALGO bits 0~2, FB bits 3~5
