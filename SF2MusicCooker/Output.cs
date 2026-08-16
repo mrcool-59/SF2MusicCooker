@@ -20,18 +20,18 @@ namespace SF2MusicCooker
             {
                 _banks = new Bank[4]
                 {
-                    new Bank(0),
-                    new Bank(1),
-                    new Bank(2),
-                    new Bank(3)
+                    new Bank("musicbank0", "musicbank0-standard", 1, 32),
+                    new Bank("musicbank1", "musicbank1-standard", 33, 16), // Shrinked compared to vanilla
+                    new Bank("musicbankext0", "musicbankext0", 49, 8), // Extra bank 1
+                    new Bank("musicbankext1", "musicbankext1", 57, 8) // Extra bank 1
                 };
             }
             else
             {
                 _banks = new Bank[2]
                 {
-                    new Bank(0),
-                    new Bank(1)
+                    new Bank("musicbank0", "musicbank0-standard", 1, 32),
+                    new Bank("musicbank1", "musicbank1-standard", 33, 32)
                 };
             }
 
@@ -46,8 +46,7 @@ namespace SF2MusicCooker
                     return bank;
             }
 
-            throw new NotSupportedException("Unable to find the appropriate music bank for music number " + number + Environment.NewLine
-                 + "You MUST enable extra music banks if you want to use music numbers from 49 to 64.");
+            throw new NotSupportedException("Unable to find the appropriate music bank for music number " + number);
         }
 
         private Song[] GetAllSongs(bool putCustomFirst)
@@ -91,6 +90,7 @@ namespace SF2MusicCooker
 
                         // Don't add unreachable musics (i.e: those who don't have a defined ASM name)
                         // These pseudo-musics are probably used for adding sentinel values in case sound driver reads out of bounds data
+                        // We are going to add our own sentinel music anyway
                         if (asmName == null) continue;
 
                         Song song = new Song(number, name, asmName, sheet);
@@ -138,21 +138,38 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Replace a vanilla song.
+        /// Replace a song.
         /// </summary>
-        public void Replace(Song song)
+        public void Replace(Song song, bool includeOriginalName = false)
         {
             Bank bank = Find(song.Number);
-            bank.Replace(song);
+            Song originalSong = bank.Remove(song.Number, out _);
+
+            song = song.UpdateASMName(originalSong.ASMName);
+            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name));
+            bank.Add(song);
         }
 
         /// <summary>
-        /// Remove a vanilla song and return it.
+        /// Move-replace a song.
         /// </summary>
-        public Song Remove(int number)
+        public void MoveReplace(Song song, int moveFromNumber, bool includeOriginalName = false)
         {
-            Bank bank = Find(number);
-            return bank.Remove(number);
+            Bank originalBank = Find(moveFromNumber);
+            Song originalSong = originalBank.Remove(moveFromNumber, out _);
+
+            Bank bank = Find(song.Number);
+            song = song.UpdateASMName(originalSong.ASMName);
+            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name));
+            bank.Add(song);
+        }
+
+        private static string GetCombinedName(string name, string originalName)
+        {
+            if (originalName == null)
+                return name;
+            else
+                return originalName + " -> " + name;
         }
 
         /// <summary>
@@ -162,7 +179,7 @@ namespace SF2MusicCooker
         {
             foreach (Bank bank in _banks)
             {
-                bank.Pad(bank.LastNumber, Instruments);
+                _ = bank.Pad(bank.LastNumber, Instruments);
             }
         }
 
@@ -249,7 +266,7 @@ namespace SF2MusicCooker
         private void WriteASMSoundTest(string path)
         {
             const string filename = "soundtest-standard.asm.tpl";
-            if (File.Exists(filename))
+            if (File.Exists(filename) && _sfx2name != null)
             {
                 string template = File.ReadAllText(filename);
                 StringBuilder sb = new StringBuilder(template);
@@ -322,7 +339,7 @@ namespace SF2MusicCooker
         /// Get the music number of the other element of a pair of linked musics in the SF2DISASM.
         /// If those musics are reorganized properly, it will be possible to remove this hack in the future.
         /// </summary>
-        public static int GetPairedMusic(int number)
+        public int GetPairedMusic(int number)
         {
             if (number == 3)
                 return 4;

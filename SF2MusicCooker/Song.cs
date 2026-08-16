@@ -19,5 +19,15 @@ namespace SF2MusicCooker
             ASMName = asmName;
             Sheet = sheet;
         }
+
+        public Song UpdateName(string newName)
+        {
+            return new Song(Number, newName, ASMName, Sheet);
+        }
+
+        public Song UpdateASMName(string newAsmName)
+        {
+            return new Song(Number, Name, newAsmName, Sheet);
+        }
     }
 }

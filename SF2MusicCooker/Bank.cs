@@ -3,64 +3,44 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace SF2MusicCooker
 {
     public sealed class Bank
     {
-        private static readonly string[] bankNames = new string[4]
-        {
-            "musicbank0",
-            "musicbank1",
-            "musicbankext0",
-            "musicbankext1",
-        };
-
-        private static readonly int[] bankOrigins = new int[4]
-        {
-            1,
-            33,
-            49,
-            57,
-        };
-
-        private static readonly int[] bankLengths = new int[4]
-        {
-            32,
-            16,
-            8,
-            8,
-        };
-
         private readonly List<Song> _custom = new List<Song>();
         private readonly List<Song> _vanilla = new List<Song>();
 
         /// <summary>
-        /// ID of this bank (0, 1 for vanilla banks and 2, 3 for extra banks).
-        /// </summary>
-        public readonly int ID;
-
-        /// <summary>
         /// Name of this bank.
         /// </summary>
-        public string Name { get { return bankNames[ID]; } }
+        public readonly string Name;
 
         /// <summary>
         /// Folder name of this bank.
         /// </summary>
-        public string FolderName { get { return bankNames[ID] + (ID <= 1 ? "-standard" : ""); } }
+        public readonly string FolderName;
 
         /// <summary>
-        /// Base music number of this bank.
+        /// Length of this bank.
         /// </summary>
-        public int BaseNumber { get { return bankOrigins[ID]; } }
+        public readonly int Length;
+
+        /// <summary>
+        /// First music number of this bank.
+        /// </summary>
+        public readonly int FirstNumber;
 
         /// <summary>
         /// Last music number of this bank.
         /// </summary>
-        public int LastNumber { get { return bankOrigins[ID] + bankLengths[ID] - 1; } }
+        public int LastNumber { get { return FirstNumber + Length - 1; } }
+
+        /// <summary>
+        /// Start index of the physical segment.
+        /// </summary>
+        public int SegmentOffset { get { return FirstNumber == 1 ? 0 : 32; } } // TODO: SF2 specific hack, will hopefully be removed soon once I figure out how to make extra banks work ingame with bank switching
 
         /// <summary>
         /// List of custom songs in the bank.
@@ -77,7 +57,7 @@ namespace SF2MusicCooker
         /// </summary>
         public bool InRange(int number)
         {
-            return number >= BaseNumber && number <= LastNumber;
+            return number >= FirstNumber && number <= LastNumber;
         }
 
         /// <summary>
@@ -93,39 +73,45 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Replace a vanilla song by the provided song.
+        /// Remove a song from this bank and return it.
         /// </summary>
-        public void Replace(Song song)
+        public Song Remove(int number, out bool vanilla)
         {
-            Song existing = Find(song.Number, out bool vanilla);
-            if (existing == null || !vanilla) throw new InvalidOperationException("Music number " + song.Number + " is not a vanilla music that can be replaced");
+            if (!InRange(number)) throw new InvalidOperationException("Music number " + number + " cannot be put into " + Name);
 
-            _vanilla.Remove(existing);
-            _custom.Add(new Song(song.Number, song.Name, existing.ASMName, song.Sheet));
-        }
+            int index = _vanilla.FindIndex(s => s.Number == number);
+            if (index >= 0)
+            {
+                Song removed = _vanilla[index];
+                _vanilla.RemoveAt(index);
+                vanilla = true;
+                return removed;
+            }
 
-        /// <summary>
-        /// Remove a vanilla song and return it.
-        /// </summary>
-        public Song Remove(int number)
-        {
-            Song existing = Find(number, out bool vanilla);
-            if (existing == null || !vanilla) throw new InvalidOperationException("Music number " + number + " is not a vanilla music that can be move-replaced");
+            index = _custom.FindIndex(s => s.Number == number);
+            if (index >= 0)
+            {
+                Song removed = _custom[index];
+                _custom.RemoveAt(index);
+                vanilla = false;
+                return removed;
+            }
 
-            _vanilla.Remove(existing);
-            return existing;
+            throw new InvalidOperationException("Music number " + number + " doesn't exist in " + Name);
         }
 
         /// <summary>
         /// Add an empty music for the given music number if the music number is not already used.
         /// </summary>
-        public void Pad(int number, FMInstruments instruments)
+        public bool Pad(int number, FMInstruments instruments)
         {
             if (Find(number, out _) == null)
             {
                 string sheet = AsmSheetWriter.Write(FurnaceFile.Empty, Options.Default, instruments, number);
                 _vanilla.Add(new Song(number, null, null, sheet));
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -152,13 +138,12 @@ namespace SF2MusicCooker
         {
             StringBuilder output = new StringBuilder(File.ReadAllText("musicbank.asm.tpl"));
 
-            int from = BaseNumber;
+            int from = FirstNumber;
             int to = LastNumber;
-            int segmentStart = ID == 0 ? 0 : 32;
 
             for (int i = 1; i <= 32; i++)
             {
-                int number = segmentStart + i;
+                int number = SegmentOffset + i;
                 if (number >= from && number <= to)
                 {
                     Song song = Find(number, out _);
@@ -244,11 +229,15 @@ namespace SF2MusicCooker
             return overloaded;
         }
 
-        public Bank(int id)
+        public Bank(string name, string folderName, int firstNumber, int length)
         {
-            if (id < 0 || id > 3) throw new ArgumentOutOfRangeException(nameof(id), "must be 0~3");
+            if (firstNumber <= 0) throw new ArgumentOutOfRangeException(nameof(firstNumber), "cannot be zero or negative");
+            if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length), "cannot be zero or negative");
 
-            ID = id;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            FolderName = folderName ?? name;
+            FirstNumber = firstNumber;
+            Length = length;
         }
 
         /// <summary>

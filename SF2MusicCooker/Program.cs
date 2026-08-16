@@ -84,7 +84,7 @@ namespace SF2MusicCooker
                         instruments.AddMany(file, dumpNotes);
 
                         // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
-                        int pairNumber = Output.GetPairedMusic(number);
+                        int pairNumber = output.GetPairedMusic(number);
                         if (provided.Contains(pairNumber)) pairNumber = 0; // Both elements of the pair have been provided, no need to use this hack
 
                         // Prepare the options
@@ -120,8 +120,7 @@ namespace SF2MusicCooker
                                 }
                                 else
                                 {
-                                    Song originalMusic = output.Remove(moveFrom);
-                                    output.Add(new Song(number, name, originalMusic.ASMName, sheet));
+                                    output.MoveReplace(song, moveFrom);
                                 }
                             }
                         }
