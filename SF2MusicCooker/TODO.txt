@@ -1,4 +1,5 @@
 ﻿Version 0.9:
+- Mettre command 'sustain' si la note dure + du max supporté par le sound driver
 - Amélioration de la précision du rendu: fréquence
 	=> Refaire la façon d'associer une note Furnace à une note Cube (0..120 => 0..84) en choisissant la meilleure note disponible
 	=> Il y aussi 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h

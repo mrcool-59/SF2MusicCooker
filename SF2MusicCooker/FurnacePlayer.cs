@@ -142,7 +142,7 @@ namespace SF2MusicCooker
                             }
 
                             // Safety net
-                            if (noteLength >= 1024) throw new ApplicationException("Sorry, we got a note with predicted length >= 1024 which means it is probably a bug in the tool :(");
+                            if (noteLength >= 4096) throw new ApplicationException("Sorry, we got a note with predicted length >= 4096 which means it is probably a bug in the tool :(");
                         }
                     }
                     else if (activeChannelCell.Note == PatternCell.NoteOff)
@@ -156,7 +156,7 @@ namespace SF2MusicCooker
                                 silenceLength++;
 
                             // Safety net
-                            if (silenceLength >= 1024) throw new ApplicationException("Sorry, we got a silence with predicted length >= 1024 which means it is probably a bug in the tool :(");
+                            if (silenceLength >= 4096) throw new ApplicationException("Sorry, we got a silence with predicted length >= 4096 which means it is probably a bug in the tool :(");
                         }
                     }
                 }
