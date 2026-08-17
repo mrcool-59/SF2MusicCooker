@@ -215,5 +215,43 @@ namespace SF2MusicCooker
         {
             return BitConverter.ToString(x).Replace("-", "");
         }
+
+        /// <summary>
+        /// Fill a buffer with a value.
+        /// </summary>
+        public static void Fill(byte[] buffer, int offset, int count, byte value)
+        {
+            if (offset < 0 || offset >= buffer.Length) throw new ArgumentOutOfRangeException(nameof(offset));
+
+            int end = offset + count;
+            if (count < 0 || end > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+
+            for (int i = offset; i < end; i++) buffer[i] = value;
+        }
+
+        /// <summary>
+        /// Pick item with the highest score returned by evaluation function. In case of ties, the earliest item wins.
+        /// </summary>
+        public static T SelectMax<T>(IReadOnlyList<T> candidates, Func<T, int> fn)
+        {
+            if (fn == null)
+                throw new ArgumentNullException(nameof(fn));
+
+            if (candidates == null || candidates.Count == 0)
+                return default;
+
+            T best = candidates[0];
+            int max = fn(best);
+            for (int i = 1; i < candidates.Count; i++)
+            {
+                int score = fn(candidates[i]);
+                if (score > max)
+                {
+                    max = score;
+                    best = candidates[i];
+                }
+            }
+            return best;
+        }
     }
 }

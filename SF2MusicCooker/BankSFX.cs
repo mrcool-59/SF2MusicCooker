@@ -127,26 +127,30 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Return the estimated size of the bank in bytes.
+        /// </summary>
+        public int GetEstimatedSize()
+        {
+            int bytes = 0;
+            foreach (SFX sfx in _custom.Concat(_vanilla))
+            {
+                bytes += AsmSheetToolkit.EstimateBytes(sfx.Sheet, out _);
+            }
+            return bytes;
+        }
+
+        /// <summary>
         /// Print estimated size of the bank and return if it should be considered overloaded.
         /// </summary>
         public bool PrintSize()
         {
-            int bytes = 0;
-
-            foreach (SFX sfx in _custom.Concat(_vanilla))
-            {
-                if (sfx.Sheet != null)
-                {
-                    bytes += AsmSheetToolkit.EstimateBytes(sfx.Sheet, out _);
-                }
-            }
-
+            int bytes = GetEstimatedSize();
             float ratio = (float)bytes / MaxSize;
             bool overloaded = ratio >= 0.999f;
             string suffix = overloaded ? " !!! OVERLOADED !!!" : string.Empty;
             string percentage = (ratio * 100f).ToString("0.00", CultureInfo.InvariantCulture);
 
-            Console.WriteLine("Bank '{0}' is using approximately {1} bytes out of {2} [{3}%]{4}", Name, bytes, MaxSize, percentage, suffix);
+            Console.WriteLine("> Bank '{0}' is using {1} bytes out of {2} [{3}%]{4}", Name, bytes, MaxSize, percentage, suffix);
             return overloaded;
         }
 

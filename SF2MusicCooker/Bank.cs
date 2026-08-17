@@ -200,7 +200,7 @@ namespace SF2MusicCooker
         {
             foreach (Song song in songs)
             {
-                if (song.Sheet != null) // Can be null in the special case of paired vanilla musics (3, 4) and (13, 14)
+                if (song.Sheet != null) // Can be null in the special case of paired musics [for vanilla SF2: musics (3, 4) and (13, 14)]
                 {
                     string filename = GetMusicFilename(song.Number);
                     File.WriteAllText(Path.Combine(path, filename), song.Sheet);
@@ -210,26 +210,33 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Print estimated size of the bank and return if it should be considered overloaded.
+        /// Return the estimated size of the bank in bytes.
         /// </summary>
-        public bool PrintSize()
+        public int GetEstimatedSize()
         {
             int bytes = 0;
-
             foreach (Song song in _custom.Concat(_vanilla))
             {
-                if (song.Sheet != null)
+                if (song.Sheet != null) // See above
                 {
                     bytes += AsmSheetToolkit.EstimateBytes(song.Sheet, out _);
                 }
             }
+            return bytes;
+        }
 
+        /// <summary>
+        /// Print estimated size of the bank and return if it should be considered overloaded.
+        /// </summary>
+        public bool PrintSize()
+        {
+            int bytes = GetEstimatedSize();
             float ratio = (float)bytes / MaxSize;
             bool overloaded = ratio >= 0.999f;
             string suffix = overloaded ? " !!! OVERLOADED !!!" : string.Empty;
             string percentage = (ratio * 100f).ToString("0.00", CultureInfo.InvariantCulture);
 
-            Console.WriteLine("Bank '{0}' is using approximately {1} bytes out of {2} [{3}%]{4}", Name, bytes, MaxSize, percentage, suffix);
+            Console.WriteLine("> Bank '{0}' is using {1} bytes out of {2} [{3}%]{4}", Name, bytes, MaxSize, percentage, suffix);
             return overloaded;
         }
 

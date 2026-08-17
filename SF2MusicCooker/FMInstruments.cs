@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 
 namespace SF2MusicCooker
 {
     public sealed class FMInstruments
     {
-        public const byte MAX_INSTRUMENTS = 141;
+        public const byte MAX_INSTRUMENTS = 141; // (= 4096 / 29)
 
         public sealed class Definition : IEquatable<Definition>
         {
@@ -68,8 +67,16 @@ namespace SF2MusicCooker
             return 0xFF;
         }
 
+        private byte Allocate()
+        {
+            int instrument = Array.FindIndex(_used, u => u == 0);
+            if (instrument < 0) throw new NotSupportedException("Sorry, it appears all " + _used.Length + " instruments are used, there is no free instrument slot!");
+            _used[instrument] = 1;
+            return (byte)instrument;
+        }
+
         /// <summary>
-        /// Add all instruments from a FurnaceFile. Duplicate instruments are not added twice, they are reused instead.
+        /// Add all instruments from a FurnaceFile. Duplicate instruments are not added twice, they are reused instead. This method will throw if we don't have room for more instruments.
         /// </summary>
         public void AddMany(FurnaceFile file, bool print)
         {
@@ -98,7 +105,7 @@ namespace SF2MusicCooker
         }
         
         /// <summary>
-        /// Add an instrument and return its associated instrument number.
+        /// Add an instrument and return its associated instrument number. This method will throw if we don't have room for more instruments.
         /// </summary>
         public byte Add(Definition definition)
         {
@@ -120,12 +127,20 @@ namespace SF2MusicCooker
         /// <summary>
         /// Clear an instrument.
         /// </summary>
-        public void Clear(byte instrument)
+        public void Remove(byte instrument)
         {
             if (instrument >= _used.Length) throw new ArgumentOutOfRangeException(nameof(instrument));
 
             _used[instrument] = 0;
             Definition.Null.Write(_buffer, instrument);
+        }
+
+        /// <summary>
+        /// Clear all instruments.
+        /// </summary>
+        public void Clear()
+        {
+            for (int i = 0; i < _used.Length; i++) Remove((byte)i);
         }
 
         /// <summary>
@@ -137,20 +152,9 @@ namespace SF2MusicCooker
             {
                 if (_used[i] == 1 && !set.Contains(i))
                 {
-                    Clear((byte)i);
+                    Remove((byte)i);
                 }
             }
-        }
-
-        /// <summary>
-        /// Allocate a new instrument or throw an exception if no empty slot is available.
-        /// </summary>
-        private byte Allocate()
-        {
-            int instrument = Array.FindIndex(_used, u => u == 0);
-            if (instrument < 0) throw new NotSupportedException("Sorry, it appears all " + _used.Length + " instruments are used, there is no free instrument slot!");
-            _used[instrument] = 1;
-            return (byte)instrument;
         }
 
         /// <summary>
@@ -217,6 +221,8 @@ namespace SF2MusicCooker
 
             _buffer = new byte[4096];
             _used = new byte[slots];
+
+            Tools.Fill(_buffer, 0, _buffer.Length, 0xFF);
         }
     }
 }

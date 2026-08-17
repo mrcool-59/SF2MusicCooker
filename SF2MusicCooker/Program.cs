@@ -139,6 +139,10 @@ namespace SF2MusicCooker
                 }
 
                 output.PadLast();
+
+                // TODO: implement here SFX add/replace feature
+
+                Console.WriteLine("Bank storage summary:");
                 bool overloaded = output.PrintSize();
                 if (overloaded)
                 {

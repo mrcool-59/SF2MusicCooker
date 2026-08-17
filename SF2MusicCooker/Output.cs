@@ -16,10 +16,21 @@ namespace SF2MusicCooker
 
         private Dictionary<int, HashSet<int>> _sfxNeededByMap;
 
+        /// <summary>
+        /// The global list of FM instruments (for Channel 1-5 + Channel 6 in FM mode).
+        /// </summary>
         public FMInstruments Instruments { get; }
 
-        public Output(Bank[] banks, BankSFX[] sfxBanks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
+        /// <summary>
+        /// The global list of PCM samples (for Channel 6 in DAC mode).
+        /// </summary>
+        public PCMInstruments Samples { get; }
+
+        public Output(Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
+            if (pcmBanks == null)
+                throw new ArgumentNullException(nameof(pcmBanks));
+
             if (musicPairs != null && musicPairs.Length % 2 != 0)
                 throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
 
@@ -28,7 +39,11 @@ namespace SF2MusicCooker
             _musicPairs = musicPairs;
             _soundTestTemplate = soundTestTemplate;
 
+            _sfxNeededByMap = null; // Initial state: no dependencies exist
+
             Instruments = new FMInstruments(instrumentSlots);
+
+            Samples = new PCMInstruments(pcmBanks);
         }
 
         /// <summary>
@@ -63,10 +78,16 @@ namespace SF2MusicCooker
                 new BankSFX("sfxbank", "sfxbank-standard", 0x2000)
             };
 
-            return new Output(banks, sfxBanks, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
+            int[] pcmBanks = new int[]
+            {
+                0x8000, // PCM bank 0
+                0x3000, // PCM bank 1
+            };
+
+            return new Output(banks, sfxBanks, pcmBanks, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
         }
 
-        private Bank Find(int number)
+        private Bank SelectMusicBank(int number)
         {
             foreach (Bank bank in _banks)
             {
@@ -75,6 +96,23 @@ namespace SF2MusicCooker
             }
 
             throw new NotSupportedException("Unable to find the appropriate music bank for music number " + number);
+        }
+
+        private SFX FindSFXAndBank(int number, out BankSFX bank)
+        {
+            foreach (BankSFX b in _sfxBanks)
+            {
+                SFX sfx = b.Find(number, out _);
+                if (sfx != null)
+                {
+                    bank = b;
+                    return sfx; // SFX found
+                }
+            }
+
+            bank = Tools.SelectMax(_sfxBanks, b => b.MaxSize - b.GetEstimatedSize()); // Overkill as there is usually only 1 SFX bank
+            if (bank == null) throw new NotSupportedException("No SFX bank is present!");
+            return null; // SFX not found (but we have a bank)
         }
 
         private Song[] GetAllSongs(bool putCustomFirst)
@@ -96,7 +134,7 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Load vanilla music data from the appropriate SF2DISASM folders (numbers, names, sheets, FM instruments).
+        /// Load vanilla music data from the appropriate SF2DISASM folders (numbers, names, sheets, FM instruments, samples).
         /// </summary>
         public void LoadVanilla(string rootFolder)
         {
@@ -115,6 +153,8 @@ namespace SF2MusicCooker
             };
             string pathToYmInstBin = Path.Combine(soundFolder, "yminst.bin");
             string pathToMusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
+
+            // TODO: samples
 
             LoadVanilla(pathToMusicNumbersAndAsmNames, pathToSfxNumbersAndAsmNames, pathToMusicBankFolders, pathToSfxBankFiles, pathToYmInstBin, pathToMusicNamesTxt);
         }
@@ -157,7 +197,7 @@ namespace SF2MusicCooker
                         if (asmName == null) continue;
 
                         Song song = new Song(number, name, asmName, sheet);
-                        Bank bank = Find(song.Number);
+                        Bank bank = SelectMusicBank(song.Number);
                         bank.Add(song, true);
                         AsmSheetToolkit.FillInstruments(sheet, usedInstruments);
 
@@ -169,7 +209,7 @@ namespace SF2MusicCooker
                             _ = number2enum.TryGetValue(pairNumber, out string pairAsmName);
                             Song pairSong = new Song(pairNumber, pairName, pairAsmName, null);
 
-                            Bank pairBank = Find(pairNumber);
+                            Bank pairBank = SelectMusicBank(pairNumber);
                             pairBank.Add(pairSong, true);
                         }
                     }
@@ -212,6 +252,8 @@ namespace SF2MusicCooker
             byte[] yminst = File.ReadAllBytes(pathToYmInstBin);
             Instruments.Load(yminst);
             Instruments.ClearExcept(usedInstruments);
+
+            // TODO: samples (+ clear unused ones)
         }
 
         /// <summary>
@@ -219,7 +261,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void Add(Song song)
         {
-            Bank bank = Find(song.Number);
+            Bank bank = SelectMusicBank(song.Number);
             bank.Add(song);
         }
 
@@ -228,7 +270,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void Replace(Song song, bool includeOriginalName = false)
         {
-            Bank bank = Find(song.Number);
+            Bank bank = SelectMusicBank(song.Number);
             Song originalSong = bank.Remove(song.Number, out _);
 
             song = song.UpdateASMName(originalSong.ASMName);
@@ -241,13 +283,41 @@ namespace SF2MusicCooker
         /// </summary>
         public void MoveReplace(Song song, int moveFromNumber, bool includeOriginalName = false)
         {
-            Bank originalBank = Find(moveFromNumber);
+            Bank originalBank = SelectMusicBank(moveFromNumber);
             Song originalSong = originalBank.Remove(moveFromNumber, out _);
 
-            Bank bank = Find(song.Number);
+            Bank bank = SelectMusicBank(song.Number);
             song = song.UpdateASMName(originalSong.ASMName);
             if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name));
             bank.Add(song);
+        }
+
+        /// <summary>
+        /// Add custom SFXs or replace vanilla SFXs. All SFXs must be prepared in advance because this method will verify dependencies consistency.
+        /// </summary>
+        public void AddOrReplaceSFX(SFX[] sfxs, bool includeOriginalName = false)
+        {
+            // Dependencies verification
+            VerifyReplaceSFXAllowed(new HashSet<int>(sfxs.Select(s => s.Number)));
+
+            foreach (SFX sfx in sfxs)
+            {
+                SFX addedSfx = sfx;
+                SFX originalSfx = FindSFXAndBank(sfx.Number, out BankSFX bank);
+
+                // Is it a 'replace' operation? (instead of a 'add')
+                if (originalSfx != null)
+                {
+                    addedSfx = addedSfx.UpdateASMName(originalSfx.ASMName);
+                    if (includeOriginalName) addedSfx = addedSfx.UpdateName(GetCombinedName(sfx.Name, originalSfx.Name));
+                    bank.Remove(originalSfx.Number, out _);
+                }
+
+                bank.Add(addedSfx);
+            }
+
+            // Update 'needed by' map
+            _sfxNeededByMap = AsmSheetToolkit.VerifyAndGetDependencies(_sfxBanks);
         }
 
         private static string GetCombinedName(string name, string originalName)
@@ -267,6 +337,7 @@ namespace SF2MusicCooker
             {
                 _ = bank.Pad(bank.LastNumber, Instruments);
             }
+            // Note: this doesn't apply to SFX banks
         }
 
         /// <summary>
@@ -283,6 +354,7 @@ namespace SF2MusicCooker
             {
                 if (bank.PrintSize()) anyOverloaded = true;
             }
+            Samples.PrintSize();
             return anyOverloaded;
         }
 
@@ -309,6 +381,7 @@ namespace SF2MusicCooker
             WriteASMSfxEnum(path);
             WriteASMSoundTest(path);
             WriteFMInstruments(path);
+            WriteSamples();
         }
 
         /// <summary>
@@ -334,6 +407,7 @@ namespace SF2MusicCooker
             WriteASMSfxEnum(Path.Combine(rootFolder, "disasm\\enums"));
             WriteASMSoundTest(Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch"));
             WriteFMInstruments(soundFolder);
+            WriteSamples();
         }
 
         private void DeleteAndCreateFolder(string path)
@@ -456,6 +530,11 @@ namespace SF2MusicCooker
         {
             File.WriteAllBytes(Path.Combine(path, "yminst-standard.bin"), Instruments.ToArray());
             Console.WriteLine("> Wrote 'yminst-standard.bin' file!");
+        }
+
+        private void WriteSamples()
+        {
+            // TODO
         }
 
         /// <summary>

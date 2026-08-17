@@ -40,5 +40,15 @@ namespace SF2MusicCooker
             PointerName = pointerName;
             Sheet = sheet;
         }
+
+        public SFX UpdateName(string newName)
+        {
+            return new SFX(Number, newName, ASMName, PointerName, Sheet);
+        }
+
+        public SFX UpdateASMName(string newAsmName)
+        {
+            return new SFX(Number, Name, newAsmName, PointerName, Sheet);
+        }
     }
 }
