@@ -112,7 +112,7 @@ namespace SF2MusicCooker
         {
             if (Find(number, out _) == null)
             {
-                string sheet = AsmSheetWriter.Write(FurnaceFile.Empty, Options.Default, instruments, number);
+                string sheet = AsmSheetWriter.Write(Furnace.FurnaceFile.Empty, Options.Default, instruments, number);
                 _vanilla.Add(new Song(number, null, null, sheet));
                 return true;
             }

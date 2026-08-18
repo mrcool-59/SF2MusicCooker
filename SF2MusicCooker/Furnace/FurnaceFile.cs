@@ -4,259 +4,10 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
-namespace SF2MusicCooker
+namespace SF2MusicCooker.Furnace
 {
     public sealed class FurnaceFile
     {
-        // This class only needs to support reading and handle a subset of Furnace file format features (anything related to Genesis chips)
-        // Shortcuts are allowed and even encouraged!
-
-        public readonly struct Effect
-        {
-            public const byte GoTo = 0x0B;
-            public const byte GoNext = 0x0D;
-            public const byte End = 0xFF;
-            public const byte Pan = 0x08;
-            public const byte PanTrinary = 0x80;
-
-            public readonly byte Type;
-            public readonly byte Value;
-
-            public Effect(byte type, byte value)
-            {
-                Type = type;
-                Value = value;
-            }
-
-            public string ToStringHex()
-            {
-                return Tools.Hex(new byte[2] { Type, Value });
-            }
-
-            public override string ToString()
-            {
-                if (this == Absent)
-                    return "ABSENT";
-                else
-                    return Tools.Hex1(Type) + " [" + Tools.Hex1(Value) + "]";
-            }
-
-            public override int GetHashCode()
-            {
-                return Type * 433 + Value;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is Effect effect && effect == this;
-            }
-
-            public static bool operator ==(Effect a, Effect b)
-            {
-                return a.Type == b.Type && a.Value == b.Value;
-            }
-
-            public static bool operator !=(Effect a, Effect b)
-            {
-                return a.Type != b.Type || a.Value != b.Value;
-            }
-
-            /// <summary>
-            /// Represents an absent effect.
-            /// </summary>
-            public static readonly Effect Absent = new Effect(0xEF, 0xFF);
-        }
-
-        public sealed class PatternCell
-        {
-            public const byte NoteCMinus5 = 0;
-            public const byte NoteB9 = 179;
-            public const byte NoteOff = 180;
-            public const byte NoteRelease = 181;
-            // public const byte MacroRelease = 182;
-            public const byte NoteAbsent = 255;
-            public const byte InstrumentAbsent = 255;
-            public const byte VolumeAbsent = 255;
-
-            public readonly byte Note;
-            public readonly byte Instrument;
-            public readonly byte Volume;
-            public readonly Effect[] Effects;
-
-            /// <summary>
-            /// True if the cell contains nothing.
-            /// </summary>
-            public bool IsEmpty { get { return Note == NoteAbsent && Instrument == InstrumentAbsent && Volume == VolumeAbsent && Effects.Length == 0; } }
-
-            /// <summary>
-            /// True if the cell contains a new note to play.
-            /// </summary>
-            public bool HasNewNote { get { return Note != NoteAbsent && Note != NoteRelease && Note != NoteOff; } }
-
-            public PatternCell()
-            {
-                Note = NoteAbsent;
-                Instrument = InstrumentAbsent;
-                Volume = VolumeAbsent;
-                Effects = Array.Empty<Effect>();
-            }
-
-            public PatternCell(byte note, byte instrument, byte volume, Effect[] effects)
-            {
-                Note = note;
-                Instrument = instrument;
-                Volume = volume;
-                Effects = effects ?? Array.Empty<Effect>();
-            }
-
-            public override string ToString()
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(GetNoteString(Note));
-                sb.Append(Instrument == InstrumentAbsent ? ".." : Tools.Hex1(Instrument));
-                sb.Append(Volume == VolumeAbsent ? ".." : Tools.Hex1(Volume));
-                foreach (Effect effect in Effects) sb.Append(effect.ToStringHex());
-                return sb.ToString();
-            }
-
-            /// <summary>
-            /// Get a user-friendly representation of a note command.
-            /// </summary>
-            public static string GetNoteString(byte note)
-            {
-                if (note == NoteAbsent)
-                    return "...";
-                else if (note == NoteOff)
-                    return "OFF";
-                else if (note == NoteRelease)
-                    return "===";
-                else
-                    return NoteBible.GetByValue(note).Name;
-            }
-
-            /// <summary>
-            /// Get the first effect of the provided type in the cell and return true on success.
-            /// Otherwise return false and write the "Absent" effect.
-            /// </summary>
-            public bool TryGetEffect(byte type, out Effect effect)
-            {
-                foreach (Effect e in Effects)
-                {
-                    if (e.Type == type)
-                    {
-                        effect = e;
-                        return true;
-                    }
-                }
-                effect = Effect.Absent;
-                return false;
-            }
-
-            /// <summary>
-            /// Represents the empty cell.
-            /// </summary>
-            public static readonly PatternCell Empty = new PatternCell();
-        }
-
-        public sealed class Pattern
-        {
-            private readonly PatternCell[] cells;
-
-            public int Rows { get { return cells.Length; } }
-
-            public Pattern(int rows)
-            {
-                cells = new PatternCell[rows];
-            }
-
-            /// <summary>
-            /// Get a cell from the pattern. This method will always return a not-null PatternCell.
-            /// </summary>
-            public PatternCell Get(int row)
-            {
-                return cells[row] ?? PatternCell.Empty;
-            }
-
-            /// <summary>
-            /// Set a cell from the pattern. Passing null will clear the cell.
-            /// </summary>
-            public void Set(int row, PatternCell cell)
-            {
-                if (cell != null && cell.IsEmpty) cell = null;
-                cells[row] = cell;
-            }
-        }
-
-        public sealed class Instrument
-        {
-            public const short PSG = 0x00;
-            public const short FM = 0x01;
-            public const short DAC = 0x04;
-
-            /// <summary>
-            /// The instrument type (PSG, FM, DAC).
-            /// </summary>
-            public readonly short Type;
-
-            /// <summary>
-            /// The instrument user modifiable name.
-            /// </summary>
-            public readonly string Name;
-
-            /// <summary>
-            /// The data payload describing this instrument (see Furnace documentation for details).
-            /// </summary>
-            public readonly byte[] Data;
-
-            public Instrument(short type, string name, byte[] data)
-            {
-                Type = type;
-                Name = name;
-                Data = data;
-            }
-        }
-
-        public sealed class Sample
-        {
-            public readonly string Name;
-            public readonly int Length;
-            public readonly int Rate; // C-4
-            public readonly byte Depth;
-            public readonly byte LoopDirection;
-            public readonly int LoopStart;
-            public readonly int LoopEnd;
-            public readonly byte[] Data;
-
-            public Sample(string name, int length, int rate, byte depth, byte loopDirection, int loopStart, int loopEnd, byte[] data)
-            {
-                Name = name;
-                Length = length;
-                Rate = rate;
-                Depth = depth;
-                LoopDirection = loopDirection;
-                LoopStart = loopStart;
-                LoopEnd = loopEnd;
-                Data = data;
-            }
-
-            public void Verify()
-            {
-                if (LoopStart != -1 || LoopEnd != -1)
-                    throw new NotSupportedException("Sorry, samples may not loop (" + Name + ")");
-
-                if (Depth != 0x08)
-                    throw new NotSupportedException("8-bit PCM is the expected format for samples");
-
-                if (Length != Data.Length)
-                    throw new FormatException("Data length is not consistent with declared length");
-            }
-        }
-
-        /// <summary>
-        /// The format version of this Furnace file. We might not be able to process properly files generated by a version that is too old.
-        /// </summary>
-        public readonly int FormatVersion;
-
         /// <summary>
         /// The [channel, order] matrix that return keys.
         /// </summary>
@@ -305,14 +56,24 @@ namespace SF2MusicCooker
         /// <summary>
         /// Number of rows per pattern.
         /// </summary>
-        public int Rows { get { return PatternByKey[KeyByChannelAndOrder[0, 0]].Rows; } }
+        public int Rows { get { return PatternByKey.Count == 0 ? 0 : PatternByKey[KeyByChannelAndOrder[0, 0]].Rows; } }
+
+        /// <summary>
+        /// Position that corresponds to the last row of the last order, just before the 'End' position.
+        /// </summary>
+        public Position Last { get { return new Position(Orders - 1, Rows - 1); } }
+
+        /// <summary>
+        /// Position that corresponds to the end of the music. It is defined to be one position after the 'Last' position.
+        /// </summary>
+        public Position End { get { return new Position(Orders, 0); } }
 
         /// <summary>
         /// Determine if the file is trivial and contains no music whatsoever.
         /// </summary>
         public bool IsTrivial()
         {
-            if (Orders == 0) return true;
+            if (Orders <= 0) return true;
 
             for (int channel = 0; channel < Channels; channel++)
             {
@@ -411,9 +172,8 @@ namespace SF2MusicCooker
             return removed;
         }
 
-        public FurnaceFile(int formatVersion, int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playbackRate, int a4tuning)
+        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playbackRate, int a4tuning)
         {
-            FormatVersion = formatVersion;
             KeyByChannelAndOrder = keyByChannelAndOrder;
             PatternByKey = patternByKey;
             Instruments = instruments;
@@ -425,7 +185,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Gives an empty file.
         /// </summary>
-        public static readonly FurnaceFile Empty = new FurnaceFile(0, new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 59, StandardA4Tuning);
+        public static readonly FurnaceFile Empty = new FurnaceFile(new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 59, StandardA4Tuning);
 
         private static int ComputeKey(byte channel, short index)
         {
@@ -979,7 +739,7 @@ namespace SF2MusicCooker
                     float playbackRate = ticksPerSecond * virtualTempoNumerator / (virtualTempoDenominator * speed1);
                     int a4tuningRounded = (int)Math.Round(a4tuning);
 
-                    return new FurnaceFile(version, keyByChannelAndOrder, patternByKey, instruments, samples, playbackRate, a4tuningRounded);
+                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, playbackRate, a4tuningRounded);
                 }
             }
             catch (Exception ex)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SF2MusicCooker.Furnace;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -84,7 +85,7 @@ namespace SF2MusicCooker
 
             foreach (var i in file.Instruments)
             {
-                if (i.Type == FurnaceFile.Instrument.FM)
+                if (i.Type == Instrument.FM)
                 {
                     if (print) Console.WriteLine("> Analyzing FM instrument #{0} '{1}'...", index++, i.Name);
 
@@ -160,13 +161,13 @@ namespace SF2MusicCooker
         /// <summary>
         /// Generate a file-to-global instrument map for the given Furnace instrument array.
         /// </summary>
-        public Dictionary<byte, byte> Map(FurnaceFile.Instrument[] instruments)
+        public Dictionary<byte, byte> Map(Instrument[] instruments)
         {
             Dictionary<byte, byte> map = new Dictionary<byte, byte>();
             for (int instrument = 0; instrument < instruments.Length; instrument++)
             {
-                FurnaceFile.Instrument i = instruments[instrument];
-                if (i.Type == FurnaceFile.Instrument.FM)
+                Instrument i = instruments[instrument];
+                if (i.Type == Instrument.FM)
                 {
                     Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(i.Data));
                     map.Add((byte)instrument, Find(def));

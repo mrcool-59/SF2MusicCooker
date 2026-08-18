@@ -1,9 +1,8 @@
-﻿using System;
+﻿using SF2MusicCooker.Furnace;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
-using static SF2MusicCooker.FurnaceFile;
 
 namespace SF2MusicCooker
 {
@@ -203,22 +202,22 @@ namespace SF2MusicCooker
             else
             {
                 // Detect loop position by running the song a first time
-                int loopOrder = -1;
+                Position loopPosition = file.End;
                 int beats = 0;
-                foreach (FurnacePlayer.Tick tick in FurnacePlayer.Run(file, -1, 0))
+                foreach (Tick tick in Player.Run(file, -1, 0, Position.Start))
                 {
                     beats++;
-                    if (tick.BackwardGoToOrder >= 0)
+                    if (tick.NextPosition <= tick.Position)
                     {
-                        loopOrder = tick.BackwardGoToOrder;
+                        loopPosition = tick.NextPosition;
                         break;
                     }
                 }
 
                 // Print some interesting stats
                 Console.WriteLine("> Executed {0} beats before ending playback.", beats);
-                if (loopOrder >= 0)
-                    Console.WriteLine("> Music contains a loop at order #{0}.", loopOrder);
+                if (loopPosition != file.End)
+                    Console.WriteLine("> Music contains a loop at position: {0}", loopPosition);
                 else
                     Console.WriteLine("> Music doesn't contain a loop.");
 
@@ -245,7 +244,7 @@ namespace SF2MusicCooker
                     }
 
                     // Compute channel
-                    string channelAsm = WriteChannel(file, options, instrumentMap, channel, loopOrder);
+                    string channelAsm = WriteChannel(file, options, instrumentMap, channel, loopPosition);
 
                     // Append to sheet
                     sb.Append(padding);
@@ -270,7 +269,7 @@ namespace SF2MusicCooker
         }
 
         [Conditional("PRINT_LENGTH")]
-        private static void PrintLength(List<string> commands, FurnacePlayer.Tick tick, bool silence)
+        private static void PrintLength(List<string> commands, Tick tick, bool silence)
         {
             if (silence)
             {
@@ -283,7 +282,7 @@ namespace SF2MusicCooker
             }
         }
 
-        private static string WriteChannel(FurnaceFile file, Options options, Dictionary<byte, byte> instrumentMap, int channel, int loopOrder)
+        private static string WriteChannel(FurnaceFile file, Options options, Dictionary<byte, byte> instrumentMap, int channel, Position loopPosition)
         {
             // Volume to cube helper
             Volume volume = Volume.FromStrategy(options.VolumeStrategy);
@@ -396,7 +395,7 @@ namespace SF2MusicCooker
             commands.Add("vibrato " + BYTE(0));
 
             // Play the song while observing this channel in particular
-            foreach (FurnacePlayer.Tick tick in FurnacePlayer.Run(file, channel, MAX_PREDICT_LENGTH))
+            foreach (Tick tick in Player.Run(file, channel, MAX_PREDICT_LENGTH, Position.Start))
             {
                 PatternCell cell = tick.ActiveChannelCell;
 
@@ -404,7 +403,7 @@ namespace SF2MusicCooker
                 _ = tick.PrintLengthWarning(MAX_PREDICT_LENGTH);
 
                 // Mark beginning of loop
-                if (tick.Order == loopOrder && tick.Row == 0)
+                if (tick.Position == loopPosition)
                 {
                     commands.Add("mainLoopStart");
                 }
@@ -503,16 +502,19 @@ namespace SF2MusicCooker
                     // TODO
                 }
 
-                // Mark ending of loop and exit
-                if (tick.BackwardGoToOrder >= 0)
+                if (tick.NextPosition <= tick.Position)
                 {
+                    // Mark ending of loop and exit
                     commands.Add("mainLoopEnd");
                     break;
                 }
+                else if (tick.NextPosition >= file.End)
+                {
+                    // We reached the end (can only occur if there's no loop)
+                    commands.Add("channel_end");
+                    break;
+                }
             }
-
-            // Add channel_end if we don't have a loop
-            if (loopOrder == -1) commands.Add("channel_end");
 
             // List to array
             string[] finalCommands = commands.ToArray();
@@ -520,14 +522,8 @@ namespace SF2MusicCooker
             // Apply optimization (only if dumping is disabled)
             if (options.OptimizeNotes && !options.DumpNotes) finalCommands = optimizer.Optimize(finalCommands);
 
-            // Outputs command list
-            string asm = string.Join(Environment.NewLine + padding, finalCommands);
-
-            // Small optimization for empty channels
-            asm = Regex.Replace(asm, "mainLoopStart[\r\n\t ]+mainLoopEnd", "channel_end");
-
             // Channel done!
-            return asm;
+            return string.Join(Environment.NewLine + padding, finalCommands);
         }
     }
 }

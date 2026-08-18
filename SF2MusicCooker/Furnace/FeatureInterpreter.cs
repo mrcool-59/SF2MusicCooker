@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SF2MusicCooker
+namespace SF2MusicCooker.Furnace
 {
     public static class FeatureInterpreter
     {

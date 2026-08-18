@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SF2MusicCooker.Furnace;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;

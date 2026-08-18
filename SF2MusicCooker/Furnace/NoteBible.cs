@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SF2MusicCooker
+namespace SF2MusicCooker.Furnace
 {
     public static class NoteBible
     {

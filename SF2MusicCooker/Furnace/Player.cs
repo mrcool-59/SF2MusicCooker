@@ -1,108 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using static SF2MusicCooker.FurnaceFile;
 
-namespace SF2MusicCooker
+namespace SF2MusicCooker.Furnace
 {
-    public static class FurnacePlayer
+    public static class Player
     {
-        public readonly struct Tick
-        {
-            /// <summary>
-            /// Current order in the playback.
-            /// </summary>
-            public readonly int Order;
-
-            /// <summary>
-            /// Current row in the playback.
-            /// </summary>
-            public readonly int Row;
-
-            /// <summary>
-            /// The currently playing cell for the active channel.
-            /// </summary>
-            public readonly PatternCell ActiveChannelCell;
-
-            /// <summary>
-            /// Indicate the length of the new note before release (0 if no note), this is *always* equal to or lower than note length.
-            /// </summary>
-            public readonly int NoteRelease;
-
-            /// <summary>
-            /// Indicate the length of the new note before stopping (0 if no note). Cannot be higher than 'maxPredictLength' specified in the Run method call.
-            /// </summary>
-            public readonly int NoteLength;
-
-            /// <summary>
-            /// Indicate the length of the silence (i.e: note OFF) before the next note (0 if no silence). Cannot be higher than 'maxPredictLength' specified in the Run method call.
-            /// </summary>
-            public readonly int SilenceLength;
-
-            /// <summary>
-            /// Filled if we encounter a 'go to pattern' effect that sends us backward.
-            /// In that case, this field contains the order value to go backward to.
-            /// Otherwise this value will be -1.
-            /// </summary>
-            public readonly int BackwardGoToOrder;
-
-            public Tick(int order, int row, PatternCell activeChannelCell, int noteRelease, int noteLength, int silenceLength, int backwardGoToOrder = -1)
-            {
-                Order = order;
-                Row = row;
-                ActiveChannelCell = activeChannelCell;
-                NoteRelease = noteRelease;
-                NoteLength = noteLength;
-                SilenceLength = silenceLength;
-                BackwardGoToOrder = backwardGoToOrder;
-            }
-
-            /// <summary>
-            /// Print a warning to the user if note/silence length has reached the length threshold. Return true if warning was actually printed.
-            /// </summary>
-            public bool PrintLengthWarning(int lengthThreshold)
-            {
-                string what = null;
-                if (SilenceLength >= lengthThreshold)
-                {
-                    what = "silence";
-                    Console.WriteLine("! Silence triggered at [order: {0}, row: {1}] has a hit the maximum allowed length ({2} ticks)", Order, Row, SilenceLength);
-                }
-                if (NoteLength >= lengthThreshold)
-                {
-                    what = "note";
-                    Console.WriteLine("! Note triggered at [order: {0}, row: {1}] has a hit the maximum allowed length ({2} ticks)", Order, Row, NoteLength);
-                }
-                if (what != null)
-                {
-                    Console.WriteLine("! This is either a bug in the tool or a deliberate, absurdly long {0} in the Furnace file.", what);
-                    Console.WriteLine("! Regardless of the cause, the consequence is that the actual {0} length will be capped in the output sheet.", what);
-                    return true;
-                }
-                return false;
-            }
-        }
-
         /// <summary>
         /// Play each row of each pattern in the intended order and produce an enumeration of ticks.
         /// </summary>
-        public static IEnumerable<Tick> Run(FurnaceFile file, int activeChannel, int maxPredictLength, int fromOrder = 0, int fromRow = 0)
+        public static IEnumerable<Tick> Run(FurnaceFile file, int activeChannel, int maxPredictLength, Position from)
         {
-            if (file.Orders == 0) yield break;
-
             int channels = file.Channels;
             int orders = file.Orders;
             int rows = file.Rows;
 
-            int order = fromOrder;
-            int row = fromRow;
+            int order = from.Order;
+            int row = from.Row;
 
             while (order < orders)
             {
+                Position position = new Position(order, row);
                 Effect goTo = Effect.Absent;
                 Effect goNext = Effect.Absent;
                 Effect end = Effect.Absent;
                 PatternCell activeChannelCell = null;
-                int backwardGoToOrder = -1;
 
                 for (int channel = 0; channel < channels; channel++)
                 {
@@ -116,7 +37,6 @@ namespace SF2MusicCooker
                     if (goTo == Effect.Absent && cell.TryGetEffect(Effect.GoTo, out goTo))
                     {
                         if (goTo.Value < 0 || goTo.Value >= file.Orders) throw new FormatException("Encountered 'go to pattern' effect (0B) with invalid order value");
-                        if (goTo.Value <= order) backwardGoToOrder = goTo.Value;
                     }
 
                     if (goNext == Effect.Absent)
@@ -135,7 +55,7 @@ namespace SF2MusicCooker
                 {
                     if (activeChannelCell.HasNewNote)
                     {
-                        foreach (Tick tick in Run(file, activeChannel, 0, order, row))
+                        foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
                             if (noteLength == 0)
                             {
@@ -167,7 +87,7 @@ namespace SF2MusicCooker
                     }
                     else if (activeChannelCell.Note == PatternCell.NoteOff)
                     {
-                        foreach (Tick tick in Run(file, activeChannel, 0, order, row))
+                        foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
                             // See how long the silence will last
                             if (tick.ActiveChannelCell.HasNewNote)
@@ -180,9 +100,6 @@ namespace SF2MusicCooker
                         }
                     }
                 }
-
-                // Submit to caller
-                yield return new Tick(order, row, activeChannelCell, noteRelease, noteLength, silenceLength, backwardGoToOrder);
 
                 // Go to the next step using the appropriate control flow
                 if (goTo != Effect.Absent)
@@ -197,13 +114,18 @@ namespace SF2MusicCooker
                 }
                 else if (end != Effect.Absent)
                 {
-                    yield break; // End the song
+                    row = 0;
+                    order = orders;
                 }
                 else if (++row == rows)
                 {
                     row = 0;
                     order++;
                 }
+
+                // Submit to caller
+                Position nextPosition = new Position(order, row);
+                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength);
             }
         }
     }
