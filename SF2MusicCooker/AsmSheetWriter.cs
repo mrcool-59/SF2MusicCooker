@@ -92,7 +92,6 @@ namespace SF2MusicCooker
 
         /// <summary>
         /// Outputs an ASM music sheet compatible under SF2DISASM framework.
-        /// The generated sheet will definitely be very imperfect when it comes to translating the special effects specified in the source Furnace file.
         /// </summary>
         public static string Write(FurnaceFile file, Options options, InstrumentMap map, int number, int pairNumber = 0)
         {
@@ -134,6 +133,40 @@ namespace SF2MusicCooker
 
             // Additional emptiness remark
             if (channels.Empty) asm = "; This is an empty music and it won't produce any sound output" + Environment.NewLine + Environment.NewLine + asm;
+
+            // Print how much time it took
+            if (!channels.Empty) Console.WriteLine("> Building ASM sheet took {0} ms", sw.ElapsedMilliseconds);
+
+            // All done!
+            return asm;
+        }
+
+        /// <summary>
+        /// Outputs an ASM SFX sheet compatible under SF2DISASM framework.
+        /// </summary>
+        public static string WriteSFX(SFXType type, FurnaceFile file, Options options, InstrumentMap map, int number)
+        {
+            StringBuilder sb = new StringBuilder(1024);
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // Configuration for SFX
+            uint mask = type == SFXType.Type1_PSG_Square3_Noise ? ChannelCommands.Mask_SFX_1 : ChannelCommands.Mask_SFX_2;
+            ChannelCommands channels = new ChannelCommands(10, mask, type == SFXType.Type2_YM_Ch4_Ch5_Ch6DAC, Environment.NewLine + padding);
+
+            // Generate the channels
+            channels.Generate(file, options, map);
+
+            // Write header (disclaimer is skipped for SFX)
+            sb.AppendFormat("Sfx_{0}:", number);
+            if (options.Title != null) sb.AppendFormat("\t\t; {0}", options.Title);
+            sb.AppendLine();
+            sb.AppendFormat(padding + "db {0}\t; SFX type", (byte)type); sb.AppendLine();
+
+            // Write channels
+            channels.Write(sb, "Sfx_" + number, padding);
+
+            // We have generated the full ASM to describe the SFX!
+            string asm = sb.ToString();
 
             // Print how much time it took
             if (!channels.Empty) Console.WriteLine("> Building ASM sheet took {0} ms", sw.ElapsedMilliseconds);
