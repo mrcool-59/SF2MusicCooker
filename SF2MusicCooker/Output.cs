@@ -207,7 +207,7 @@ namespace SF2MusicCooker
                         {
                             _ = number2name.TryGetValue(pairNumber, out string pairName);
                             _ = number2enum.TryGetValue(pairNumber, out string pairAsmName);
-                            Song pairSong = new Song(pairNumber, pairName, pairAsmName, Sheet.Null);
+                            Song pairSong = new Song(pairNumber, pairName, pairAsmName, Sheet.Clone);
 
                             Bank pairBank = SelectMusicBank(pairNumber);
                             pairBank.Add(pairSong, true);

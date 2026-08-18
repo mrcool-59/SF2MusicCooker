@@ -31,8 +31,11 @@ namespace SF2MusicCooker
             if (pointerName == null)
                 throw new ArgumentNullException(nameof(pointerName));
 
-            if (sheet == null || sheet == Sheet.Null)
+            if (sheet == null)
                 throw new ArgumentNullException(nameof(sheet));
+
+            if (sheet == Sheet.Clone)
+                throw new ArgumentException("Special sheet 'Clone' is forbidden here", nameof(sheet));
 
             Number = number;
             Name = name ?? asmName.Replace("SFX_", "");

@@ -116,7 +116,7 @@ namespace SF2MusicCooker
                                 output.Replace(song, includeOriginalNames);
                                 if (pairNumber > 0)
                                 {
-                                    output.Replace(new Song(pairNumber, name, asmName, Sheet.Null), includeOriginalNames);
+                                    output.Replace(new Song(pairNumber, name, asmName, Sheet.Clone), includeOriginalNames);
                                     Console.WriteLine("WARNING: music {0} will also be replaced by music {1} since they are linked in pairs", pairNumber, number);
                                 }
                             }

@@ -66,9 +66,9 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Represents the null sheet, that doesn't contain any ASM.
+        /// Represents a music sheet that is a clone of another music. This sheet doesn't contain any ASM and will throw if attempting to get it.
         /// </summary>
-        public static Sheet Null = new Sheet(null, null);
+        public static Sheet Clone = new Sheet(null, null);
 
         public static implicit operator string(Sheet sheet) => sheet.ASM;
     }
