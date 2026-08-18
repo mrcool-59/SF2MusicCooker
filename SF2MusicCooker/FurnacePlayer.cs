@@ -24,17 +24,17 @@ namespace SF2MusicCooker
             public readonly PatternCell ActiveChannelCell;
 
             /// <summary>
-            /// Indicate the length of the new note before release (0 if no note).
+            /// Indicate the length of the new note before release (0 if no note), this is *always* equal to or lower than note length.
             /// </summary>
             public readonly int NoteRelease;
 
             /// <summary>
-            /// Indicate the length of the new note before stopping (0 if no note).
+            /// Indicate the length of the new note before stopping (0 if no note). Cannot be higher than 'maxPredictLength' specified in the Run method call.
             /// </summary>
             public readonly int NoteLength;
 
             /// <summary>
-            /// Indicate the length of the silence (i.e: note OFF) before the next note (0 if no silence).
+            /// Indicate the length of the silence (i.e: note OFF) before the next note (0 if no silence). Cannot be higher than 'maxPredictLength' specified in the Run method call.
             /// </summary>
             public readonly int SilenceLength;
 
@@ -55,17 +55,37 @@ namespace SF2MusicCooker
                 SilenceLength = silenceLength;
                 BackwardGoToOrder = backwardGoToOrder;
             }
+
+            /// <summary>
+            /// Print a warning to the user if note/silence length has reached the length threshold. Return true if warning was actually printed.
+            /// </summary>
+            public bool PrintLengthWarning(int lengthThreshold)
+            {
+                string what = null;
+                if (SilenceLength >= lengthThreshold)
+                {
+                    what = "silence";
+                    Console.WriteLine("! Silence triggered at [order: {0}, row: {1}] has a hit the maximum allowed length ({2} ticks)", Order, Row, SilenceLength);
+                }
+                if (NoteLength >= lengthThreshold)
+                {
+                    what = "note";
+                    Console.WriteLine("! Note triggered at [order: {0}, row: {1}] has a hit the maximum allowed length ({2} ticks)", Order, Row, NoteLength);
+                }
+                if (what != null)
+                {
+                    Console.WriteLine("! This is either a bug in the tool or a deliberate, absurdly long {0} in the Furnace file.", what);
+                    Console.WriteLine("! Regardless of the cause, the consequence is that the actual {0} length will be capped in the output sheet.", what);
+                    return true;
+                }
+                return false;
+            }
         }
 
         /// <summary>
         /// Play each row of each pattern in the intended order and produce an enumeration of ticks.
         /// </summary>
-        public static IEnumerable<Tick> Run(FurnaceFile file, int activeChannel)
-        {
-            return Run(file, activeChannel, 0, 0, true); // Call the private method without exposing the forbidden parameters
-        }
-
-        private static IEnumerable<Tick> Run(FurnaceFile file, int activeChannel, int fromOrder, int fromRow, bool predictLength)
+        public static IEnumerable<Tick> Run(FurnaceFile file, int activeChannel, int maxPredictLength, int fromOrder = 0, int fromRow = 0)
         {
             if (file.Orders == 0) yield break;
 
@@ -111,11 +131,11 @@ namespace SF2MusicCooker
                 int noteLength = 0;
                 int silenceLength = 0;
 
-                if (predictLength && activeChannelCell != null)
+                if (maxPredictLength > 0 && activeChannelCell != null)
                 {
                     if (activeChannelCell.HasNewNote)
                     {
-                        foreach (Tick tick in Run(file, activeChannel, order, row, false))
+                        foreach (Tick tick in Run(file, activeChannel, 0, order, row))
                         {
                             if (noteLength == 0)
                             {
@@ -141,13 +161,13 @@ namespace SF2MusicCooker
                                 break;
                             }
 
-                            // Safety net
-                            if (noteLength >= 4096) throw new ApplicationException("Sorry, we got a note with predicted length >= 4096 which means it is probably a bug in the tool :(");
+                            // No need to go higher than max length
+                            if (noteLength >= maxPredictLength) break;
                         }
                     }
                     else if (activeChannelCell.Note == PatternCell.NoteOff)
                     {
-                        foreach (Tick tick in Run(file, activeChannel, order, row, false))
+                        foreach (Tick tick in Run(file, activeChannel, 0, order, row))
                         {
                             // See how long the silence will last
                             if (tick.ActiveChannelCell.HasNewNote)
@@ -155,8 +175,8 @@ namespace SF2MusicCooker
                             else
                                 silenceLength++;
 
-                            // Safety net
-                            if (silenceLength >= 4096) throw new ApplicationException("Sorry, we got a silence with predicted length >= 4096 which means it is probably a bug in the tool :(");
+                            // No need to go higher than max length
+                            if (silenceLength >= maxPredictLength) break;
                         }
                     }
                 }

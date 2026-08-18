@@ -53,37 +53,21 @@ namespace SF2MusicCooker
 
         /// <summary>
         /// Get an estimation of the number of bytes a music .asm file will take when assembled into a music bank.
-        /// This will also return if this is an empty music. An empty music basically only has the mandatory 'db' header bytes and 'channel_end' commmand.
-        /// The size estimation should be "almost" exact but you should not 100% rely on it.
+        /// The size estimation should be very close to exact (if not just plain exact) but you should not 100% rely on it.
         /// </summary>
-        public static int EstimateBytes(string sheet, out bool empty)
+        public static int EstimateBytes(string sheet)
         {
             using (StringReader reader = new StringReader(sheet))
             {
                 int bytes = 0;
-                empty = true;
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    bytes += EstimateLine(line, ref empty);
+                    string command = StripArguments(Tools.RemoveASMLabel(Tools.RemoveASMComment(line)));
+                    if (map.TryGetValue(command, out int commandSize)) bytes += commandSize;
                 }
                 return bytes;
             }
-        }
-
-        private static int EstimateLine(string line, ref bool empty)
-        {
-            int bytes = 0;
-            string command = StripArguments(Tools.RemoveASMLabel(Tools.RemoveASMComment(line)));
-            if (!string.IsNullOrEmpty(command))
-            {
-                if (command != "db" && command != "dw" && command != "channel_end")
-                    empty = false;
-
-                if (map.TryGetValue(command, out int wordBytes))
-                    bytes += wordBytes;
-            }
-            return bytes;
         }
 
         /// <summary>

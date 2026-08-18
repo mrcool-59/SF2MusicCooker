@@ -158,6 +158,7 @@ namespace SF2MusicCooker
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
+            bool trivial = file.IsTrivial();
 
             // Enable DAC mode (0) if song contains samples, otherwise disable it (1)
             byte dac = (byte)(file.Samples.Length > 0 ? 0 : 1);
@@ -190,69 +191,79 @@ namespace SF2MusicCooker
             }
             sb.AppendLine();
 
-            // Detect loop position by running the song a first time
-            int loopOrder = -1;
-            int beats = 0;
-            foreach (FurnacePlayer.Tick tick in FurnacePlayer.Run(file, -1))
+            if (trivial)
             {
-                beats++;
-                if (tick.BackwardGoToOrder >= 0)
+                for (int channel = 0; channel < file.Channels; channel++)
                 {
-                    loopOrder = tick.BackwardGoToOrder;
-                    break;
+                    sb.AppendFormat("Music_{0}_Channel_{1}:", number, channel); sb.AppendLine();
                 }
-            }
 
-            if (file.Orders > 0)
+                sb.AppendLine(padding + "channel_end");
+            }
+            else
             {
+                // Detect loop position by running the song a first time
+                int loopOrder = -1;
+                int beats = 0;
+                foreach (FurnacePlayer.Tick tick in FurnacePlayer.Run(file, -1, 0))
+                {
+                    beats++;
+                    if (tick.BackwardGoToOrder >= 0)
+                    {
+                        loopOrder = tick.BackwardGoToOrder;
+                        break;
+                    }
+                }
+
+                // Print some interesting stats
                 Console.WriteLine("> Executed {0} beats before ending playback.", beats);
                 if (loopOrder >= 0)
                     Console.WriteLine("> Music contains a loop at order #{0}.", loopOrder);
                 else
                     Console.WriteLine("> Music doesn't contain a loop.");
-            }
 
-            for (int channel = 0; channel < file.Channels; channel++)
-            {
-                // Write labels
-                sb.AppendFormat("Music_{0}_Channel_{1}:", number, channel); sb.AppendLine();
-
-                // Trivial file
-                if (file.Orders == 0) continue;
-
-                // When using isolate channel feature: if channel is not the isolated channel, neutralize it
-                if (options.IsolateChannel >= 0 && channel != options.IsolateChannel) { sb.AppendLine(padding + "channel_end"); continue; }
-
-                // Do not write channel 6 in DAC mode because it is not supported yet
-                if (dac == 0 && channel == 5)
+                // Now process each channel
+                for (int channel = 0; channel < file.Channels; channel++)
                 {
-                    sb.AppendLine(padding + "channel_end");
-                    Console.WriteLine("! Channel 6 has been skipped because we don't support DAC yet"); // TODO
-                    continue;
+                    // Write labels
+                    sb.AppendFormat("Music_{0}_Channel_{1}:", number, channel); sb.AppendLine();
+
+                    // Do not write channels that are empty or muted
+                    if (!file.HasPlayNoteCommand(channel) || (options.IsolateChannel >= 0 && channel != options.IsolateChannel))
+                    {
+                        // TODO: re-use another empty channel data instead!
+                        sb.AppendLine(padding + "channel_end");
+                        continue;
+                    }
+
+                    // Do not write channel 6 in DAC mode because it is not supported yet
+                    if (dac == 0 && channel == 5)
+                    {
+                        sb.AppendLine(padding + "channel_end");
+                        Console.WriteLine("! Channel 6 has been skipped because we don't support DAC yet"); // TODO
+                        continue;
+                    }
+
+                    // Compute channel
+                    string channelAsm = WriteChannel(file, options, instrumentMap, channel, loopOrder);
+
+                    // Append to sheet
+                    sb.Append(padding);
+                    sb.AppendLine(channelAsm);
                 }
-
-                // Compute channel
-                string channelAsm = WriteChannel(file, options, instrumentMap, channel, loopOrder);
-
-                // Append to sheet
-                sb.Append(padding);
-                sb.AppendLine(channelAsm);
             }
-
-            // Trivial file
-            if (file.Orders == 0) sb.AppendLine(padding + "channel_end");
 
             // We have generated the full ASM to describe the music!
             string asm = sb.ToString();
 
             // Count number of bytes it will take in bank and show it on first line as a comment
-            asm = "; MUSIC SIZE = " + AsmSheetToolkit.EstimateBytes(asm, out bool empty) + " (approximately)" + Environment.NewLine + asm;
+            asm = "; MUSIC SIZE = " + AsmSheetToolkit.EstimateBytes(asm) + " (approximately)" + Environment.NewLine + asm;
 
             // Additional emptiness remark
-            if (empty) asm = "; This is an empty music and it won't produce any sound output" + Environment.NewLine + Environment.NewLine + asm;
+            if (trivial) asm = "; This is an empty music and it won't produce any sound output" + Environment.NewLine + Environment.NewLine + asm;
 
             // Print how much time it took
-            if (file.Orders > 0) Console.WriteLine("> Building ASM sheet took {0} ms.", sw.ElapsedMilliseconds);
+            if (!trivial) Console.WriteLine("> Building ASM sheet took {0} ms.", sw.ElapsedMilliseconds);
 
             // All done!
             return asm;
@@ -278,6 +289,9 @@ namespace SF2MusicCooker
             Volume volume = Volume.FromStrategy(options.VolumeStrategy);
             byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume);
 
+            // We assume notes should never be longer than this ludicrous length
+            const int MAX_PREDICT_LENGTH = 1048576;
+
             // If no volume instruction is present in the channel
             const int DEFAULT_VOL = 0x7F;
 
@@ -294,32 +308,84 @@ namespace SF2MusicCooker
             bool fm = channel < 6;
 
             // Helper: note
-            void WriteNote(byte note, int length)
+            void WriteNote(byte note, int release, int length)
             {
-                byte newLength = (byte)Math.Min(0xFF, length);
-                if (currentLength != newLength)
+                int cappedLength = Math.Min(length, release + 0x7F); // After releasing a note, we can't have it play for more than 0x7F ticks
+                int extraSilence = length - cappedLength;
+
+                length = cappedLength;
+
+                while (length > 0)
                 {
-                    currentLength = newLength;
-                    commands.Add("noteL " + NOTE(note) + "," + BYTE(currentLength));
+                    if (length >= 0x100)
+                        WriteSetReleaseOrSustain(-1); // This note is sustained because it goes above the max length of a single note (i.e: another note is required)
+                    else
+                        WriteSetReleaseOrSustain(length - release); // This note will end, we can also set when it should be released
+
+                    byte newLength = (byte)Math.Min(0xFF, length);
+                    if (currentLength != newLength)
+                    {
+                        currentLength = newLength;
+                        commands.Add("noteL " + NOTE(note) + "," + BYTE(currentLength));
+                    }
+                    else
+                    {
+                        commands.Add("note  " + NOTE(note));
+                    }
+                    release -= newLength;
+                    length -= newLength;
                 }
-                else
+
+                WriteSilence(extraSilence);
+            }
+
+            // Helper: update note release delay (-1: never released [sustain], 0: released at note length, N: released at [note length - N])
+            void WriteSetReleaseOrSustain(int ticks)
+            {
+                byte newRelease = ticks < 0 ? (byte)0x80 : (byte)Math.Min(0x7F, ticks);
+                if (currentRelease != newRelease)
                 {
-                    commands.Add("note  " + NOTE(note));
+                    currentRelease = newRelease;
+                    if (currentRelease == 0x80)
+                        commands.Add("sustain"); // 'setRelease 80h' would be equivalent, but less clear
+                    else
+                        commands.Add("setRelease " + BYTE(currentRelease));
                 }
             }
 
             // Helper: silence
             void WriteSilence(int length)
             {
-                byte newLength = (byte)Math.Min(0xFF, length);
-                if (currentLength != newLength)
+                while (length > 0)
                 {
-                    currentLength = newLength;
-                    commands.Add("waitL " + BYTE(currentLength));
+                    byte newLength = (byte)Math.Min(0xFF, length);
+                    if (currentLength != newLength)
+                    {
+                        currentLength = newLength;
+                        commands.Add("waitL " + BYTE(currentLength));
+                    }
+                    else
+                    {
+                        commands.Add("wait");
+                    }
+                    length -= newLength;
                 }
-                else
+            }
+
+            // Helper: silence before first note
+            void WriteFirstSilence()
+            {
+                if (firstNoteTick >= 0)
                 {
-                    commands.Add("wait");
+                    // A silence was indeed there
+                    if (firstNoteTick >= 1)
+                    {
+                        commands.Add("; First note delay"); // Put a remark this is the first note delay
+                        WriteSilence(firstNoteTick);
+                    }
+
+                    // First note placed
+                    firstNoteTick = -1;
                 }
             }
 
@@ -330,9 +396,12 @@ namespace SF2MusicCooker
             commands.Add("vibrato " + BYTE(0));
 
             // Play the song while observing this channel in particular
-            foreach (FurnacePlayer.Tick tick in FurnacePlayer.Run(file, channel))
+            foreach (FurnacePlayer.Tick tick in FurnacePlayer.Run(file, channel, MAX_PREDICT_LENGTH))
             {
                 PatternCell cell = tick.ActiveChannelCell;
+
+                // Verify that note/silence length we got is not absurd
+                _ = tick.PrintLengthWarning(MAX_PREDICT_LENGTH);
 
                 // Mark beginning of loop
                 if (tick.Order == loopOrder && tick.Row == 0)
@@ -393,27 +462,11 @@ namespace SF2MusicCooker
                         PrintLength(commands, tick, false);
 
                         // If this is the first note, a silence might have occured beforehand
-                        if (firstNoteTick >= 0)
-                        {
-                            // A silence was indeed there
-                            if (firstNoteTick >= 1)
-                            {
-                                commands.Add("; First note delay"); // Put a remark this is the first note delay
-                                WriteSilence(firstNoteTick);
-                            }
+                        // TODO: incorrect with loops (drifting notes, should be done outside of main loop)
+                        WriteFirstSilence();
 
-                            // First note placed
-                            firstNoteTick = -1;
-                        }
-
-                        byte newRelease = (byte)Math.Min(0x7F, tick.NoteLength - tick.NoteRelease);
-                        if (currentRelease != newRelease)
-                        {
-                            currentRelease = newRelease;
-                            commands.Add("setRelease " + BYTE(currentRelease));
-                        }
-
-                        WriteNote(cell.Note, tick.NoteLength);
+                        // Finally, write the note itself
+                        WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
                     }
                     else if (cell.Note == PatternCell.NoteOff && firstNoteTick < 0)
                     {

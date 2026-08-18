@@ -134,7 +134,7 @@ namespace SF2MusicCooker
             int bytes = 0;
             foreach (SFX sfx in _custom.Concat(_vanilla))
             {
-                bytes += AsmSheetToolkit.EstimateBytes(sfx.Sheet, out _);
+                bytes += AsmSheetToolkit.EstimateBytes(sfx.Sheet);
             }
             return bytes;
         }

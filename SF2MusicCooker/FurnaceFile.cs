@@ -308,6 +308,37 @@ namespace SF2MusicCooker
         public int Rows { get { return PatternByKey[KeyByChannelAndOrder[0, 0]].Rows; } }
 
         /// <summary>
+        /// Determine if the file is trivial and contains no music whatsoever.
+        /// </summary>
+        public bool IsTrivial()
+        {
+            if (Orders == 0) return true;
+
+            for (int channel = 0; channel < Channels; channel++)
+            {
+                if (HasPlayNoteCommand(channel)) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Verify if the specified channel has at least a play note command.
+        /// </summary>
+        public bool HasPlayNoteCommand(int channel)
+        {
+            foreach (Pattern pattern in GetAllPatternsForChannel(channel))
+            {
+                for (int i = 0; i < pattern.Rows; i++)
+                {
+                    PatternCell cell = pattern.Get(i);
+                    if (cell.HasNewNote) return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Verify if the specified channel has at least a volume command.
         /// </summary>
         public bool HasVolumeCommand(int channel)
