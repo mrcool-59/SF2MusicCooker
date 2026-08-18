@@ -18,9 +18,9 @@ namespace SF2MusicCooker
         public readonly string Name;
         public readonly string ASMName;
         public readonly string PointerName;
-        public readonly string Sheet;
+        public readonly Sheet Sheet;
 
-        public SFX(int number, string name, string asmName, string pointerName, string sheet)
+        public SFX(int number, string name, string asmName, string pointerName, Sheet sheet)
         {
             if (number < FIRST || number >= NONE)
                 throw new NotSupportedException("SFX number must be between " + FIRST + " and " + (NONE - 1));
@@ -31,7 +31,7 @@ namespace SF2MusicCooker
             if (pointerName == null)
                 throw new ArgumentNullException(nameof(pointerName));
 
-            if (sheet == null)
+            if (sheet == null || sheet == Sheet.Null)
                 throw new ArgumentNullException(nameof(sheet));
 
             Number = number;

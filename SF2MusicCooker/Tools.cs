@@ -217,6 +217,24 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Return hexadecimal representation of one byte that is suitable to be put into ASM output.
+        /// </summary>
+        public static string Hex1ASM(byte x)
+        {
+            return HexASM(new byte[1] { x });
+        }
+
+        /// <summary>
+        /// Return hexadecimal representation of byte array that is suitable to be put into ASM output.
+        /// </summary>
+        public static string HexASM(byte[] x)
+        {
+            string h = Hex(x) + "h";
+            if (!char.IsDigit(h[0])) h = "0" + h;
+            return h;
+        }
+
+        /// <summary>
         /// Fill a buffer with a value.
         /// </summary>
         public static void Fill(byte[] buffer, int offset, int count, byte value)

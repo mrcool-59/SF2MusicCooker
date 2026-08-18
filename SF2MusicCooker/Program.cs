@@ -101,13 +101,13 @@ namespace SF2MusicCooker
                         InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
 
                         // Write the ASM sheet of the music
-                        string sheet = AsmSheetWriter.Write(file, options, map, number, pairNumber);
+                        string asm = AsmSheetWriter.Write(file, options, map, number, pairNumber);
 
                         // Build ASM name
                         string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
 
                         // Send to output!
-                        Song song = new Song(number, name, asmName, sheet);
+                        Song song = new Song(number, name, asmName, new Sheet(asm));
                         if (moveFrom != 0)
                         {
                             if (moveFrom == number)
@@ -116,7 +116,7 @@ namespace SF2MusicCooker
                                 output.Replace(song, includeOriginalNames);
                                 if (pairNumber > 0)
                                 {
-                                    output.Replace(new Song(pairNumber, name, asmName, null), includeOriginalNames);
+                                    output.Replace(new Song(pairNumber, name, asmName, Sheet.Null), includeOriginalNames);
                                     Console.WriteLine("WARNING: music {0} will also be replaced by music {1} since they are linked in pairs", pairNumber, number);
                                 }
                             }

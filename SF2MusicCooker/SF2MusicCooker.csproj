@@ -72,6 +72,7 @@
     <Compile Include="Furnace\SampleMap.cs" />
     <Compile Include="SFX.cs" />
     <Compile Include="SFXType.cs" />
+    <Compile Include="Sheet.cs" />
     <Compile Include="Song.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Volume.cs" />

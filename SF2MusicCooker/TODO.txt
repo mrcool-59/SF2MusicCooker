@@ -1,5 +1,4 @@
 ﻿Version 0.9:
-- Mettre command 'sustain' si la note dure + du max supporté par le sound driver
 - Jump to next pattern + Jump to combined pour pouvoir sauter à (Order + Row)
 - Amélioration de la précision du rendu: fréquence
 	=> Refaire la façon d'associer une note Furnace à une note Cube (0..120 => 0..84) en choisissant la meilleure note disponible
@@ -17,6 +16,7 @@ Version 1.0:
 Version 1.1:
 - DAC support
 - Calculer les instruments FM/samples utilisés *après* avoir retiré les vanilla song pour pouvoir économiser de la place
+	=> Nécessite un rework important de l'enchainement des actions car il faut d'abord retirer les songs vanilla avant d'importer les customs (utiliser Defer de Sheet)
 - Ignorer les samples des instruments inutilisés et vérifier le canal 6 pour déterminer si le DAC est activé ou non + interdire l'utilisation d'instruments FM si oui
 
 Version 1.2:

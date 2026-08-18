@@ -7,12 +7,15 @@ namespace SF2MusicCooker
         public readonly int Number;
         public readonly string Name;
         public readonly string ASMName;
-        public readonly string Sheet;
+        public readonly Sheet Sheet;
 
-        public Song(int number, string name, string asmName, string sheet)
+        public Song(int number, string name, string asmName, Sheet sheet)
         {
             if (number < 1 || number > 64)
                 throw new NotSupportedException("Music number must be between 1 and 64");
+
+            if (sheet == null)
+                throw new ArgumentNullException(nameof(sheet));
 
             Number = number;
             Name = name;

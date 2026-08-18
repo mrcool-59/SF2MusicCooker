@@ -112,8 +112,8 @@ namespace SF2MusicCooker
         {
             if (Find(number, out _) == null)
             {
-                string sheet = AsmSheetWriter.Write(Furnace.FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, number);
-                _vanilla.Add(new Song(number, null, null, sheet));
+                string asm = AsmSheetWriter.Write(Furnace.FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, number);
+                _vanilla.Add(new Song(number, null, null, new Sheet(asm)));
                 return true;
             }
             return false;
@@ -172,7 +172,7 @@ namespace SF2MusicCooker
                 {
                     throw new InvalidOperationException("You should call 'PadLast' before calling 'Write'");
                 }
-                if (song != null && song.Sheet != null)
+                if (song != null && song.Sheet != Sheet.Null)
                 {
                     output.Append("\t\tinclude \"");
                     output.Append(GetMusicFilename(number));
@@ -200,7 +200,7 @@ namespace SF2MusicCooker
         {
             foreach (Song song in songs)
             {
-                if (song.Sheet != null) // Can be null in the special case of paired musics [for vanilla SF2: musics (3, 4) and (13, 14)]
+                if (song.Sheet != Sheet.Null) // Can be null in the special case of paired musics [for vanilla SF2: musics (3, 4) and (13, 14)]
                 {
                     string filename = GetMusicFilename(song.Number);
                     File.WriteAllText(Path.Combine(path, filename), song.Sheet);
@@ -217,7 +217,7 @@ namespace SF2MusicCooker
             int bytes = 0;
             foreach (Song song in _custom.Concat(_vanilla))
             {
-                if (song.Sheet != null) // See above
+                if (song.Sheet != Sheet.Null) // See above
                 {
                     bytes += AsmSheetToolkit.EstimateBytes(song.Sheet);
                 }

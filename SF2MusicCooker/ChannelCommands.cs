@@ -431,13 +431,6 @@ namespace SF2MusicCooker
             return size;
         }
 
-        private static string HEX(byte[] bytes)
-        {
-            string h = Tools.Hex(bytes) + "h";
-            if (!char.IsDigit(h[0])) h = "0" + h;
-            return h;
-        }
-
         private static string BYTE(byte value)
         {
             return value.ToString();
@@ -445,7 +438,7 @@ namespace SF2MusicCooker
 
         private static string BYTE_HEX(byte value)
         {
-            return HEX(new byte[1] { value });
+            return Tools.Hex1ASM(value);
         }
 
         private static string NOTE(byte value)

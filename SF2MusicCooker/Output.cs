@@ -189,17 +189,17 @@ namespace SF2MusicCooker
                         int number = int.Parse(match.Groups[1].Value);
                         number2name.TryGetValue(number, out string name);
                         number2enum.TryGetValue(number, out string asmName);
-                        string sheet = File.ReadAllText(filename);
+                        string asm = File.ReadAllText(filename);
 
                         // Don't add unreachable musics (i.e: those who don't have a defined ASM name)
                         // These pseudo-musics are probably used for adding sentinel values in case sound driver reads out of bounds data
                         // We are going to add our own sentinel music anyway
                         if (asmName == null) continue;
 
-                        Song song = new Song(number, name, asmName, sheet);
+                        Song song = new Song(number, name, asmName, new Sheet(asm));
                         Bank bank = SelectMusicBank(song.Number);
                         bank.Add(song, true);
-                        AsmSheetToolkit.FillInstruments(sheet, usedInstruments);
+                        AsmSheetToolkit.FillInstruments(asm, usedInstruments);
 
                         // Special case for music 4 and 14
                         int pairNumber = GetPairedMusic(number);
@@ -207,7 +207,7 @@ namespace SF2MusicCooker
                         {
                             _ = number2name.TryGetValue(pairNumber, out string pairName);
                             _ = number2enum.TryGetValue(pairNumber, out string pairAsmName);
-                            Song pairSong = new Song(pairNumber, pairName, pairAsmName, null);
+                            Song pairSong = new Song(pairNumber, pairName, pairAsmName, Sheet.Null);
 
                             Bank pairBank = SelectMusicBank(pairNumber);
                             pairBank.Add(pairSong, true);
@@ -221,8 +221,8 @@ namespace SF2MusicCooker
             int currentSfx = SFX.FIRST;
             foreach (string filename in pathToSfxBankFiles)
             {
-                string compositeSheet = File.ReadAllText(filename);
-                string[] pointerNames = Tools.GetAllStringElements(compositeSheet, sfxPointerNameRegex);
+                string compositeAsm = File.ReadAllText(filename);
+                string[] pointerNames = Tools.GetAllStringElements(compositeAsm, sfxPointerNameRegex);
                 BankSFX bank = _sfxBanks[currentBank];
 
                 foreach (string pointerName in pointerNames)
@@ -233,15 +233,15 @@ namespace SF2MusicCooker
                     // Don't add unreachable SFXs (i.e: those who don't have a defined ASM name)
                     if (asmName == null) continue;
 
-                    string sfxSheet = AsmSheetToolkit.SplitByLabel(compositeSheet, sfxPointerNameLabelRegex, pointerName);
+                    string asm = AsmSheetToolkit.SplitByLabel(compositeAsm, sfxPointerNameLabelRegex, pointerName);
 
-                    SFX sfx = new SFX(number, null, asmName, pointerName, sfxSheet);
+                    SFX sfx = new SFX(number, null, asmName, pointerName, new Sheet(asm));
                     bank.Add(sfx, true);
 
                     currentSfx++;
                 }
 
-                AsmSheetToolkit.FillInstruments(compositeSheet, usedInstruments);
+                AsmSheetToolkit.FillInstruments(compositeAsm, usedInstruments);
                 currentBank++;
             }
 

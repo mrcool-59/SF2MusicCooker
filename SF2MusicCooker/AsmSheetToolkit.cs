@@ -55,9 +55,9 @@ namespace SF2MusicCooker
         /// Get an estimation of the number of bytes a music .asm file will take when assembled into a music bank.
         /// The size estimation should be very close to exact (if not just plain exact) but you should not 100% rely on it.
         /// </summary>
-        public static int EstimateBytes(string sheet)
+        public static int EstimateBytes(string asm)
         {
-            using (StringReader reader = new StringReader(sheet))
+            using (StringReader reader = new StringReader(asm))
             {
                 int bytes = 0;
                 string line;
@@ -73,17 +73,17 @@ namespace SF2MusicCooker
         /// <summary>
         /// Get the numbers of the musics defined by the sheet.
         /// </summary>
-        public static int[] GetMusicNumbers(string sheet)
+        public static int[] GetMusicNumbers(string asm)
         {
-            return Tools.GetAllElements(sheet, music, int.Parse);
+            return Tools.GetAllElements(asm, music, int.Parse);
         }
 
         /// <summary>
         /// Fill the set with the list of instruments used by the sheet.
         /// </summary>
-        public static void FillInstruments(string sheet, HashSet<int> set)
+        public static void FillInstruments(string asm, HashSet<int> set)
         {
-            int[] instruments = Tools.GetAllElements(sheet, inst, int.Parse);
+            int[] instruments = Tools.GetAllElements(asm, inst, int.Parse);
             set.UnionWith(instruments);
         }
 
@@ -113,18 +113,18 @@ namespace SF2MusicCooker
         /// <summary>
         /// Get a section of a composite sheet, identified by a label, up until the next label or the end of the composite sheet.
         /// </summary>
-        public static string SplitByLabel(string compositeSheet, Regex labelRegex, string label)
+        public static string SplitByLabel(string compositeAsm, Regex labelRegex, string label)
         {
-            MatchCollection matches = labelRegex.Matches(compositeSheet);
+            MatchCollection matches = labelRegex.Matches(compositeAsm);
             for (int i = 0; i < matches.Count; i++)
             {
                 if (matches[i].Groups[1].Value == label)
                 {
                     int next = i + 1;
                     int start = matches[i].Index;
-                    int end = next < matches.Count ? matches[next].Index : compositeSheet.Length;
+                    int end = next < matches.Count ? matches[next].Index : compositeAsm.Length;
 
-                    return compositeSheet.Substring(start, end - start);
+                    return compositeAsm.Substring(start, end - start);
                 }
             }
             throw new FormatException("Unable to find label '" + label + "' in the composite sheet");

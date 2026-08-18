@@ -15,53 +15,6 @@ namespace SF2MusicCooker
             Effect.GoTo, Effect.GoNext, Effect.End, Effect.Pan, Effect.PanTrinary
         };
 
-        private static string HEX(byte[] bytes)
-        {
-            string h = Tools.Hex(bytes) + "h";
-            if (!char.IsDigit(h[0])) h = "0" + h;
-            return h;
-        }
-
-        private static string BYTE(byte value)
-        {
-            return value.ToString();
-        }
-
-        private static string BYTE_HEX(byte value)
-        {
-            return HEX(new byte[1] { value });
-        }
-
-        private static string NOTE(byte value)
-        {
-            // In "The First Battle" test music:
-            // With +0 value offset: instruments do not play at the correct height
-            // With +12 value offset: instruments sound correct but I can't shake the feeling this is way too brittle
-
-            // TODO: This requires a more rigorous approach to get the correct notes all the time
-            // Take a look at Furnace source code to figure how the frequency register is filled
-            // Then select the closest available frequency in the Cube catalog
-            // Also don't forget to do something like this:
-            //      value = (byte)Math.Max(0, Math.Min(0x53, value)); // Cube sound engine has 0x54 notes defined [0..0x53]
-
-            return NoteBible.GetByValue((byte)(value + 12)).Label; // Verify the note is valid/supported and return the proper ASM label
-        }
-
-        private static byte PAN_F2C(byte pan)
-        {
-            bool disableLeft = (pan & 0x0F) != 0;
-            bool disableRight = (pan & 0xF0) != 0;
-            if (disableLeft && disableRight) { disableLeft = disableRight = false; }
-            return (byte)((disableLeft ? 0 : (1 << 7)) | (disableRight ? 0 : (1 << 6)));
-        }
-
-        private static byte PAN3_F2C(byte trinaryPan)
-        {
-            if (trinaryPan == 0x00) return 1 << 6; // LEFT
-            else if (trinaryPan == 0xFF) return 1 << 7; // RIGHT
-            else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
-        }
-
         /// <summary>
         /// Get the optimal "Timer B" value to play the song at the intended rate.
         /// </summary>
@@ -166,9 +119,9 @@ namespace SF2MusicCooker
             sb.AppendLine();
             if (pairNumber > 0) { sb.AppendFormat("Music_{0}:\t\t; Special case, these two musics are paired in SF2DISASM", pairNumber); sb.AppendLine(); }
             sb.AppendFormat(padding + "db 0\t; Must be zero"); sb.AppendLine();
-            sb.AppendFormat(padding + "db {0}\t; DAC mode (0=YES, 1=NO)", BYTE(channels.DAC)); sb.AppendLine();
+            sb.AppendFormat(padding + "db {0}\t; DAC mode (0=YES, 1=NO)", channels.DAC); sb.AppendLine();
             sb.AppendFormat(padding + "db 0\t; Reserved"); sb.AppendLine();
-            sb.AppendFormat(padding + "db {0}\t; YM Timer B (music tempo)", BYTE_HEX(timer)); sb.AppendLine();
+            sb.AppendFormat(padding + "db {0}\t; YM Timer B (music tempo)", Tools.Hex1ASM(timer)); sb.AppendLine();
 
             // Write channels
             channels.Write(sb, "Music_" + number, padding);
