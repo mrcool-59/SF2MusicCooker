@@ -76,14 +76,19 @@ namespace SF2MusicCooker
                         int removed = file.RemoveUnsupportedNotes();
                         if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
 
+                        // Identify the instruments that are really used
+                        Instrument[] usedFurnaceInstruments = file.GetUsedInstruments();
+                        int unused = file.Instruments.Length - usedFurnaceInstruments.Length;
+                        if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
+
                         // Warn the user of unsupported effects the .fur file may have
                         AsmSheetWriter.PrintUnsupportedEffects(file);
 
                         // Warn the user of unsupported sample maps the .fur file may have
-                        AsmSheetWriter.PrintUnsupportedSampleMaps(file);
+                        AsmSheetWriter.PrintUnsupportedSampleMaps(usedFurnaceInstruments);
 
-                        // Complete the global FM instruments by those present in this .fur file
-                        instruments.AddMany(file, dumpNotes);
+                        // Complete the global FM instruments by those present in this .fur file, if they are really used
+                        instruments.AddMany(usedFurnaceInstruments, dumpNotes);
 
                         // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
                         int pairNumber = output.GetPairedMusic(number);
@@ -92,8 +97,11 @@ namespace SF2MusicCooker
                         // Prepare the options
                         Options options = new Options("[CUSTOM] " + name, null, isolateChannel, !noOptimizeNotes, dumpNotes);
 
+                        // Prepare the Furnace to Cube instrument map
+                        InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
+
                         // Write the ASM sheet of the music
-                        string sheet = AsmSheetWriter.Write(file, options, instruments, number, pairNumber);
+                        string sheet = AsmSheetWriter.Write(file, options, map, number, pairNumber);
 
                         // Build ASM name
                         string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);

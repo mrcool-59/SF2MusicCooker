@@ -48,6 +48,7 @@
     <Compile Include="AsmSheetToolkit.cs" />
     <Compile Include="Bank.cs" />
     <Compile Include="BankSFX.cs" />
+    <Compile Include="ChannelCommands.cs" />
     <Compile Include="Furnace\Effect.cs" />
     <Compile Include="Furnace\FeatureInterpreter.cs" />
     <Compile Include="Furnace\FurnaceFile.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="Furnace\Position.cs" />
     <Compile Include="Furnace\Sample.cs" />
     <Compile Include="Furnace\Tick.cs" />
+    <Compile Include="InstrumentMap.cs" />
     <Compile Include="LoopOptimizer.cs" />
     <Compile Include="Furnace\NoteBible.cs" />
     <Compile Include="Options.cs" />

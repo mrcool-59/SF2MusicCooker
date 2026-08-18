@@ -77,29 +77,28 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Add all instruments from a FurnaceFile. Duplicate instruments are not added twice, they are reused instead. This method will throw if we don't have room for more instruments.
+        /// Add Furnace instruments. Duplicate instruments are not added twice, they are reused instead. This method will throw if we don't have room for more instruments.
         /// </summary>
-        public void AddMany(FurnaceFile file, bool print)
+        public void AddMany(Instrument[] instruments, bool print)
         {
-            int index = 0;
-
-            foreach (var i in file.Instruments)
+            for (int i = 0; i < instruments.Length; i++)
             {
-                if (i.Type == Instrument.FM)
+                Instrument instrument = instruments[i];
+                if (instrument.Type == Instrument.FM)
                 {
-                    if (print) Console.WriteLine("> Analyzing FM instrument #{0} '{1}'...", index++, i.Name);
+                    if (print) Console.WriteLine("> Analyzing FM instrument #{0} '{1}'...", i, instrument.Name);
 
-                    Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(i.Data));
-                    byte instrument = FindSafe(def);
+                    Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
+                    byte index = FindSafe(def);
 
-                    if (instrument == 0xFF)
+                    if (index == 0xFF)
                     {
-                        instrument = Add(def);
-                        if (print) Console.WriteLine("+ Added FM instrument '{0}' to instrument list! [{1}]", i.Name, instrument);
+                        index = Add(def);
+                        if (print) Console.WriteLine("+ Added FM instrument '{0}' to instrument list! [{1}]", instrument.Name, index);
                     }
                     else
                     {
-                        if (print) Console.WriteLine("! A duplicate of FM instrument '{0}' already exists in the instrument list! [{1}]", i.Name, instrument);
+                        if (print) Console.WriteLine("! A duplicate of FM instrument '{0}' already exists in the instrument list! [{1}]", instrument.Name, index);
                     }
                 }
             }
@@ -159,18 +158,18 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Generate a file-to-global instrument map for the given Furnace instrument array.
+        /// Generate a file-to-global FM instrument map for the given Furnace instrument array.
         /// </summary>
-        public Dictionary<byte, byte> Map(Instrument[] instruments)
+        public Dictionary<byte, byte> Map(Instrument[] instruments, HashSet<Instrument> usedSet = null)
         {
             Dictionary<byte, byte> map = new Dictionary<byte, byte>();
-            for (int instrument = 0; instrument < instruments.Length; instrument++)
+            for (int i = 0; i < instruments.Length; i++)
             {
-                Instrument i = instruments[instrument];
-                if (i.Type == Instrument.FM)
+                Instrument instrument = instruments[i];
+                if (instrument.Type == Instrument.FM && (usedSet == null || usedSet.Contains(instrument)))
                 {
-                    Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(i.Data));
-                    map.Add((byte)instrument, Find(def));
+                    Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
+                    map.Add((byte)i, Find(def));
                 }
             }
             return map;

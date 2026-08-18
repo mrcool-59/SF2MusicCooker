@@ -19,12 +19,12 @@ namespace SF2MusicCooker.Furnace
         public readonly Dictionary<int, Pattern> PatternByKey;
 
         /// <summary>
-        /// The defined instruments.
+        /// The defined Furnace instruments.
         /// </summary>
         public readonly Instrument[] Instruments;
 
         /// <summary>
-        /// The defined samples.
+        /// The defined Furnace samples.
         /// </summary>
         public readonly Sample[] Samples;
 
@@ -69,21 +69,6 @@ namespace SF2MusicCooker.Furnace
         public Position End { get { return new Position(Orders, 0); } }
 
         /// <summary>
-        /// Determine if the file is trivial and contains no music whatsoever.
-        /// </summary>
-        public bool IsTrivial()
-        {
-            if (Orders <= 0) return true;
-
-            for (int channel = 0; channel < Channels; channel++)
-            {
-                if (HasPlayNoteCommand(channel)) return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Verify if the specified channel has at least a play note command.
         /// </summary>
         public bool HasPlayNoteCommand(int channel)
@@ -113,6 +98,43 @@ namespace SF2MusicCooker.Furnace
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Return the channels that really use the specified instrument number. Return an empty array if no channel uses this instrument number.
+        /// </summary>
+        public int[] GetInstrumentUsage(byte instrument)
+        {
+            if (instrument >= Instruments.Length) throw new ArgumentOutOfRangeException(nameof(instrument));
+
+            List<int> channels = new List<int>(Channels);
+            for (int channel = 0; channel < Channels; channel++)
+            {
+                bool active = instrument == 0x00;
+                foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
+                {
+                    var cell = tick.ActiveChannelCell;
+                    if (cell.Instrument == instrument) active = true;
+                    else if (cell.Instrument != PatternCell.InstrumentAbsent) active = false;
+                    if (cell.HasNewNote && active) { channels.Add(channel); break; }
+                    else if (tick.NextPosition <= tick.Position) break;
+                }
+            }
+            return channels.ToArray();
+        }
+
+        /// <summary>
+        /// Return all Furnace instruments that are really used.
+        /// </summary>
+        public Instrument[] GetUsedInstruments()
+        {
+            List<Instrument> usedInstruments = new List<Instrument>();
+            for (int i = 0; i < Instruments.Length; i++)
+            {
+                if (GetInstrumentUsage((byte)i).Length > 0)
+                    usedInstruments.Add(Instruments[i]);
+            }
+            return usedInstruments.ToArray();
         }
 
         /// <summary>
@@ -317,10 +339,9 @@ namespace SF2MusicCooker.Furnace
                     if (systems[1] != 0x03) throw new FormatException("Second chip of song must be 'SN76489' chip");
                     if (systems[2] != 0x00) throw new FormatException("Song must contain exactly 2 chips");
 
-                    // Sanity checks because we do have some constraints to output that to .asm files that ultimately needs to fit
-                    if (instrumentCount > 64) throw new FormatException("Sorry, please limit your song to 64 instruments (sanity check)");
-                    if (sampleCount > 64) throw new FormatException("Sorry, please limit your song to 64 samples (sanity check)");
-                    if ((patternCount * patternLength) > 131072) throw new FormatException("Sorry, please limit your song to 131072 pattern rows (sanity check)");
+                    // Sanity checks
+                    if (instrumentCount > 250) throw new FormatException("Sorry, please limit your song to 250 instruments (sanity check)");
+                    if (sampleCount > 250) throw new FormatException("Sorry, please limit your song to 250 samples (sanity check)");
 
                     // By virtue of the previous constraints
                     const int chipCount = 2;

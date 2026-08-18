@@ -108,11 +108,11 @@ namespace SF2MusicCooker
         /// <summary>
         /// Add an empty music for the given music number if the music number is not already used.
         /// </summary>
-        public bool Pad(int number, FMInstruments instruments)
+        public bool Pad(int number)
         {
             if (Find(number, out _) == null)
             {
-                string sheet = AsmSheetWriter.Write(Furnace.FurnaceFile.Empty, Options.Default, instruments, number);
+                string sheet = AsmSheetWriter.Write(Furnace.FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, number);
                 _vanilla.Add(new Song(number, null, null, sheet));
                 return true;
             }

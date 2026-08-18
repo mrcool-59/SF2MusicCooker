@@ -274,7 +274,7 @@ namespace SF2MusicCooker
             Song originalSong = bank.Remove(song.Number, out _);
 
             song = song.UpdateASMName(originalSong.ASMName);
-            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name));
+            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name ?? originalSong.ASMName));
             bank.Add(song);
         }
 
@@ -288,7 +288,7 @@ namespace SF2MusicCooker
 
             Bank bank = SelectMusicBank(song.Number);
             song = song.UpdateASMName(originalSong.ASMName);
-            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name));
+            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name ?? originalSong.ASMName));
             bank.Add(song);
         }
 
@@ -335,7 +335,7 @@ namespace SF2MusicCooker
         {
             foreach (Bank bank in _banks)
             {
-                _ = bank.Pad(bank.LastNumber, Instruments);
+                _ = bank.Pad(bank.LastNumber);
             }
             // Note: this doesn't apply to SFX banks
         }
@@ -471,7 +471,7 @@ namespace SF2MusicCooker
             Song[] allSongs = GetAllSongs(true);
             SFX[] allSFXs = GetAllSFXs(false);
             int maxNumber = 0;
-            int validCount = 0;
+            HashSet<string> distincts = new HashSet<string>();
 
             // Get the highest music number
             foreach (Song song in allSongs) { if (song.Name != null) maxNumber = Math.Max(maxNumber, song.Number); }
@@ -500,25 +500,26 @@ namespace SF2MusicCooker
             // Add musics to index list
             foreach (Song song in allSongs)
             {
-                if (song != null && song.Name != null && song.ASMName != null)
+                if (song != null && song.Name != null && song.ASMName != null && distincts.Add("M#" + song.Name))
                 {
                     if (indexes.Length > 0) indexes.Append(padding);
                     indexes.AppendFormat("dc.b {0}", song.ASMName);
                     indexes.AppendLine();
-                    validCount++;
                 }
             }
 
             // Add SFXs to index list
             foreach (SFX sfx in allSFXs)
             {
-                if (indexes.Length > 0) indexes.Append(padding);
-                indexes.AppendFormat("dc.b {0}", sfx.ASMName);
-                indexes.AppendLine();
-                validCount++;
+                if (distincts.Add("S#" + sfx.Name))
+                {
+                    if (indexes.Length > 0) indexes.Append(padding);
+                    indexes.AppendFormat("dc.b {0}", sfx.ASMName);
+                    indexes.AppendLine();
+                }
             }
 
-            sb.Replace("{{LAST_INDEX}}", (validCount - 1).ToString());
+            sb.Replace("{{LAST_INDEX}}", (distincts.Count - 1).ToString());
             sb.Replace("{{INDEXES}}", indexes.ToString());
             sb.Replace("{{NAMES}}", names.ToString());
 
