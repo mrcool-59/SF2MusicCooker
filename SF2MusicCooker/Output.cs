@@ -471,7 +471,7 @@ namespace SF2MusicCooker
             Song[] allSongs = GetAllSongs(true);
             SFX[] allSFXs = GetAllSFXs(false);
             int maxNumber = 0;
-            HashSet<string> distincts = new HashSet<string>();
+            int validCount = 0;
 
             // Get the highest music number
             foreach (Song song in allSongs) { if (song.Name != null) maxNumber = Math.Max(maxNumber, song.Number); }
@@ -500,26 +500,26 @@ namespace SF2MusicCooker
             // Add musics to index list
             foreach (Song song in allSongs)
             {
-                if (song != null && song.Name != null && song.ASMName != null && distincts.Add("M#" + song.Name))
+                bool isNotCloneOrIsVanilla = song.Sheet != Sheet.Clone || _banks.Any(b => b.Vanilla.Contains(song));
+                if (song != null && song.Name != null && song.ASMName != null && isNotCloneOrIsVanilla)
                 {
                     if (indexes.Length > 0) indexes.Append(padding);
                     indexes.AppendFormat("dc.b {0}", song.ASMName);
                     indexes.AppendLine();
+                    validCount++;
                 }
             }
 
             // Add SFXs to index list
             foreach (SFX sfx in allSFXs)
             {
-                if (distincts.Add("S#" + sfx.Name))
-                {
-                    if (indexes.Length > 0) indexes.Append(padding);
-                    indexes.AppendFormat("dc.b {0}", sfx.ASMName);
-                    indexes.AppendLine();
-                }
+                if (indexes.Length > 0) indexes.Append(padding);
+                indexes.AppendFormat("dc.b {0}", sfx.ASMName);
+                indexes.AppendLine();
+                validCount++;
             }
 
-            sb.Replace("{{LAST_INDEX}}", (distincts.Count - 1).ToString());
+            sb.Replace("{{LAST_INDEX}}", (validCount - 1).ToString());
             sb.Replace("{{INDEXES}}", indexes.ToString());
             sb.Replace("{{NAMES}}", names.ToString());
 

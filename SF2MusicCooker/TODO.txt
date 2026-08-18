@@ -1,27 +1,26 @@
 ﻿Version 0.9:
 - Jump to next pattern + Jump to combined pour pouvoir sauter à (Order + Row)
+- SFX input support
 - Amélioration de la précision du rendu: fréquence
 	=> Refaire la façon d'associer une note Furnace à une note Cube (0..120 => 0..84) en choisissant la meilleure note disponible
 	=> Il y aussi 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h
-- SFX ralentit quand The First Battle (72 hz) joue, probablement à cause du timer altéré, mais pourquoi le son ralentit au lieu d'accélérer?
-	=> Enquêter un peu mais ne rien faire...
-	=> Peut être qu'il y a une compensation côté SFX, mais qu'il faut que la clock SFX et clock Music soit une multiple l'un de l'autre
-	=> Voir comment les musics du jeu original utilisent setYMTimer...
 
 Version 1.0:
 - No playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
-- Support for remaining built-in effects (vibrato...)
+- DAC support (en ignorant les samples inutilisés)
 
 Version 1.1:
-- DAC support
+- Support for remaining built-in effects (vibrato...)
 - Calculer les instruments FM/samples utilisés *après* avoir retiré les vanilla song pour pouvoir économiser de la place
 	=> Nécessite un rework important de l'enchainement des actions car il faut d'abord retirer les songs vanilla avant d'importer les customs (utiliser Defer de Sheet)
-- Ignorer les samples des instruments inutilisés et vérifier le canal 6 pour déterminer si le DAC est activé ou non + interdire l'utilisation d'instruments FM si oui
 
 Version 1.2:
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 
-Version 1.3:
-- SFX
+Version 1.2.1:
+- SFX ralentit quand The First Battle (72 hz) joue, probablement à cause du timer altéré, mais pourquoi le son ralentit au lieu d'accélérer?
+	=> Enquêter un peu mais ne rien faire...
+	=> Peut être qu'il y a une compensation côté SFX, mais qu'il faut que la clock SFX et clock Music soit une multiple l'un de l'autre
+	=> Voir comment les musics du jeu original utilisent setYMTimer...
