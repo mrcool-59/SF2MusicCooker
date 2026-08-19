@@ -84,22 +84,25 @@
     <Content Include="README.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Test\%40music1-Test Silence.fur">
+    <None Include="Test\%40music01-Test Silence.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music2-Test Note Length.fur">
+    <None Include="Test\%40music02-Test Note Length.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music3-Test Basic.fur">
+    <None Include="Test\%40music03-Test Basic.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music4-Test Tricky Loop.fur">
+    <None Include="Test\%40music04-Test Tricky Loop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music41-Choose your Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="sfxbank.asm.tpl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\%40music05-Test Illegal Volume Ramp.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="__Run.bat">
