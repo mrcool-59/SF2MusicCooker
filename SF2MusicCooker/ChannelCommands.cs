@@ -143,7 +143,7 @@ namespace SF2MusicCooker
             bool fm = channel < 6;
 
             // Write initial pan for FM channels
-            if (fm) commands.Add("stereo " + BYTE_HEX(currentPan));
+            if (fm) commands.Add("stereo " + BYTE_HEX(currentPan)); // TODO: will be done by first note, just set a flag to write it
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
@@ -515,6 +515,8 @@ Source: https://tildearrow.org/furnace/doc/v0.6.7/3-pattern/effects.html
         https://tildearrow.org/furnace/doc/v0.6.7/7-systems/ym2612.html
         https://tildearrow.org/furnace/doc/v0.6.7/7-systems/sms.html
 
+Wiz has done interesting stuff here: https://github.com/CubeTaguchiCentral/CubeTools/blob/master/src/com/sega/md/snd/convert/furnacetocube/F2CPatternConverter.java
+
 If an effect from Furnace documentation doesn't appear below, it means it has been deemed irrelevant, niche, too complex or unfeasible for implementation.
 
 Effects marked with o are implemented.
@@ -533,7 +535,8 @@ These can be implemented by using a Cube command:
 =================================================
 o Panning
 # Vibrato
-# Set Pitch Slides
+# Detune (all operators)
+# Portamento (Set Pitch Slides)
 # Set Pitch (00: -1 semitone, 80: base, FF: +1 semitone)
 # Note/Frequency Shifting
 # Set tick rate
@@ -561,7 +564,7 @@ These could be implemented by directly altering the patterns:
 
 These effects cannot be implemented because we can't alter pitch/volume/pan/... between 2 notes:
 ================================================================================================
-- Portamento (volume & pitch) = slides the volume/pitch to the target volume/note. x is the slide speed.
+- Volume Portamento = slides the volume/pitch to the target volume/note. x is the slide speed.
 - Tremolo = changes volume to be "wavy" with a sine LFO. x is the speed. y is the depth.
 - Panning slide
 

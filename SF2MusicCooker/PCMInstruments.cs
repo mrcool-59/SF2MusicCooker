@@ -41,6 +41,14 @@ namespace SF2MusicCooker
                 return "TODO"; // TODO
             }
 
+            /// <summary>
+            /// Get playback rate from 'period' (borrowed from Wiz code).
+            /// </summary>
+            public static int ComputePlaybackRate(int period)
+            {
+                return (int)(3012000 * Math.Pow(period - (-32.07), -1.573) + 1005); // TODO: use this
+            }
+
             public PCMSample(ushort framePeriod, ushort bank, ushort length, ushort offset)
             {
                 FramePeriod = framePeriod;

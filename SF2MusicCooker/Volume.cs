@@ -54,6 +54,8 @@ namespace SF2MusicCooker
 
         static Volume()
         {
+            // TODO: find closest candidate instead of truncating, calculate (7F - volume)
+
             byte[] volumes = new byte[16]
             {
                 // Value put in YM volume register for each Cube level value (in backwards order I suppose)
