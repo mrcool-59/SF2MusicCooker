@@ -1,27 +1,28 @@
 ﻿Version 0.9:
-- Volume command between notes: probably doesn't work (verify anyway), same for padding
-	=> Print warnings pour les commands qui se trouvent en dehors des new notes
-	=> Restructurer le code sachant cette limitation
+- On ne peut pas modifier le volume/panning/etc. pendant une note, cela ne peut se faire qu'à chaque nouvelle note
+	=> Restructurer le code sachant cette limitation, print des warnings quand on a une commande mal placée qui ne sera appliquée qu'à la prochaine note
 - SFX input support
+- DAC support (en ignorant les samples inutilisés)
+
+Version 1.0:
 - Amélioration de la précision du rendu: fréquence
 	=> Refaire la façon d'associer une note Furnace à une note Cube (0..120 => 0..84) en choisissant la meilleure note disponible
 	=> Il y aussi 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h
-
-Version 1.0:
-- No playback pour les musics 49-56 et probablement aussi 57-64
+- Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
-- DAC support (en ignorant les samples inutilisés)
+- Support for important effects (marked with '#' in ChannelCommands.cs)
 
 Version 1.1:
-- Support for remaining built-in effects (vibrato...)
-- Calculer les instruments FM/samples utilisés *après* avoir retiré les vanilla song pour pouvoir économiser de la place
-	=> Nécessite un rework important de l'enchainement des actions car il faut d'abord retirer les songs vanilla avant d'importer les customs (utiliser Defer de Sheet)
-
-Version 1.2:
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 
+Version 1.2:
+- Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
+- Calculer les instruments FM/samples utilisés *après* avoir retiré les vanilla song pour pouvoir économiser de la place
+	=> Nécessite un rework important de l'enchainement des actions car il faut d'abord retirer les songs vanilla avant d'importer les customs (utiliser Defer de Sheet)
+
 Version 1.2.1:
+- Focus on bug fixes
 - SFX ralentit quand The First Battle (72 hz) joue, probablement à cause du timer altéré, mais pourquoi le son ralentit au lieu d'accélérer?
 	=> Enquêter un peu mais ne rien faire...
 	=> Peut être qu'il y a une compensation côté SFX, mais qu'il faut que la clock SFX et clock Music soit une multiple l'un de l'autre

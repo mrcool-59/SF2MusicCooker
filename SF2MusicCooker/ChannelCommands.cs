@@ -32,6 +32,9 @@ namespace SF2MusicCooker
             if (channels <= 0) throw new ArgumentOutOfRangeException(nameof(channels), "cannot be zero or negative");
             if (channels > 31) throw new ArgumentOutOfRangeException(nameof(channels), "cannot be higher than 31");
 
+            if (channels != 10)
+                throw new NotSupportedException("This tool can only handle Sega Genesis music, with 10 channels (6 FM + 4 PSG)");
+
             _channels = new string[channels];
             _mask = mask;
             _requiresDAC = requiresDAC;
@@ -226,18 +229,7 @@ namespace SF2MusicCooker
                         WriteSilence(tick.SilenceLength);
                     }
 
-                    // TODO: remaining FM features to implement/review:
-                    // - Set Pitch Slides
-                    // - Note/Frequency Shifting
-                    // - Vibrato
-
-                    // - Arpeggio (?)
-                    // - Legato (?)
-                    // - Portamento (?)
-                    // - Tremolo (?)
-                    // - Set tick rate (applied when next note plays/ends, raise warning if the effect is not put on a silence/note)
-
-                    // https://tildearrow.org/furnace/doc/v0.6.7/3-pattern/effects.html
+                    // TODO: remaining FM effects to implement/review (see below)
                 }
                 else
                 {
@@ -482,7 +474,7 @@ namespace SF2MusicCooker
     }
 }
 
-/* ----- AVAILABLE GRAMMAR -----
+/* -------------------- AVAILABLE GRAMMAR --------------------
 
 For all (timing/looping):
                 commands.Add("mainLoopStart");
@@ -516,4 +508,61 @@ For PSG channels:
                 commands.Add("setRelease " + BYTE_HEX(0x05));
                 commands.Add("vibrato " + BYTE_HEX(0x4C));
                 commands.Add("shifting " + BYTE_HEX(0x10));
+
+-------------------- EFFECTS IMPLEMENTATION ANALYSIS --------------------
+
+Source: https://tildearrow.org/furnace/doc/v0.6.7/3-pattern/effects.html
+        https://tildearrow.org/furnace/doc/v0.6.7/7-systems/ym2612.html
+        https://tildearrow.org/furnace/doc/v0.6.7/7-systems/sms.html
+
+If an effect from Furnace documentation doesn't appear below, it means it has been deemed irrelevant, niche, too complex or unfeasible for implementation.
+
+Effects marked with o are implemented.
+Effects marked with # should be priorized and ultimately implemented.
+Effects marked with + are "nice to have" but not worth getting a headache over it.
+Effects marked with - are not possible unless we deviate a lot from the Furnace definition or take big risks (i.e: not worth having *BIG* headaches over it at all).
+
+Player:
+=======
+o Goto order
+o Goto row
+o Goto order + row (when combined)
+o Goto end
+
+These can be implemented by using a Cube command:
+=================================================
+o Panning
+# Vibrato
+# Set Pitch Slides
+# Set Pitch (00: -1 semitone, 80: base, FF: +1 semitone)
+# Note/Frequency Shifting
+# Set tick rate
+# Set volume of left/right/rear left/rear right channel (< 80: OFF, >= 80: ON), yet another way of altering pan...
++ Sample offset: can be faked by introducing a new sample declaration in the sample list with desired offset, this one might be reasonable if used carefully
+- Replace FM operator property effects: could be somewhat faked by adding a new instrument everytime a property changes, but this would get out of hand very quickly
+
+NOTE: these affects are only applied when a new note plays; a warning must be issued if the user tries to use the effect elsewhere
+     => Verify Furnace behavior before implementing any of them, especially when the effect is declared on cells without a new note
+
+These could be implemented by directly altering the patterns:
+=============================================================
+# Note cut/delay/release = observe Furnace behavior carefully before implementing this...
+     => Compliant with Furnace: rewrite patterns as needed... (annoying)
++ Arpeggio = this effect produces a rapid cycle between the current note, the note plus x semitones and the note plus y semitones
+     => Compliant with Furnace: produce an artificial cycle of 3 notes: [current, current + x semitones, current + y semitones]
+     => Arpeggio speed: delay between artificial notes can be changed (default 1)
+     => Verify Furnace behavior and how the effect is stopped
++ Retrigger = repeats current note every x ticks, as long as the effect is present on the row
+     => Compliant with Furnace: add new notes as needed
+- Legato = while on, new notes instantly change the pitch of the currently playing sound instead of starting it over
+     => Compliant with Furnace: (must verify) set sustain for first note, and remove note release/OFF commands until the last note of the legato
+     => Technically legato cannot be implemented purely by altering the patterns as we need to enable 'sustain' on the first note
+     => Verify Furnace behavior and how the effect is stopped
+
+These effects cannot be implemented because we can't alter pitch/volume/pan/... between 2 notes:
+================================================================================================
+- Portamento (volume & pitch) = slides the volume/pitch to the target volume/note. x is the slide speed.
+- Tremolo = changes volume to be "wavy" with a sine LFO. x is the speed. y is the depth.
+- Panning slide
+
 */
