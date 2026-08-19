@@ -148,18 +148,18 @@ namespace SF2MusicCooker
             // Write initial silence (before the first note)
             WriteSilence(firstNoteTicks - 1);
 
-            // We assume notes should never be longer than this ludicrous length
-            const int MAX_PREDICT_LENGTH = 1048576;
+            // We assume notes should never be longer than this very generous length
+            int maxPredictLength = file.Orders * file.Rows * 16;
 
             // Play the song while observing this channel in particular
             int ticks = 0;
-            foreach (Tick tick in Player.Run(file, channel, MAX_PREDICT_LENGTH, Position.Start))
+            foreach (Tick tick in Player.Run(file, channel, maxPredictLength, Position.Start))
             {
                 PatternCell cell = tick.ActiveChannelCell;
                 ticks++;
 
                 // Verify that note/silence length we got is not absurd
-                _ = tick.PrintLengthWarning(MAX_PREDICT_LENGTH);
+                _ = tick.PrintLengthWarning(maxPredictLength);
 
                 // Mark beginning of loop
                 if (tick.Position == loopStart)
@@ -262,8 +262,14 @@ namespace SF2MusicCooker
             // Apply optimization (only if dumping is disabled)
             if (options.OptimizeNotes && !options.DumpNotes) finalCommands = optimizer.Optimize(finalCommands);
 
+            // Get the assembly
+            string asm = string.Join(_separator, finalCommands);
+
+            // Remove empty loops (can happen if we play 1 note that we infinitely sustain in a loop that does nothing)
+            asm = asm.Replace("mainLoopStart" + _separator + "mainLoopEnd", "channel_end");
+
             // Channel done!
-            return string.Join(_separator, finalCommands);
+            return asm;
 
             // ------------------------------ Helpers -------------------------------
 

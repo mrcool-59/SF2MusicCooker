@@ -62,8 +62,8 @@ namespace SF2MusicCooker.Furnace
             }
             if (what != null)
             {
-                Console.WriteLine("! This is either a bug in the tool or a deliberate, absurdly long {0} in the Furnace file.", what);
-                Console.WriteLine("! Regardless of the cause, the consequence is that the actual {0} length will be capped in the output sheet.", what);
+                Console.WriteLine("! This is usually caused by a {0} followed by a loop that does nothing (extending it infinitely).", what);
+                Console.WriteLine("! The actual {0} length will be capped in the output sheet.", what);
                 return true;
             }
             return false;

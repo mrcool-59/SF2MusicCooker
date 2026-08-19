@@ -90,7 +90,7 @@
     <None Include="Input\%40music3-Test Basic.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Input\%40music4-Test Fine Loop.fur">
+    <None Include="Input\%40music4-Test Tricky Loop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Input\%40music41-Choose your Path.fur">

@@ -1,5 +1,4 @@
 ﻿Version 0.9:
-- Réfléchir à 'Test Fine Loop' qui déclenche l'overflow de long note
 - SFX input support
 - Amélioration de la précision du rendu: fréquence
 	=> Refaire la façon d'associer une note Furnace à une note Cube (0..120 => 0..84) en choisissant la meilleure note disponible
