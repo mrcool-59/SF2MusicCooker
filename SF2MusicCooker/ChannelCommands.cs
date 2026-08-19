@@ -145,6 +145,9 @@ namespace SF2MusicCooker
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
 
+            // Cancel shifting immediately (to be safe)
+            // commands.Add("shifting " + BYTE(0));
+
             // Write initial silence (before the first note)
             WriteSilence(firstNoteTicks - 1);
 
@@ -232,7 +235,7 @@ namespace SF2MusicCooker
                     // - Legato (?)
                     // - Portamento (?)
                     // - Tremolo (?)
-                    // - Set tick rate
+                    // - Set tick rate (applied when next note plays/ends, raise warning if the effect is not put on a silence/note)
 
                     // https://tildearrow.org/furnace/doc/v0.6.7/3-pattern/effects.html
                 }
@@ -482,37 +485,35 @@ namespace SF2MusicCooker
 /* ----- AVAILABLE GRAMMAR -----
 
 For all (timing/looping):
-                sb.AppendLine("mainLoopStart");
-                sb.AppendLine("mainLoopEnd");
-                sb.AppendLine("wait");
-                sb.AppendLine("waitL " + BYTE(192));
+                commands.Add("mainLoopStart");
+                commands.Add("mainLoopEnd");
+                commands.Add("wait");
+                commands.Add("waitL " + BYTE(192));
 
 For FM/DAC channels:
-                sb.AppendLine("stereo " + BYTE_HEX(0xC0));
-                sb.AppendLine("vol " + BYTE_HEX(0x0C));
-                sb.AppendLine("wait");
-                sb.AppendLine("waitL " + BYTE(192));
+                commands.Add("stereo " + BYTE_HEX(0xC0));
+                commands.Add("vol " + BYTE_HEX(0x0C));
 
 For FM channels:
-                sb.AppendLine("inst " + BYTE(0));
-                sb.AppendLine("sustain");
-                sb.AppendLine("setRelease " + BYTE_HEX(0x05));
-                sb.AppendLine("vibrato " + BYTE_HEX(0x2C));
-                sb.AppendLine("setSlide " + BYTE_HEX(0x20));
-                sb.AppendLine("noSlide");
-                sb.AppendLine("shifting " + BYTE_HEX(0x20));
-                sb.AppendLine("noteL " + NOTE("As3") + "," + BYTE(24));
-                sb.AppendLine("note " + NOTE("As3"));
+                commands.Add("inst " + BYTE(0));
+                commands.Add("sustain");
+                commands.Add("setRelease " + BYTE_HEX(0x05));
+                commands.Add("vibrato " + BYTE_HEX(0x2C));
+                commands.Add("setSlide " + BYTE_HEX(0x20));
+                commands.Add("noSlide");
+                commands.Add("shifting " + BYTE_HEX(0x20));
+                commands.Add("noteL " + NOTE(0x51) + "," + BYTE(24));
+                commands.Add("note " + NOTE(0x51));
 
 For DAC channel:
-                sb.AppendLine("sample " + BYTE(4));
-                sb.AppendLine("sampleL " + BYTE(4) + "," + BYTE(3));
+                commands.Add("sample " + BYTE(4));
+                commands.Add("sampleL " + BYTE(4) + "," + BYTE(3));
 
 For PSG channels:
-                sb.AppendLine("psgInst " + BYTE(4));
-                sb.AppendLine("psgNoteL " + NOTE("As3") + "," + BYTE(4));
-                sb.AppendLine("psgNote " + NOTE("As3"));
-                sb.AppendLine("setRelease " + BYTE_HEX(0x05));
-                sb.AppendLine("vibrato " + BYTE_HEX(0x4C));
-                sb.AppendLine("shifting " + BYTE_HEX(0x10));
+                commands.Add("psgInst " + BYTE(4));
+                commands.Add("psgNoteL " + NOTE(0x51) + "," + BYTE(4));
+                commands.Add("psgNote " + NOTE(0x51));
+                commands.Add("setRelease " + BYTE_HEX(0x05));
+                commands.Add("vibrato " + BYTE_HEX(0x4C));
+                commands.Add("shifting " + BYTE_HEX(0x10));
 */

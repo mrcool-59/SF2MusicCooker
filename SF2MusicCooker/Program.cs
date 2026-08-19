@@ -20,6 +20,7 @@ namespace SF2MusicCooker
             bool autoNo = Test("--autono") || Test("-an");
             bool dumpUncompressed = Test("--dumpuncompressed") || Test("-du");
             bool dumpNotes = Test("--dumpnotes") || Test("-dn");
+            bool test = Test("--test") || Test("-t");
             int isolateChannel = -1;
             for (int i = 0; i < 9; i++) if (Test("--channel" + i) || Test("-c" + i)) isolateChannel = i;
 
@@ -47,7 +48,7 @@ namespace SF2MusicCooker
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
                 FMInstruments instruments = output.Instruments;
-                FileInfo[] furs = new DirectoryInfo("Input").GetFiles("*.fur");
+                FileInfo[] furs = new DirectoryInfo(test ? "Test" : "Input").GetFiles("*.fur");
                 FileInfo[] activeFurs = Array.FindAll(furs, fur => !fur.Name.StartsWith("!"));
                 HashSet<int> provided = new HashSet<int>();
 

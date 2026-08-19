@@ -1,4 +1,7 @@
 ﻿Version 0.9:
+- Volume command between notes: probably doesn't work (verify anyway), same for padding
+	=> Print warnings pour les commands qui se trouvent en dehors des new notes
+	=> Restructurer le code sachant cette limitation
 - SFX input support
 - Amélioration de la précision du rendu: fréquence
 	=> Refaire la façon d'associer une note Furnace à une note Cube (0..120 => 0..84) en choisissant la meilleure note disponible

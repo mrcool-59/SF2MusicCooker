@@ -78,22 +78,25 @@
     <Compile Include="Volume.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Input\Put .fur files here with correct naming.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="README.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Input\%40music1-Test Silence.fur">
+    <None Include="Test\%40music1-Test Silence.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Input\%40music2-Test Note Length.fur">
+    <None Include="Test\%40music2-Test Note Length.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Input\%40music3-Test Basic.fur">
+    <None Include="Test\%40music3-Test Basic.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Input\%40music4-Test Tricky Loop.fur">
+    <None Include="Test\%40music4-Test Tricky Loop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Input\%40music41-Choose your Path.fur">
+    <None Include="Test\%40music41-Choose your Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="sfxbank.asm.tpl">
@@ -108,7 +111,7 @@
     <None Include="musicbank.asm.tpl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Input\%40music33-The First Battle.fur">
+    <None Include="Test\%40music33-The First Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="TODO.txt" />
