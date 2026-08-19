@@ -20,9 +20,9 @@ namespace SF2MusicCooker.Furnace
             while (order < orders)
             {
                 Position position = new Position(order, row);
+                Effect end = Effect.Absent;
                 Effect goTo = Effect.Absent;
                 Effect goNext = Effect.Absent;
-                Effect end = Effect.Absent;
                 PatternCell activeChannelCell = null;
 
                 for (int channel = 0; channel < channels; channel++)
@@ -34,16 +34,9 @@ namespace SF2MusicCooker.Furnace
                     if (channel == activeChannel)
                         activeChannelCell = cell;
 
-                    if (goTo == Effect.Absent && cell.TryGetEffect(Effect.GoTo, out goTo))
-                    {
-                        if (goTo.Value < 0 || goTo.Value >= file.Orders) throw new FormatException("Encountered 'go to pattern' effect (0B) with invalid order value");
-                    }
-
-                    if (goNext == Effect.Absent)
-                        _ = cell.TryGetEffect(Effect.GoNext, out goNext);
-
-                    if (end == Effect.Absent)
-                        _ = cell.TryGetEffect(Effect.End, out end);
+                    if (end == Effect.Absent) cell.TryGetEffect(Effect.End, out end);
+                    if (goTo == Effect.Absent) cell.TryGetEffect(Effect.GoTo, out goTo);
+                    if (goNext == Effect.Absent) cell.TryGetEffect(Effect.GoNext, out goNext);
                 }
 
                 // Figure out the length of the note or silence by predicting the future
@@ -101,21 +94,26 @@ namespace SF2MusicCooker.Furnace
                     }
                 }
 
-                // Go to the next step using the appropriate control flow
-                if (goTo != Effect.Absent)
-                {
-                    row = 0;
-                    order = goTo.Value;
-                }
-                else if (goNext != Effect.Absent)
-                {
-                    row = 0;
-                    order++;
-                }
-                else if (end != Effect.Absent)
+                // Set next position using the appropriate control flow (based on Furnace default logic -- no compatibility flag!)
+                if (end != Effect.Absent)
                 {
                     row = 0;
                     order = orders;
+                }
+                else if (goTo != Effect.Absent && goNext != Effect.Absent)
+                {
+                    row = Math.Min(rows - 1, goNext.Value); // If row overflows, clamp to last valid row
+                    order = goTo.Value >= orders ? 0 : goTo.Value; // If order overflows, we go to order 0 instead
+                }
+                else if (goTo != Effect.Absent)
+                {
+                    row = 0;
+                    order = goTo.Value >= orders ? 0 : goTo.Value; // If order overflows, we go to order 0 instead
+                }
+                else if (goNext != Effect.Absent)
+                {
+                    row = Math.Min(rows - 1, goNext.Value); // If row overflows, clamp to last valid row
+                    order++;
                 }
                 else if (++row == rows)
                 {

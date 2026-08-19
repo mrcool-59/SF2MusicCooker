@@ -414,7 +414,7 @@ namespace SF2MusicCooker
                 if (firstNoteTicks > 0)
                     Console.WriteLine("> Channel {0} first note tick: {1}", channel, ticks);
                 else
-                    Console.WriteLine("> Channel {0} first note never happens");
+                    Console.WriteLine("! Channel {0} first note never happens", channel);
             }
             return firstNoteTicks;
         }

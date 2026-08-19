@@ -53,12 +53,12 @@ namespace SF2MusicCooker.Furnace
             if (SilenceLength >= lengthThreshold)
             {
                 what = "silence";
-                Console.WriteLine("! Silence triggered at {0} has a hit the maximum allowed length ({1} ticks)", Position, SilenceLength);
+                Console.WriteLine("! Silence triggered at {0} has hit the maximum allowed length ({1} ticks)", Position, SilenceLength);
             }
             if (NoteLength >= lengthThreshold)
             {
                 what = "note";
-                Console.WriteLine("! Note triggered at {0} has a hit the maximum allowed length ({1} ticks)", Position, NoteLength);
+                Console.WriteLine("! Note triggered at {0} has hit the maximum allowed length ({1} ticks)", Position, NoteLength);
             }
             if (what != null)
             {
