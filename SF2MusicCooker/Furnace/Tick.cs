@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SF2MusicCooker.Furnace
+﻿namespace SF2MusicCooker.Furnace
 {
     public readonly struct Tick
     {
@@ -42,31 +40,6 @@ namespace SF2MusicCooker.Furnace
             NoteRelease = noteRelease;
             NoteLength = noteLength;
             SilenceLength = silenceLength;
-        }
-
-        /// <summary>
-        /// Print a warning to the user if note/silence length has reached the length threshold. Return true if warning was actually printed.
-        /// </summary>
-        public bool PrintLengthWarning(int lengthThreshold)
-        {
-            string what = null;
-            if (SilenceLength >= lengthThreshold)
-            {
-                what = "silence";
-                Console.WriteLine("! Silence triggered at {0} has hit the maximum allowed length ({1} ticks)", Position, SilenceLength);
-            }
-            if (NoteLength >= lengthThreshold)
-            {
-                what = "note";
-                Console.WriteLine("! Note triggered at {0} has hit the maximum allowed length ({1} ticks)", Position, NoteLength);
-            }
-            if (what != null)
-            {
-                Console.WriteLine("! This is usually caused by a {0} followed by a loop that does nothing (extending it infinitely).", what);
-                Console.WriteLine("! The actual {0} length will be capped in the output sheet.", what);
-                return true;
-            }
-            return false;
         }
     }
 }

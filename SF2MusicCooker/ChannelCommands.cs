@@ -123,7 +123,7 @@ namespace SF2MusicCooker
             if (!file.HasPlayNoteCommand(channel) || (options.IsolateChannel >= 0 && channel != options.IsolateChannel)) return "channel_end";
 
             // We must be able to reach the first note
-            int firstNoteTicks = FindFirstNote(file, channel, true);
+            int firstNoteTicks = FindFirstNote(file, channel, options.DumpNotes);
             if (firstNoteTicks == 0) return "channel_end";
 
             // Volume to cube helper
@@ -132,18 +132,15 @@ namespace SF2MusicCooker
 
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
+            HashSet<string> warnings = new HashSet<string>();
             bool instrumentChanged = true;
+            bool volumeChanged = true;
+            bool panChanged = true;
             byte currentInstrument = 0x00;
             byte currentVolume = VOL_F2C(0x7F); // Max volume by default
             byte currentPan = PAN_F2C(0x00);
-            byte currentRelease = 0xFF;
-            byte currentLength = 0x00;
-
-            // Is it FM or PSG?
-            bool fm = channel < 6;
-
-            // Write initial pan for FM channels
-            if (fm) commands.Add("stereo " + BYTE_HEX(currentPan)); // TODO: will be done by first note, just set a flag to write it
+            byte currentRelease = 0xFF; // Will force the first note to set release
+            byte currentLength = 0x00; // Will force the first note or silence to set length
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
@@ -164,8 +161,14 @@ namespace SF2MusicCooker
                 PatternCell cell = tick.ActiveChannelCell;
                 ticks++;
 
+                // For troubleshooting
+                if (options.DumpNotes) commands.Add("; " + tick.Position + "  " + cell);
+
+                // Prove that we determine correctly the note release / length
+                DumpLength(commands, tick);
+
                 // Verify that note/silence length we got is not absurd
-                _ = tick.PrintLengthWarning(maxPredictLength);
+                VerifyExtremeLength(tick, maxPredictLength);
 
                 // Mark beginning of loop
                 if (tick.Position == loopStart)
@@ -174,35 +177,22 @@ namespace SF2MusicCooker
                 }
 
                 // Is it FM or PSG channel?
-                if (fm)
+                if (channel < 6)
                 {
-                    // For troubleshooting
-                    if (options.DumpNotes) commands.Add("; " + cell);
-
-                    // Apply pan change (we support 2 possible ways to define pan change in Furnace)
-                    WritePan(cell);
-
-                    // Defer instrument change
-                    if (cell.Instrument != currentInstrument && cell.Instrument != PatternCell.InstrumentAbsent)
-                    {
-                        currentInstrument = cell.Instrument;
-                        instrumentChanged = true;
-                    }
-
-                    // Apply volume change (with exceptions)
-                    if (cell.Volume != PatternCell.VolumeAbsent && currentVolume != VOL_F2C(cell.Volume))
-                    {
-                        currentVolume = VOL_F2C(cell.Volume);
-                        // Do not write volume command before the first note has played
-                        // Do not write volume command if it's going to be replaced immediately after an instrument change
-                        if (ticks >= firstNoteTicks && (!cell.HasNewNote || !instrumentChanged)) commands.Add("vol " + BYTE(currentVolume));
-                    }
+                    // Read cell content
+                    ReadInstrument(tick);
+                    ReadVolume(tick, true);
+                    ReadPan(tick, false);
 
                     // Apply note change
                     if (cell.HasNewNote)
                     {
-                        // Prove that we determine correctly the note release / length
-                        PrintLength(commands, tick, false);
+                        // Apply pan change
+                        if (panChanged)
+                        {
+                            panChanged = false;
+                            commands.Add("stereo " + BYTE_HEX(currentPan));
+                        }
 
                         // Apply instrument change
                         if (instrumentChanged)
@@ -211,8 +201,14 @@ namespace SF2MusicCooker
                             if (map.FM(currentInstrument, out byte inst))
                             {
                                 commands.Add("inst " + BYTE(inst));
-                                commands.Add("vol " + BYTE(currentVolume)); // We output a volume change instruction after an instrument change
                             }
+                        }
+
+                        // Apply volume change
+                        if (volumeChanged)
+                        {
+                            volumeChanged = false;
+                            commands.Add("vol " + BYTE(currentVolume));
                         }
 
                         // TODO: sample / sampleL commands
@@ -222,9 +218,6 @@ namespace SF2MusicCooker
                     }
                     else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                     {
-                        // Prove that we determine correctly the silence length
-                        PrintLength(commands, tick, true);
-
                         // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                         WriteSilence(tick.SilenceLength);
                     }
@@ -233,8 +226,12 @@ namespace SF2MusicCooker
                 }
                 else
                 {
-                    // PSG channel grammar
-                    // TODO
+                    // Read cell content with PSG logic
+                    ReadInstrument(tick);
+                    ReadVolume(tick, false); // We also use volume outside of new PSG note as a hint to select the correct PSG instrument, so don't raise warning here
+                    ReadPan(tick, true); // Just to verify we don't try to pan PSG instruments
+
+                    // TODO: PSG channel grammar
                 }
 
                 if (tick.NextPosition <= tick.Position)
@@ -247,7 +244,7 @@ namespace SF2MusicCooker
                 {
                     // We reached the end (can only occur if there's no loop)
                     commands.Add("channel_end");
-                    break;
+                    break; // Technically overkill since current tick would have been the last tick of enumeration
                 }
             }
 
@@ -267,6 +264,39 @@ namespace SF2MusicCooker
             return asm;
 
             // ------------------------------ Helpers -------------------------------
+
+            void Warning(string what, Tick tick)
+            {
+                if (warnings.Add(what))
+                {
+                    string message = string.Format("! Channel {0} @ {1} -> {2}", GetChannelName(channel), tick.Position, what);
+                    Console.WriteLine(message);
+                }
+            }
+
+            void VerifyExtremeLength(Tick tick, int lengthThreshold)
+            {
+                string what = null;
+                int length = 0;
+                if (tick.SilenceLength >= lengthThreshold)
+                {
+                    what = "Silence";
+                    length = tick.SilenceLength;
+                }
+                if (tick.NoteLength >= lengthThreshold)
+                {
+                    what = "Note";
+                    length = tick.NoteLength;
+                }
+                if (what != null)
+                {
+                    string message = string.Format("{0} has hit the maximum allowed length ({1} ticks)", what, length);
+                    what = what.ToLower();
+                    message += Environment.NewLine + string.Format("  This is usually caused by a {0} followed by a loop that does nothing (extending it infinitely).", what);
+                    message += Environment.NewLine + string.Format("  The actual {0} length will be capped in the output sheet.", what);
+                    Warning(message, tick);
+                }
+            }
 
             void WriteNote(byte note, int release, int length)
             {
@@ -330,44 +360,92 @@ namespace SF2MusicCooker
                 }
             }
 
-            void WritePan(PatternCell cell)
+            void ReadInstrument(Tick tick)
             {
-                if (cell.TryGetEffect(Effect.Pan, out Effect pan))
+                PatternCell cell = tick.ActiveChannelCell;
+
+                // No warning needed here as Furnace doesn't apply instrument change immediately
+
+                if (cell.Instrument != currentInstrument && cell.Instrument != PatternCell.InstrumentAbsent)
                 {
-                    byte newPan = PAN_F2C(pan.Value);
+                    currentInstrument = cell.Instrument;
+                    instrumentChanged = true;
+                }
+            }
+
+            void ReadVolume(Tick tick, bool disallowOutsideOfNewNote)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.Volume != PatternCell.VolumeAbsent && currentVolume != VOL_F2C(cell.Volume))
+                {
+                    if (disallowOutsideOfNewNote && !cell.HasNewNote)
+                        Warning("Volume change will be delayed because it can only be applied when a new note plays.", tick);
+
+                    currentVolume = VOL_F2C(cell.Volume);
+                    volumeChanged = true;
+                }
+            }
+
+            void ReadPan(Tick tick, bool disallowPanning)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Pan, out Effect effect))
+                {
+                    Try(PAN_F2C(effect.Value));
+                }
+                else if (cell.TryGetEffect(Effect.PanTrinary, out effect))
+                {
+                    Try(PAN3_F2C(effect.Value));
+                }
+
+                void Try(byte newPan)
+                {
+                    if (disallowPanning)
+                        Warning("Panning change is not allowed on this channel.", tick);
+                    else if (!cell.HasNewNote)
+                        Warning("Panning change will be delayed because it can only be applied when a new note plays.", tick);
+
                     if (currentPan != newPan)
                     {
                         currentPan = newPan;
-                        commands.Add("stereo " + BYTE_HEX(currentPan));
+                        panChanged = true;
                     }
                 }
-                else if (cell.TryGetEffect(Effect.PanTrinary, out pan))
-                {
-                    byte newPan = PAN3_F2C(pan.Value);
-                    if (currentPan != newPan)
-                    {
-                        currentPan = newPan;
-                        commands.Add("stereo " + BYTE_HEX(currentPan));
-                    }
-                }
+            }
+
+            byte PAN_F2C(byte pan)
+            {
+                bool disableLeft = (pan & 0x0F) != 0;
+                bool disableRight = (pan & 0xF0) != 0;
+                if (disableLeft && disableRight) { disableLeft = disableRight = false; }
+                return (byte)((disableLeft ? 0 : (1 << 7)) | (disableRight ? 0 : (1 << 6)));
+            }
+
+            byte PAN3_F2C(byte trinaryPan)
+            {
+                if (trinaryPan == 0x00) return 1 << 6; // LEFT
+                else if (trinaryPan == 0xFF) return 1 << 7; // RIGHT
+                else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
             }
         }
 
-        [Conditional("PRINT_LENGTH")]
-        private static void PrintLength(List<string> commands, Tick tick, bool silence)
+        [Conditional("DUMP_LENGTH")]
+        private static void DumpLength(List<string> commands, Tick tick)
         {
-            if (silence)
+            if (tick.SilenceLength > 0)
             {
                 commands.Add("; Silence length = " + tick.SilenceLength);
             }
-            else
+            else if (tick.NoteLength > 0)
             {
                 commands.Add("; Note release in = " + tick.NoteRelease);
                 commands.Add("; Note length = " + tick.NoteLength);
             }
         }
 
-        private static Position FindLoopStart(FurnaceFile file, bool print)
+        private Position FindLoopStart(FurnaceFile file, bool print)
         {
             Position loopStart = file.End;
             Position loopEnd = loopStart;
@@ -393,7 +471,7 @@ namespace SF2MusicCooker
             return loopStart;
         }
 
-        private static int FindFirstNote(FurnaceFile file, int channel, bool print)
+        private int FindFirstNote(FurnaceFile file, int channel, bool print)
         {
             int firstNoteTicks = 0;
             int ticks = 0;
@@ -410,14 +488,26 @@ namespace SF2MusicCooker
                     break;
                 }
             }
-            if (print && ticks > 0)
+            if (ticks > 0)
             {
-                if (firstNoteTicks > 0)
-                    Console.WriteLine("> Channel {0} first note tick: {1}", channel, ticks);
-                else
-                    Console.WriteLine("! Channel {0} first note never happens", channel);
+                if (firstNoteTicks <= 0)
+                    Console.WriteLine("! Channel {0} first note never happens", GetChannelName(channel));
+                else if (print)
+                    Console.WriteLine("> Channel {0} first note tick: {1}", GetChannelName(channel), ticks);
             }
             return firstNoteTicks;
+        }
+
+        private string GetChannelName(int channel)
+        {
+            if (channel == 5 && DAC == 0)
+                return "FM 6 (DAC)";
+            else if (channel <= 5)
+                return "FM " + (channel + 1);
+            else if (channel <= 8)
+                return "Square " + (channel - 5);
+            else
+                return "Noise";
         }
 
         private static readonly LoopOptimizer optimizer = new LoopOptimizer(repeats => "countedLoopStart " + (repeats - 1), _ => "countedLoopEnd",
@@ -455,21 +545,6 @@ namespace SF2MusicCooker
             //      value = (byte)Math.Max(0, Math.Min(0x53, value)); // Cube sound engine has 0x54 notes defined [0..0x53]
 
             return NoteBible.GetByValue((byte)(value + 12)).Label; // Verify the note is valid/supported and return the proper ASM label
-        }
-
-        private static byte PAN_F2C(byte pan)
-        {
-            bool disableLeft = (pan & 0x0F) != 0;
-            bool disableRight = (pan & 0xF0) != 0;
-            if (disableLeft && disableRight) { disableLeft = disableRight = false; }
-            return (byte)((disableLeft ? 0 : (1 << 7)) | (disableRight ? 0 : (1 << 6)));
-        }
-
-        private static byte PAN3_F2C(byte trinaryPan)
-        {
-            if (trinaryPan == 0x00) return 1 << 6; // LEFT
-            else if (trinaryPan == 0xFF) return 1 << 7; // RIGHT
-            else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
         }
     }
 }

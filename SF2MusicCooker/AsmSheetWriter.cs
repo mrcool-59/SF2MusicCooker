@@ -59,7 +59,7 @@ namespace SF2MusicCooker
                     sb.Append("..");
                 }
 
-                Console.WriteLine("! The song contains {0} currently unsupported effect{1}:", set.Count, set.Count > 1 ? "s": "");
+                Console.WriteLine("! The song contains {0} unsupported effect{1}:", set.Count, set.Count > 1 ? "s": "");
                 Console.WriteLine("    " + sb);
             }
         }

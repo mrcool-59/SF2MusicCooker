@@ -1,6 +1,4 @@
 ﻿Version 0.9:
-- On ne peut pas modifier le volume/panning/etc. pendant une note, cela ne peut se faire qu'à chaque nouvelle note
-	=> Restructurer le code sachant cette limitation, print des warnings quand on a une commande mal placée qui ne sera appliquée qu'à la prochaine note
 - SFX input support
 - DAC support (en ignorant les samples inutilisés)
 
@@ -15,6 +13,8 @@ Version 1.0:
 Version 1.1:
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
+- Support for .fur files taken from WizAssets repository (bonus feature)
+	=> This would require ad-hoc macro support for PSG instrument
 
 Version 1.2:
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
@@ -23,6 +23,7 @@ Version 1.2:
 
 Version 1.2.1:
 - Focus on bug fixes
+- Auto-bank assignment feature
 - SFX ralentit quand The First Battle (72 hz) joue, probablement à cause du timer altéré, mais pourquoi le son ralentit au lieu d'accélérer?
 	=> Enquêter un peu mais ne rien faire...
 	=> Peut être qu'il y a une compensation côté SFX, mais qu'il faut que la clock SFX et clock Music soit une multiple l'un de l'autre
