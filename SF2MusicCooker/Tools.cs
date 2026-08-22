@@ -13,6 +13,16 @@ namespace SF2MusicCooker
         private static readonly Regex regexMove = new Regex("^\\+music([0-9]+)@([0-9]+)(.+)");
 
         /// <summary>
+        /// Regex to find all "dw x" instructions in ASM file (with x being some ASM numeric value).
+        /// </summary>
+        public static readonly Regex Regex_dw = new Regex("dw ([a-fA-F0-9hH]+)");
+
+        /// <summary>
+        /// Regex to find all "db x" instructions in ASM file (with x being some ASM numeric value).
+        /// </summary>
+        public static readonly Regex Regex_db = new Regex("db ([a-fA-F0-9hH]+)");
+
+        /// <summary>
         /// Parse 'filename' according to one of the valid patterns explained in the README file and return music number, move from number (0 for add) and music name.
         /// Throws an exception otherwise.
         /// </summary>
@@ -90,7 +100,7 @@ namespace SF2MusicCooker
 
         private static IEnumerable<(string key, int value)> IterateASMEnum(string filename)
         {
-            Regex regex = new Regex("^([a-zA-Z0-9_]+)\\:[ \t]*equ[ \t]*([0-9]+)$");
+            Regex regex = new Regex("^([a-zA-Z0-9_]+)\\:[ \t]*equ[ \t]*([a-fA-F0-9hH]+)$");
             string[] lines = File.ReadAllLines(filename);
 
             foreach (string line in lines)
@@ -99,7 +109,7 @@ namespace SF2MusicCooker
                 Match match = regex.Match(simplifiedLine);
                 if (match.Success)
                 {
-                    yield return (match.Groups[1].Value, int.Parse(match.Groups[2].Value));
+                    yield return (match.Groups[1].Value, ConvertASMValue(match.Groups[2].Value));
                 }
             }
         }
@@ -150,6 +160,17 @@ namespace SF2MusicCooker
                 line = line.Substring(index + 1); // Strip label
             }
             return line;
+        }
+
+        /// <summary>
+        /// Convert an ASM numeric string value (e.g: "400" in decimal or "0CDh" in hexadecimal) to integer.
+        /// </summary>
+        public static int ConvertASMValue(string x)
+        {
+            if (x.EndsWith("h", StringComparison.OrdinalIgnoreCase))
+                return Convert.ToInt32(x.Substring(0, x.Length - 1), 16);
+            else
+                return int.Parse(x);
         }
 
         /// <summary>
@@ -245,6 +266,31 @@ namespace SF2MusicCooker
             if (count < 0 || end > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
             for (int i = offset; i < end; i++) buffer[i] = value;
+        }
+
+        /// <summary>
+        /// Pick item with the lowest score returned by evaluation function. In case of ties, the earliest item wins.
+        /// </summary>
+        public static T SelectMin<T>(IReadOnlyList<T> candidates, Func<T, int> fn)
+        {
+            if (fn == null)
+                throw new ArgumentNullException(nameof(fn));
+
+            if (candidates == null || candidates.Count == 0)
+                return default;
+
+            T best = candidates[0];
+            int min = fn(best);
+            for (int i = 1; i < candidates.Count; i++)
+            {
+                int score = fn(candidates[i]);
+                if (score < min)
+                {
+                    min = score;
+                    best = candidates[i];
+                }
+            }
+            return best;
         }
 
         /// <summary>

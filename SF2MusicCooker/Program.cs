@@ -22,7 +22,9 @@ namespace SF2MusicCooker
             bool dumpNotes = Test("--dumpnotes") || Test("-dn");
             bool test = Test("--test") || Test("-t");
             int isolateChannel = -1;
+            int only = -1;
             for (int i = 0; i < 9; i++) if (Test("--channel" + i) || Test("-c" + i)) isolateChannel = i;
+            for (int i = 1; i < SFX.NONE; i++) if (Test("--only" + i) || Test("-o" + i)) only = i;
 
             // Arg to pass to postbuild script, if it needs to run
             string postBuild = null;
@@ -63,6 +65,8 @@ namespace SF2MusicCooker
                 {
                     Tools.ExtractNumberAndName(fur.Name, out int number, out int moveFrom, out string name);
 
+                    if (only >= 0 && number != only) continue;
+
                     using (FileStream stream = fur.OpenRead())
                     {
                         Console.WriteLine("Reading '{0}' input file...", fur.Name);
@@ -102,7 +106,7 @@ namespace SF2MusicCooker
                         InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
 
                         // Write the ASM sheet of the music
-                        string asm = AsmSheetWriter.Write(file, options, map, number, pairNumber);
+                        string asm = AsmSheetWriter.Write(file, options, map, output.Pitch, number, pairNumber);
 
                         // Build ASM name
                         string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);

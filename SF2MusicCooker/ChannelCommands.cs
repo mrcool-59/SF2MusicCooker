@@ -92,7 +92,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Generate channel commands from a Furnace file and the provided instrument map.
         /// </summary>
-        public void Generate(FurnaceFile file, Options options, InstrumentMap map)
+        public void Generate(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch)
         {
             if (file.Channels != _channels.Length)
                 throw new NotSupportedException("Furnace file must have " + _channels.Length + " channels"); // 6 from YM2612 + 4 from PSG
@@ -107,14 +107,14 @@ namespace SF2MusicCooker
             // Fill each channel
             for (int channel = 0; channel < file.Channels; channel++)
             {
-                _channels[channel] = GenerateChannel(file, options, map, channel, loopStart);
+                _channels[channel] = GenerateChannel(file, options, map, pitch, channel, loopStart);
             }
 
             // Update empty flag
             Empty = Array.TrueForAll(_channels, c => c == null || c == "channel_end");
         }
 
-        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, int channel, Position loopStart)
+        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int channel, Position loopStart)
         {
             // Mask verification
             if ((_mask & (1 << channel)) == 0) return null;
@@ -429,6 +429,15 @@ namespace SF2MusicCooker
                 else if (trinaryPan == 0xFF) return 1 << 7; // RIGHT
                 else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
             }
+
+            string NOTE(byte value)
+            {
+                const int OFFSET = -24;
+                int note = pitch.MapF2YNote(value, file.A4Tuning, out int difference);
+                note -= OFFSET;
+                // TODO: 'shifting' to reach normally unsupported octaves?
+                return pitch.GetYMNoteName(note);
+            }
         }
 
         [Conditional("DUMP_LENGTH")]
@@ -530,21 +539,6 @@ namespace SF2MusicCooker
         private static string BYTE_HEX(byte value)
         {
             return Tools.Hex1ASM(value);
-        }
-
-        private static string NOTE(byte value)
-        {
-            // In "The First Battle" test music:
-            // With +0 value offset: instruments do not play at the correct height
-            // With +12 value offset: instruments sound correct but I can't shake the feeling this is way too brittle
-
-            // TODO: This requires a more rigorous approach to get the correct notes all the time
-            // Take a look at Furnace source code to figure how the frequency register is filled
-            // Then select the closest available frequency in the Cube catalog
-            // Also don't forget to do something like this:
-            //      value = (byte)Math.Max(0, Math.Min(0x53, value)); // Cube sound engine has 0x54 notes defined [0..0x53]
-
-            return NoteBible.GetByValue((byte)(value + 12)).Label; // Verify the note is valid/supported and return the proper ASM label
         }
     }
 }

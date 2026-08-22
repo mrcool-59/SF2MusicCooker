@@ -114,6 +114,7 @@ namespace SF2MusicCooker.Furnace
                 {
                     row = Math.Min(rows - 1, goNext.Value); // If row overflows, clamp to last valid row
                     order++;
+                    if (order == orders) order = 0; // If order overflows, we go to order 0 instead
                 }
                 else if (++row == rows)
                 {

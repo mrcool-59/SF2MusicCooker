@@ -13,13 +13,11 @@ namespace SF2MusicCooker.Furnace
         {
             public readonly byte Value;
             public readonly string Name;
-            public readonly string Label;
 
             public Entry(byte value, string name)
             {
                 Value = value;
                 Name = name;
-                Label = name.Replace("#", "s").Replace("-", "");
             }
 
             public override string ToString()

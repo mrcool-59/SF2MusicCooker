@@ -75,6 +75,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
 --channelN					or		-cN		(N = 0..9) If present disable output of all channels except channel N (only useful for developers)
+--onlyN						or		-oN		(N = 1..126) Only process the .fur file for the given music/SFX number and ignore the rest (only useful for developers)
 --test						or		-t		Read files in "Test" folder instead of "Input" folder (only useful for developers)
 
 

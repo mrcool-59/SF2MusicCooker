@@ -26,6 +26,11 @@ namespace SF2MusicCooker
         /// </summary>
         public PCMInstruments Samples { get; }
 
+        /// <summary>
+        /// The pitch table to map Furnace notes to Cube notes.
+        /// </summary>
+        public PitchTable Pitch { get; private set; }
+
         public Output(Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
@@ -44,6 +49,8 @@ namespace SF2MusicCooker
             Instruments = new FMInstruments(instrumentSlots);
 
             Samples = new PCMInstruments(pcmBanks);
+
+            Pitch = PitchTable.Empty;
         }
 
         /// <summary>
@@ -154,6 +161,10 @@ namespace SF2MusicCooker
             string pathToYmInstBin = Path.Combine(soundFolder, "yminst.bin");
             string pathToMusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
 
+            string ymFrequenciesPath = Path.Combine(rootFolder, "disasm\\code\\common\\tech\\sound\\cubewiz\\data\\ym_frequencies.asm");
+            string noteNamesPath = Path.Combine(soundFolder, "enums.asm");
+            LoadPitchTable(ymFrequenciesPath, noteNamesPath);
+
             // TODO: samples
 
             LoadVanilla(pathToMusicNumbersAndAsmNames, pathToSfxNumbersAndAsmNames, pathToMusicBankFolders, pathToSfxBankFiles, pathToYmInstBin, pathToMusicNamesTxt);
@@ -254,6 +265,14 @@ namespace SF2MusicCooker
             Instruments.ClearExcept(usedInstruments);
 
             // TODO: samples (+ clear unused ones)
+        }
+
+        /// <summary>
+        /// Load the pitch table from ASM file.
+        /// </summary>
+        public void LoadPitchTable(string ymFrequenciesPath, string noteNamesPath = null)
+        {
+            Pitch = new PitchTable(ymFrequenciesPath, noteNamesPath);
         }
 
         /// <summary>

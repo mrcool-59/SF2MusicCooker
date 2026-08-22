@@ -36,9 +36,8 @@ namespace SF2MusicCooker
             /// </summary>
             public string ToAsmLine()
             {
-                // '    dw  1, DAC_BANK_1, 011EFh, 08000h'
-                // TODO: output as DAC_BANK_{0}
-                return "TODO"; // TODO
+                string Hex(ushort x) => "0" + x.ToString("X") + "h";
+                return string.Format("    dw {0}, DAC_BANK_{1}, {2}, {3}", FramePeriod.ToString().PadLeft(2), Bank, Hex(Length), Hex(Offset));
             }
 
             /// <summary>
@@ -47,6 +46,15 @@ namespace SF2MusicCooker
             public static int ComputePlaybackRate(int period)
             {
                 return (int)(3012000 * Math.Pow(period - (-32.07), -1.573) + 1005); // TODO: use this
+            }
+
+            /// <summary>
+            /// Given a sample rate, compute the 'period' to the sample at roughly the supplied rate.
+            /// </summary>
+            public static int ComputeFramePeriod(int rate)
+            {
+                // TODO
+                return 0;
             }
 
             public PCMSample(ushort framePeriod, ushort bank, ushort length, ushort offset)

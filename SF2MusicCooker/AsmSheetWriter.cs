@@ -93,7 +93,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an ASM music sheet compatible under SF2DISASM framework.
         /// </summary>
-        public static string Write(FurnaceFile file, Options options, InstrumentMap map, int number, int pairNumber = 0)
+        public static string Write(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, int pairNumber = 0)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -102,7 +102,7 @@ namespace SF2MusicCooker
             ChannelCommands channels = new ChannelCommands(10, ChannelCommands.Mask_Music, false, Environment.NewLine + padding);
 
             // Generate the channels
-            channels.Generate(file, options, map);
+            channels.Generate(file, options, map, pitch);
 
             // YM timer B (song tempo)
             byte timer = GetOptimalTimerB(file.PlaybackRate);
@@ -144,7 +144,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an ASM SFX sheet compatible under SF2DISASM framework.
         /// </summary>
-        public static string WriteSFX(SFXType type, FurnaceFile file, Options options, InstrumentMap map, int number)
+        public static string WriteSFX(SFXType type, FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -154,7 +154,7 @@ namespace SF2MusicCooker
             ChannelCommands channels = new ChannelCommands(10, mask, type == SFXType.Type2_YM_Ch4_Ch5_Ch6DAC, Environment.NewLine + padding);
 
             // Generate the channels
-            channels.Generate(file, options, map);
+            channels.Generate(file, options, map, pitch);
 
             // Write header (disclaimer is skipped for SFX)
             sb.AppendFormat("Sfx_{0}:", number);
