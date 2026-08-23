@@ -275,7 +275,7 @@ namespace SF2MusicCooker
                 Buffer.BlockCopy(banks[i], 0, _banks[i], 0, banks[i].Length);
             }
 
-            string[] lines = Tools.GetAllElements(pcmSamplesAsm, new Regex("dw(.+)"), x => x);
+            string[] lines = Tools.GetAllStringElements(pcmSamplesAsm, new Regex("dw(.+)"));
 
             foreach (string line in lines)
             {

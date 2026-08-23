@@ -186,6 +186,14 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get all ASM numeric values for the specified ASM token.
+        /// </summary>
+        public static int[] GetAllNumericElements(string document, string token)
+        {
+            return GetAllElements(document, CreateNumericElementRegex(token), ConvertASMValue);
+        }
+
+        /// <summary>
         /// Get all elements that verify the provided regex. The regex must contain exactly 1 capture group.
         /// </summary>
         public static string[] GetAllStringElements(string document, Regex elementRegex)

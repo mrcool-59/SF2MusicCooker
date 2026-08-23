@@ -9,9 +9,6 @@ namespace SF2MusicCooker
     public static class AsmSheetToolkit
     {
         private static readonly Regex music = new Regex("Music_([0-9]+)\\:");
-        private static readonly Regex inst = Tools.CreateNumericElementRegex("inst");
-        private static readonly Regex sample = Tools.CreateNumericElementRegex("sample");
-        private static readonly Regex sampleL = Tools.CreateNumericElementRegex("sampleL");
 
         private static readonly Dictionary<string, int> map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
@@ -85,7 +82,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static void FillInstruments(string asm, HashSet<int> set)
         {
-            int[] instruments = Tools.GetAllElements(asm, inst, Tools.ConvertASMValue);
+            int[] instruments = Tools.GetAllNumericElements(asm, "inst");
             set.UnionWith(instruments);
         }
 
@@ -94,8 +91,8 @@ namespace SF2MusicCooker
         /// </summary>
         public static void FillSamples(string asm, HashSet<int> set)
         {
-            int[] samples = Tools.GetAllElements(asm, sample, Tools.ConvertASMValue);
-            int[] samplesL = Tools.GetAllElements(asm, sampleL, Tools.ConvertASMValue);
+            int[] samples = Tools.GetAllNumericElements(asm, "sample");
+            int[] samplesL = Tools.GetAllNumericElements(asm, "sampleL");
             set.UnionWith(samples);
             set.UnionWith(samplesL);
         }
