@@ -8,7 +8,7 @@ namespace SF2MusicCooker
         public readonly string MusicNumbersAndAsmNames;
         public readonly string SfxNumbersAndAsmNames;
         public readonly string[] MusicBankFolders;
-        public readonly string[] SfxBankFiles;
+        public readonly string[] SfxBankFolders;
         public readonly string[] PcmBankFiles;
         public readonly string PcmSamples;
         public readonly string YmInstBin;
@@ -21,14 +21,14 @@ namespace SF2MusicCooker
         /// Build file paths appropriate in a generic way.
         /// </summary>
         public FilePaths(string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames,
-            string[] musicBankFolders, string[] sfxBankFiles, string[] pcmBankFiles,
+            string[] musicBankFolders, string[] sfxBankFolders, string[] pcmBankFiles,
             string pcmSamples, string ymInstBin, string ymFrequencies,
             string noteNames = null, string musicNamesTxt = null, string soundTestFolder = null)
         {
             MusicNumbersAndAsmNames = musicNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(musicNumbersAndAsmNames));
             SfxNumbersAndAsmNames = sfxNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(sfxNumbersAndAsmNames));
             MusicBankFolders = musicBankFolders ?? throw new ArgumentNullException(nameof(musicBankFolders));
-            SfxBankFiles = sfxBankFiles ?? throw new ArgumentNullException(nameof(sfxBankFiles));
+            SfxBankFolders = sfxBankFolders ?? throw new ArgumentNullException(nameof(sfxBankFolders));
             PcmBankFiles = pcmBankFiles ?? throw new ArgumentNullException(nameof(pcmBankFiles));
             PcmSamples = pcmSamples ?? throw new ArgumentNullException(nameof(pcmSamples));
             YmInstBin = ymInstBin ?? throw new ArgumentNullException(nameof(ymInstBin));
@@ -54,9 +54,9 @@ namespace SF2MusicCooker
                 Path.Combine(soundFolder, "musicbank0"),
                 Path.Combine(soundFolder, "musicbank1"),
             };
-            SfxBankFiles = new string[1]
+            SfxBankFolders = new string[1]
             {
-                Path.Combine(soundFolder, "sfxbank", "sfxbank.asm")
+                Path.Combine(soundFolder, "sfxbank")
             };
             PcmBankFiles = new string[2]
             {

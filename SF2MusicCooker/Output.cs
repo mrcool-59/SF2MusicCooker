@@ -220,8 +220,9 @@ namespace SF2MusicCooker
             // Load SFX banks (usually only 1)
             int currentBank = 0;
             int currentSfx = SFX.FIRST;
-            foreach (string filename in _paths.SfxBankFiles)
+            foreach (string folder in _paths.SfxBankFolders)
             {
+                string filename = Path.Combine(folder, Path.GetFileName(folder) + ".asm");
                 string compositeAsm = File.ReadAllText(filename);
                 string[] pointerNames = Tools.GetAllStringElements(compositeAsm, sfxPointerNameRegex);
                 BankSFX bank = _sfxBanks[currentBank];
@@ -385,7 +386,7 @@ namespace SF2MusicCooker
             WriteASMSfxEnum(path);
             WriteASMSoundTest(path);
             WriteFMInstruments(path);
-            WriteSamples();
+            WriteSamples(path, path);
         }
 
         /// <summary>
@@ -397,7 +398,9 @@ namespace SF2MusicCooker
             string sfxEnumFolder = Path.GetDirectoryName(_paths.SfxNumbersAndAsmNames);
             string ymInstFolder = Path.GetDirectoryName(_paths.YmInstBin);
             string musicBanksFolder = _banks.Length > 0 ? Path.GetDirectoryName(_paths.MusicBankFolders[0]) : null;
-            string sfxBanksFolder = _sfxBanks.Length > 0 ? Path.GetDirectoryName(_paths.SfxBankFiles[0]) : null;
+            string sfxBanksFolder = _sfxBanks.Length > 0 ? Path.GetDirectoryName(_paths.SfxBankFolders[0]) : null;
+            string pcmSamplesFolder = Path.GetDirectoryName(_paths.PcmSamples);
+            string pcmBanksFolder = Samples.NumBanks > 0 ? Path.GetDirectoryName(_paths.PcmBankFiles[0]) : null;
 
             foreach (Bank bank in _banks)
             {
@@ -414,9 +417,9 @@ namespace SF2MusicCooker
             }
             WriteASMMusicEnum(musicEnumFolder);
             WriteASMSfxEnum(sfxEnumFolder);
-            WriteFMInstruments(ymInstFolder);
-            WriteSamples();
             WriteASMSoundTest(_paths.SoundTestFolder);
+            WriteFMInstruments(ymInstFolder);
+            WriteSamples(pcmSamplesFolder, pcmBanksFolder);
         }
 
         private void DeleteAndCreateFolder(string path)
@@ -542,9 +545,9 @@ namespace SF2MusicCooker
             Console.WriteLine("> Wrote 'yminst-standard.bin' file!");
         }
 
-        private void WriteSamples()
+        private void WriteSamples(string pcmSamplesPath, string pcmBanksPath)
         {
-            // TODO
+            Samples.Write(pcmSamplesPath, pcmBanksPath);
         }
 
         /// <summary>

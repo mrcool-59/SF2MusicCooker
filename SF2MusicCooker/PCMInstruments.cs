@@ -41,7 +41,7 @@ namespace SF2MusicCooker
             {
                 string Hex(ushort x) => "0" + x.ToString("X") + "h";
                 ushort offset = (ushort)(Offset + baseOffset);
-                return string.Format("dw {0}, DAC_BANK_{1}, {2}, {3}", ((ushort)FramePeriod).ToString().PadLeft(2), (ushort)(Bank + 1), Hex((ushort)Length), Hex(offset));
+                return string.Format("dw {0}, DAC_BANK_{1}, {2}, {3}", ((ushort)FramePeriod).ToString().PadLeft(2), (ushort)(Bank + 1), Hex((ushort)Length).PadLeft(6), Hex(offset));
             }
 
             /// <summary>
@@ -71,7 +71,7 @@ namespace SF2MusicCooker
             public static int ComputeFramePeriod(int rate)
             {
                 // TODO
-                return 0;
+                return 1;
             }
 
             public PCMSample(int framePeriod, int bank, int length, int offset)
@@ -129,7 +129,7 @@ namespace SF2MusicCooker
             {
                 int size = _banks[bank].Length;
                 int bytes = _cursors[bank];
-                float ratio = bytes / size;
+                float ratio = (float)bytes / size;
                 string percentage = (ratio * 100f).ToString("0.00", CultureInfo.InvariantCulture);
 
                 Console.WriteLine("> Bank '{0}' is using {1} bytes out of {2} [{3}%]", GetBankName(bank), bytes, size, percentage);
@@ -148,7 +148,7 @@ namespace SF2MusicCooker
 
             if (Allocate(data.Length, out ushort bank, out ushort offset))
             {
-                _catalog.Add(new PCMSample(framePeriod, bank, (ushort)data.Length, offset));
+                // _catalog.Add(new PCMSample(framePeriod, bank, (ushort)data.Length, offset));
                 return true;
             }
             else
@@ -189,8 +189,6 @@ namespace SF2MusicCooker
         /// </summary>
         public void AddMany(FurnaceFile file, Instrument[] usedInstruments, bool print)
         {
-            int index = 0;
-
             foreach (Instrument instrument in file.Instruments)
             {
                 if (instrument.Type == Instrument.DAC && Array.IndexOf(usedInstruments, instrument) >= 0)
@@ -209,8 +207,6 @@ namespace SF2MusicCooker
                         }
                     }
                 }
-
-                index++;
             }
         }
 
@@ -327,17 +323,21 @@ namespace SF2MusicCooker
             sb.AppendLine();
             sb.Append("; Playback period (higher=slower), bank index, length, offset");
             sb.AppendLine();
+            sb.AppendLine();
             sb.AppendLine("PCM_SAMPLE_ENTRIES:");
             foreach (PCMSample sample in _catalog)
             {
                 sb.Append("    ");
                 sb.AppendLine(sample.ToAsmLine(_baseOffset));
             }
-            File.WriteAllText(pcmSamplesPath, sb.ToString());
+            File.WriteAllText(Path.Combine(pcmSamplesPath, "pcm_samples-standard.asm"), sb.ToString().TrimEnd());
+            Console.WriteLine("> Wrote 'pcm_samples-standard.asm' file!");
 
             for (int i = 0; i < _banks.Length; i++)
             {
-                File.WriteAllBytes(Path.Combine(pcmBanksFolder, GetBankName(i) + "-standard.bin"), _banks[i]);
+                string filename = GetBankName(i) + "-standard.bin";
+                File.WriteAllBytes(Path.Combine(pcmBanksFolder, filename), _banks[i]);
+                Console.WriteLine("> Wrote '{0}' file!", filename);
             }
         }
 
