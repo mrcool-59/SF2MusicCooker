@@ -77,7 +77,7 @@ namespace SF2MusicCooker
         public PitchTable(string ymFrequenciesPath, string notesNamePath = null)
         {
             string asm = File.ReadAllText(ymFrequenciesPath);
-            int[] values = Tools.GetAllElements(asm, Tools.Regex_dw, Tools.ConvertASMValue);
+            int[] values = Tools.GetAllElements(asm, Tools.CreateNumericElementRegex("dw"), Tools.ConvertASMValue);
 
             _notes = new Entry[values.Length];
             for (int i = 0; i < _notes.Length; i++) _notes[i] = new Entry(i, GetYMFrequency(values[i]));

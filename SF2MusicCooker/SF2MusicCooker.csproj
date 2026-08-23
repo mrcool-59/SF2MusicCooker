@@ -49,6 +49,7 @@
     <Compile Include="Bank.cs" />
     <Compile Include="BankSFX.cs" />
     <Compile Include="ChannelCommands.cs" />
+    <Compile Include="FilePaths.cs" />
     <Compile Include="Furnace\Effect.cs" />
     <Compile Include="Furnace\FeatureInterpreter.cs" />
     <Compile Include="Furnace\FurnaceFile.cs" />

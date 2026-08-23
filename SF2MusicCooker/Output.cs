@@ -9,12 +9,18 @@ namespace SF2MusicCooker
 {
     public sealed class Output
     {
+        private readonly FilePaths _paths;
         private readonly Bank[] _banks;
         private readonly BankSFX[] _sfxBanks;
         private readonly int[] _musicPairs;
         private readonly string _soundTestTemplate;
 
         private Dictionary<int, HashSet<int>> _sfxNeededByMap;
+
+        /// <summary>
+        /// Name of the DISASM.
+        /// </summary>
+        public string Name { get; }
 
         /// <summary>
         /// The global list of FM instruments (for Channel 1-5 + Channel 6 in FM mode).
@@ -29,9 +35,14 @@ namespace SF2MusicCooker
         /// <summary>
         /// The pitch table to map Furnace notes to Cube notes.
         /// </summary>
-        public PitchTable Pitch { get; private set; }
+        public PitchTable Pitch { get; }
 
-        public Output(Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
+        /// <summary>
+        /// True if ext banks are enabled.
+        /// </summary>
+        public bool HasExtBanks { get { return Array.Exists(_banks, bank => bank.Name.Contains("musicbankext")); } }
+
+        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, int pcmBaseOffset, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
@@ -39,6 +50,7 @@ namespace SF2MusicCooker
             if (musicPairs != null && musicPairs.Length % 2 != 0)
                 throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
 
+            _paths = paths ?? throw new ArgumentNullException(nameof(paths));
             _banks = banks ?? throw new ArgumentNullException(nameof(banks));
             _sfxBanks = sfxBanks ?? throw new ArgumentNullException(nameof(sfxBanks));
             _musicPairs = musicPairs;
@@ -46,18 +58,30 @@ namespace SF2MusicCooker
 
             _sfxNeededByMap = null; // Initial state: no dependencies exist
 
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+
             Instruments = new FMInstruments(instrumentSlots);
 
-            Samples = new PCMInstruments(pcmBanks);
+            Samples = new PCMInstruments(pcmBanks, pcmBaseOffset);
 
-            Pitch = PitchTable.Empty;
+            Pitch = new PitchTable(paths.YmFrequencies, paths.NoteNames);
         }
 
         /// <summary>
         /// Create Output tailored for Shining Force 2 with SF2DISASM.
         /// </summary>
-        public static Output CreateForSF2DISASM(bool hasExtBanks)
+        public static Output CreateForSF2DISASM(string rootFolder)
         {
+            const string name = "SF2DISASM";
+            string patches = Path.Combine(rootFolder, "disasm\\sf2patches.asm");
+
+            Console.WriteLine("Checking support for 'expanded musics' feature...");
+            bool hasExtBanks = VerifyPatch(patches, name, "EXPANDED_MUSIC_BANKS", "feature/expanded_musics");
+            Console.WriteLine("> Feature is supported! This tool may proceed.");
+            Console.WriteLine("> Expanded music banks are {0}", hasExtBanks ? "ENABLED" : "DISABLED");
+
+            FilePaths paths = new FilePaths(rootFolder);
+
             Bank[] banks;
 
             if (hasExtBanks)
@@ -91,7 +115,7 @@ namespace SF2MusicCooker
                 0x3000, // PCM bank 1
             };
 
-            return new Output(banks, sfxBanks, pcmBanks, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
+            return new Output(name, paths, banks, sfxBanks, pcmBanks, 0x8000, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
         }
 
         private Bank SelectMusicBank(int number)
@@ -141,56 +165,21 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Load vanilla music data from the appropriate SF2DISASM folders (numbers, names, sheets, FM instruments, samples).
+        /// Load vanilla music data from provided paths (outside of SF2, this method is able to read data for other Cube games with similar input files).
         /// </summary>
-        public void LoadVanilla(string rootFolder)
+        public void LoadVanilla()
         {
-            string soundFolder = Path.Combine(rootFolder, "disasm\\data\\sound");
-
-            string pathToMusicNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\musics.asm");
-            string pathToSfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
-            string[] pathToMusicBankFolders = new string[2]
-            {
-                Path.Combine(soundFolder, "musicbank0"),
-                Path.Combine(soundFolder, "musicbank1"),
-            };
-            string[] pathToSfxBankFiles = new string[1]
-            {
-                Path.Combine(soundFolder, "sfxbank", "sfxbank.asm")
-            };
-            string pathToYmInstBin = Path.Combine(soundFolder, "yminst.bin");
-            string pathToMusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
-
-            string ymFrequenciesPath = Path.Combine(rootFolder, "disasm\\code\\common\\tech\\sound\\cubewiz\\data\\ym_frequencies.asm");
-            string noteNamesPath = Path.Combine(soundFolder, "enums.asm");
-            LoadPitchTable(ymFrequenciesPath, noteNamesPath);
-
-            // TODO: samples
-
-            LoadVanilla(pathToMusicNumbersAndAsmNames, pathToSfxNumbersAndAsmNames, pathToMusicBankFolders, pathToSfxBankFiles, pathToYmInstBin, pathToMusicNamesTxt);
-        }
-
-        /// <summary>
-        /// Load vanilla music data from specific folders (outside of SF2, this method is able to read data for other Cube games with similar input files).
-        /// </summary>
-        public void LoadVanilla(string pathToMusicNumbersAndAsmNames, string pathToSfxNumbersAndAsmNames, string[] pathToMusicBankFolders, string[] pathToSfxBankFiles, string pathToYmInstBin, string pathToMusicNamesTxt = null)
-        {
-            if (pathToMusicNumbersAndAsmNames == null) throw new ArgumentNullException(nameof(pathToMusicNumbersAndAsmNames));
-            if (pathToSfxNumbersAndAsmNames == null) throw new ArgumentNullException(nameof(pathToSfxNumbersAndAsmNames));
-            if (pathToMusicBankFolders == null) throw new ArgumentNullException(nameof(pathToMusicBankFolders));
-            if (pathToSfxBankFiles == null) throw new ArgumentNullException(nameof(pathToSfxBankFiles));
-            if (pathToYmInstBin == null) throw new ArgumentNullException(nameof(pathToYmInstBin));
-
-            Dictionary<int, string> number2name = pathToMusicNamesTxt != null ? Tools.ReadNumberStringMap(pathToMusicNamesTxt) : new Dictionary<int, string>(); // Load music names (for sound test)
-            Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(pathToMusicNumbersAndAsmNames); // Load numbers and ASM names
-            Dictionary<int, string> sfx_number2enum = Tools.ReadASMEnumReverseMap(pathToSfxNumbersAndAsmNames); // Load numbers and ASM names for SFXs
+            Dictionary<int, string> number2name = _paths.MusicNamesTxt != null ? Tools.ReadNumberStringMap(_paths.MusicNamesTxt) : new Dictionary<int, string>(); // Load music names (for sound test)
+            Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(_paths.MusicNumbersAndAsmNames); // Load numbers and ASM names
+            Dictionary<int, string> sfx_number2enum = Tools.ReadASMEnumReverseMap(_paths.SfxNumbersAndAsmNames); // Load numbers and ASM names for SFXs
             HashSet<int> usedInstruments = new HashSet<int>();
+            HashSet<int> usedSamples = new HashSet<int>();
             Regex regex = new Regex("^music([0-9]+)\\.asm$");
             Regex sfxPointerNameRegex = new Regex("dw[ \t]+(Sfx_[0-9]+)[ \t\r\n]");
             Regex sfxPointerNameLabelRegex = new Regex("(Sfx_[0-9]+):");
 
             // Load music sheets from music banks
-            foreach (string folder in pathToMusicBankFolders)
+            foreach (string folder in _paths.MusicBankFolders)
             {
                 foreach (string filename in Directory.GetFiles(folder, "music*.asm", SearchOption.TopDirectoryOnly))
                 {
@@ -211,6 +200,7 @@ namespace SF2MusicCooker
                         Bank bank = SelectMusicBank(song.Number);
                         bank.Add(song, true);
                         AsmSheetToolkit.FillInstruments(asm, usedInstruments);
+                        AsmSheetToolkit.FillSamples(asm, usedSamples);
 
                         // Special case for music 4 and 14
                         int pairNumber = GetPairedMusic(number);
@@ -230,7 +220,7 @@ namespace SF2MusicCooker
             // Load SFX banks (usually only 1)
             int currentBank = 0;
             int currentSfx = SFX.FIRST;
-            foreach (string filename in pathToSfxBankFiles)
+            foreach (string filename in _paths.SfxBankFiles)
             {
                 string compositeAsm = File.ReadAllText(filename);
                 string[] pointerNames = Tools.GetAllStringElements(compositeAsm, sfxPointerNameRegex);
@@ -253,6 +243,7 @@ namespace SF2MusicCooker
                 }
 
                 AsmSheetToolkit.FillInstruments(compositeAsm, usedInstruments);
+                AsmSheetToolkit.FillSamples(compositeAsm, usedSamples);
                 currentBank++;
             }
 
@@ -260,19 +251,13 @@ namespace SF2MusicCooker
             _sfxNeededByMap = AsmSheetToolkit.VerifyAndGetDependencies(_sfxBanks);
 
             // Load FM instruments and clear the unused ones
-            byte[] yminst = File.ReadAllBytes(pathToYmInstBin);
+            byte[] yminst = File.ReadAllBytes(_paths.YmInstBin);
             Instruments.Load(yminst);
             Instruments.ClearExcept(usedInstruments);
 
-            // TODO: samples (+ clear unused ones)
-        }
-
-        /// <summary>
-        /// Load the pitch table from ASM file.
-        /// </summary>
-        public void LoadPitchTable(string ymFrequenciesPath, string noteNamesPath = null)
-        {
-            Pitch = new PitchTable(ymFrequenciesPath, noteNamesPath);
+            // Load PCM banks
+            Samples.Load(_paths.PcmSamples, _paths.PcmBankFiles);
+            Samples.ClearExcept(usedSamples);
         }
 
         /// <summary>
@@ -404,29 +389,34 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Write generated files to the correct locations in SF2DISASM folder.
+        /// Write generated files to the correct locations in DISASM folder.
         /// </summary>
-        public void WriteToSF2DISASM(string rootFolder)
+        public void WriteToDISASM()
         {
-            string soundFolder = Path.Combine(rootFolder, "disasm\\data\\sound");
+            string musicEnumFolder = Path.GetDirectoryName(_paths.MusicNumbersAndAsmNames);
+            string sfxEnumFolder = Path.GetDirectoryName(_paths.SfxNumbersAndAsmNames);
+            string ymInstFolder = Path.GetDirectoryName(_paths.YmInstBin);
+            string musicBanksFolder = _banks.Length > 0 ? Path.GetDirectoryName(_paths.MusicBankFolders[0]) : null;
+            string sfxBanksFolder = _sfxBanks.Length > 0 ? Path.GetDirectoryName(_paths.SfxBankFiles[0]) : null;
+
             foreach (Bank bank in _banks)
             {
-                string bankPath = Path.Combine(soundFolder, bank.FolderName);
+                string bankPath = Path.Combine(musicBanksFolder, bank.FolderName);
                 DeleteAndCreateFolder(bankPath);
                 bank.Write(bankPath);
                 bank.WriteSheets(bankPath);
             }
             foreach (BankSFX bank in _sfxBanks)
             {
-                string bankPath = Path.Combine(soundFolder, bank.FolderName);
+                string bankPath = Path.Combine(sfxBanksFolder, bank.FolderName);
                 DeleteAndCreateFolder(bankPath);
                 bank.Write(bankPath);
             }
-            WriteASMMusicEnum(Path.Combine(rootFolder, "disasm\\enums"));
-            WriteASMSfxEnum(Path.Combine(rootFolder, "disasm\\enums"));
-            WriteASMSoundTest(Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch"));
-            WriteFMInstruments(soundFolder);
+            WriteASMMusicEnum(musicEnumFolder);
+            WriteASMSfxEnum(sfxEnumFolder);
+            WriteFMInstruments(ymInstFolder);
             WriteSamples();
+            WriteASMSoundTest(_paths.SoundTestFolder);
         }
 
         private void DeleteAndCreateFolder(string path)
@@ -479,7 +469,7 @@ namespace SF2MusicCooker
 
         private void WriteASMSoundTest(string path)
         {
-            if (_soundTestTemplate == null) return;
+            if (_soundTestTemplate == null || path == null) return;
 
             string template = File.ReadAllText(_soundTestTemplate);
             StringBuilder sb = new StringBuilder(template);
@@ -603,13 +593,17 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Verify the specified SF2DISASM root folder supports the expanded music feature.
+        /// Verify the specified patch file supports the provided patch and return it if is enabled.
         /// </summary>
-        public static void VerifySupport(string rootFolder, out bool isFeatureSupported, out bool hasExtraBanks)
+        public static bool VerifyPatch(string patchesPath, string disasmName, string patchName, string featureBranchName)
         {
-            var map = Tools.ReadASMEnumMap(Path.Combine(rootFolder, "disasm\\sf2patches.asm"));
-            isFeatureSupported = map.TryGetValue("EXPANDED_MUSIC_BANKS", out int value);
-            hasExtraBanks = value >= 1;
+            Dictionary<string, int> map = Tools.ReadASMEnumMap(patchesPath);
+            if (!map.TryGetValue(patchName, out int value))
+            {
+                throw new NotSupportedException("You are attempting to use this tool in a " + disasmName + " folder that doesn't support '" + patchName + "' patch."
+                        + Environment.NewLine + "Please merge '" + featureBranchName + "' branch into your project and try again!");
+            }
+            return value >= 1;
         }
     }
 }

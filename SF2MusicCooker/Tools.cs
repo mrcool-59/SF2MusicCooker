@@ -13,16 +13,6 @@ namespace SF2MusicCooker
         private static readonly Regex regexMove = new Regex("^\\+music([0-9]+)@([0-9]+)(.+)");
 
         /// <summary>
-        /// Regex to find all "dw x" instructions in ASM file (with x being some ASM numeric value).
-        /// </summary>
-        public static readonly Regex Regex_dw = new Regex("dw ([a-fA-F0-9hH]+)");
-
-        /// <summary>
-        /// Regex to find all "db x" instructions in ASM file (with x being some ASM numeric value).
-        /// </summary>
-        public static readonly Regex Regex_db = new Regex("db ([a-fA-F0-9hH]+)");
-
-        /// <summary>
         /// Parse 'filename' according to one of the valid patterns explained in the README file and return music number, move from number (0 for add) and music name.
         /// Throws an exception otherwise.
         /// </summary>
@@ -171,6 +161,14 @@ namespace SF2MusicCooker
                 return Convert.ToInt32(x.Substring(0, x.Length - 1), 16);
             else
                 return int.Parse(x);
+        }
+
+        /// <summary>
+        /// Create a regex to capture an ASM numeric value.
+        /// </summary>
+        public static Regex CreateNumericElementRegex(string prefix)
+        {
+            return new Regex(Regex.Escape(prefix) + "[ \t]+([a-fA-F0-9hH]+)");
         }
 
         /// <summary>

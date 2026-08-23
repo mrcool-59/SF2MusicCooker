@@ -86,8 +86,6 @@ namespace SF2MusicCooker
                 Instrument instrument = instruments[i];
                 if (instrument.Type == Instrument.FM)
                 {
-                    if (print) Console.WriteLine("> Analyzing FM instrument #{0} '{1}'...", i, instrument.Name);
-
                     Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
                     byte index = FindSafe(def);
 

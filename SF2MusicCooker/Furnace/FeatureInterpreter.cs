@@ -107,7 +107,7 @@ namespace SF2MusicCooker.Furnace
             cubeFmInstrument[28] = (byte)((algo & 0x07) | ((feedback & 0x07) << 3));
 
             // Man I sure hope it's gonna be lit after having to write all that shit.
-            // Thanks SF2DISASM Wiz for lighting up the path ahead, and plutiedev.com for clarifying what's available in YM2612 registers!
+            // Thanks Wiz for lighting up the path ahead, and plutiedev.com for clarifying what's available in YM2612 registers!
             return cubeFmInstrument;
         }
 

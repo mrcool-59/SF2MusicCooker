@@ -36,17 +36,9 @@ namespace SF2MusicCooker
                 string rootFolder = Path.GetFullPath(args[0]);
 
                 Console.WriteLine("Path to SF2DISASM: {0}", rootFolder);
-
-                Console.WriteLine("Checking support for 'expanded musics' feature...");
-                Output.VerifySupport(rootFolder, out bool isFeatureSupported, out bool hasExtraBanks);
-                if (!isFeatureSupported) throw new NotSupportedException("You are attempting to use this tool in a SF2DISASM folder that doesn't support expanded musics."
-                    + Environment.NewLine + "Please merge 'feature/expanded_musics' branch into your project and try again!");
-                Console.WriteLine("> Feature is supported! This tool may proceed.");
-                Console.WriteLine("> Expanded music banks are {0}", hasExtraBanks ? "ENABLED" : "DISABLED");
-
-                Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments)...");
-                Output output = Output.CreateForSF2DISASM(hasExtraBanks);
-                output.LoadVanilla(rootFolder);
+                Output output = Output.CreateForSF2DISASM(rootFolder);
+                Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments, PCM samples)...");
+                output.LoadVanilla();
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
                 FMInstruments instruments = output.Instruments;
@@ -94,6 +86,9 @@ namespace SF2MusicCooker
 
                         // Complete the global FM instruments by those present in this .fur file, if they are really used
                         instruments.AddMany(usedFurnaceInstruments, dumpNotes);
+
+                        // Complete the global samples by those present in this .fur file, if they are really used
+                        output.Samples.AddMany(file, usedFurnaceInstruments, dumpNotes);
 
                         // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
                         int pairNumber = output.GetPairedMusic(number);
@@ -168,32 +163,32 @@ namespace SF2MusicCooker
                     }
                     Console.WriteLine("WARNING: At least 1 Bank is overloaded, assembling the ROM will probably fail!");
                     Console.WriteLine("         For musics: you should move some musics from that Music Bank to Music Banks that still have remaining space.");
-                    if (!hasExtraBanks)
+                    if (output.Name == "SF2DISASM" && !output.HasExtBanks)
                     {
                         Console.WriteLine("         /!\\ We highly recommand you enable 'EXPANDED_MUSIC_BANKS' feature in 'sf2patches.asm' to solve this issue. /!\\");
                     }
                     Console.WriteLine("         For SFXs: sorry, you have no other option but to sacrifice some of your SFXs to make room.");
                 }
 
-                bool writeToSF2DISASM = autoYes && !autoNo;
+                bool writeToDISASM = autoYes && !autoNo;
                 if (!autoYes && !autoNo)
                 {
                     Console.WriteLine("The tool is about to write output files (Y/N).");
-                    Console.WriteLine("* Press 'Y' to write output files directly to the appropriate locations in SF2DISASM folder.");
+                    Console.WriteLine("* Press 'Y' to write output files directly to the appropriate locations in {0} folder.", output.Name);
                     Console.WriteLine("* Press 'N' to write to 'Output' folder instead (any existing 'Output' folder will be deleted beforehand).");
 
                     while (true)
                     {
                         ConsoleKeyInfo answer = Console.ReadKey(true);
-                        writeToSF2DISASM = answer.Key == ConsoleKey.Y;
+                        writeToDISASM = answer.Key == ConsoleKey.Y;
                         if (answer.Key == ConsoleKey.Y || answer.Key == ConsoleKey.N) break;
                     }
                 }
 
-                if (writeToSF2DISASM)
+                if (writeToDISASM)
                 {
-                    Console.WriteLine("Writing to SF2DISASM...");
-                    output.WriteToSF2DISASM(rootFolder);
+                    Console.WriteLine("Writing to {0}...", output.Name);
+                    output.WriteToDISASM();
                     postBuild = "\"" + rootFolder + "\"";
                 }
                 else

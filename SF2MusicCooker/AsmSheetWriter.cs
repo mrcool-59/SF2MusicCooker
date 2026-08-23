@@ -91,7 +91,7 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Outputs an ASM music sheet compatible under SF2DISASM framework.
+        /// Outputs an ASM music sheet.
         /// </summary>
         public static string Write(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, int pairNumber = 0)
         {
@@ -116,7 +116,7 @@ namespace SF2MusicCooker
             sb.AppendFormat("Music_{0}:", number);
             if (options.Title != null) sb.AppendFormat("\t\t; {0}", options.Title);
             sb.AppendLine();
-            if (pairNumber > 0) { sb.AppendFormat("Music_{0}:\t\t; Special case, these two musics are paired in SF2DISASM", pairNumber); sb.AppendLine(); }
+            if (pairNumber > 0) { sb.AppendFormat("Music_{0}:\t\t; Special case, these two musics are paired", pairNumber); sb.AppendLine(); }
             sb.AppendFormat(padding + "db 0\t; Must be zero"); sb.AppendLine();
             sb.AppendFormat(padding + "db {0}\t; DAC mode (0=YES, 1=NO)", channels.DAC); sb.AppendLine();
             sb.AppendFormat(padding + "db 0\t; Reserved"); sb.AppendLine();
@@ -142,7 +142,7 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Outputs an ASM SFX sheet compatible under SF2DISASM framework.
+        /// Outputs an ASM SFX sheet.
         /// </summary>
         public static string WriteSFX(SFXType type, FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number)
         {
