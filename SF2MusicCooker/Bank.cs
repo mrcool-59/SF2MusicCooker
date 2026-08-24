@@ -240,14 +240,14 @@ namespace SF2MusicCooker
             return overloaded;
         }
 
-        public Bank(string name, string folderName, int maxSize, int firstNumber, int length)
+        public Bank(string name, int maxSize, int firstNumber, int length)
         {
             if (maxSize <= 0) throw new ArgumentOutOfRangeException(nameof(maxSize), "cannot be zero or negative");
             if (firstNumber <= 0) throw new ArgumentOutOfRangeException(nameof(firstNumber), "cannot be zero or negative");
             if (length <= 0) throw new ArgumentOutOfRangeException(nameof(length), "cannot be zero or negative");
 
             Name = name ?? throw new ArgumentNullException(nameof(name));
-            FolderName = folderName ?? name;
+            FolderName = name + "-standard";
             MaxSize = maxSize;
             FirstNumber = firstNumber;
             Length = length;

@@ -154,12 +154,12 @@ namespace SF2MusicCooker
             return overloaded;
         }
 
-        public BankSFX(string name, string folderName, int maxSize)
+        public BankSFX(string name, int maxSize)
         {
             if (maxSize <= 0) throw new ArgumentOutOfRangeException(nameof(maxSize), "cannot be zero or negative");
 
             Name = name ?? throw new ArgumentNullException(nameof(name));
-            FolderName = folderName ?? name;
+            FolderName = name + "-standard";
             MaxSize = maxSize;
         }
     }

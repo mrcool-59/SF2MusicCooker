@@ -42,10 +42,13 @@ namespace SF2MusicCooker
         /// </summary>
         public bool HasExtBanks { get { return Array.Exists(_banks, bank => bank.Name.Contains("musicbankext")); } }
 
-        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, int pcmBaseOffset, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
+        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, string[] pcmNames, int pcmBaseOffset, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
+
+            if (pcmNames == null)
+                throw new ArgumentNullException(nameof(pcmNames));
 
             if (musicPairs != null && musicPairs.Length % 2 != 0)
                 throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
@@ -62,7 +65,7 @@ namespace SF2MusicCooker
 
             Instruments = new FMInstruments(instrumentSlots);
 
-            Samples = new PCMInstruments(pcmBanks, pcmBaseOffset);
+            Samples = new PCMInstruments(pcmBanks, pcmNames, pcmBaseOffset);
 
             Pitch = new PitchTable(paths.YmFrequencies, paths.NoteNames);
         }
@@ -83,39 +86,63 @@ namespace SF2MusicCooker
             FilePaths paths = new FilePaths(rootFolder);
 
             Bank[] banks;
+            int[] pcmBanks;
+            string[] pcmNames;
 
             if (hasExtBanks)
             {
                 banks = new Bank[4]
                 {
-                    new Bank("musicbank0", "musicbank0-standard", 0x8000, 1, 32),
-                    new Bank("musicbank1", "musicbank1-standard", 0x8000, 33, 16), // Shrinked compared to vanilla
-                    new Bank("musicbankext0", "musicbankext0-standard", 0x8000, 49, 8), // Extra bank 1
-                    new Bank("musicbankext1", "musicbankext1-standard", 0x8000, 57, 8) // Extra bank 1
+                    new Bank("musicbank0", 0x8000, 1, 32),
+                    new Bank("musicbank1", 0x8000, 33, 16), // Shrinked compared to vanilla
+                    new Bank("musicbankext0", 0x8000, 49, 8), // Extra bank 1
+                    new Bank("musicbankext1", 0x8000, 57, 8) // Extra bank 2
+                };
+
+                pcmBanks = new int[4]
+                {
+                    0x8000, // PCM bank 1
+                    0x3000, // PCM bank 2
+                    0x8000, // Extra bank 1
+                    0x8000, // Extra bank 2
+                };
+
+                pcmNames = new string[4]
+                {
+                    "pcmbank0",
+                    "pcmbank1",
+                    "pcmbankext0",
+                    "pcmbankext1",
                 };
             }
             else
             {
                 banks = new Bank[2]
                 {
-                    new Bank("musicbank0", "musicbank0-standard", 0x8000, 1, 32),
-                    new Bank("musicbank1", "musicbank1-standard", 0x8000, 33, 32)
+                    new Bank("musicbank0", 0x8000, 1, 32),
+                    new Bank("musicbank1", 0x8000, 33, 32)
+                };
+
+                pcmBanks = new int[2]
+                {
+                    0x8000, // PCM bank 1
+                    0x3000, // PCM bank 2
+                };
+
+                pcmNames = new string[2]
+                {
+                    "pcmbank0",
+                    "pcmbank1",
                 };
             }
 
             BankSFX[] sfxBanks = new BankSFX[1]
             {
                 // Quick calculation of available size for SFX bank: 64k - 44k (PCM bank 0-1) - 4k (FM instruments) - 8k (sound driver) = 8k remaining
-                new BankSFX("sfxbank", "sfxbank-standard", 0x2000)
+                new BankSFX("sfxbank", 0x2000)
             };
 
-            int[] pcmBanks = new int[]
-            {
-                0x8000, // PCM bank 0
-                0x3000, // PCM bank 1
-            };
-
-            return new Output(name, paths, banks, sfxBanks, pcmBanks, 0x8000, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
+            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmNames, 0x8000, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
         }
 
         private Bank SelectMusicBank(int number)

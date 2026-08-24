@@ -275,6 +275,33 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Return true if 'buffer' contains 'values' at the specified 'offset'.
+        /// </summary>
+        public static bool Contains(byte[] buffer, int offset, byte[] values)
+        {
+            if (buffer.Length - offset < values.Length) throw new ArgumentOutOfRangeException(nameof(offset));
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (values[i] != buffer[i + offset]) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Return index if 'buffer' contains 'values', otherwise return -1.
+        /// </summary>
+        public static int IndexOf(byte[] buffer, byte[] values)
+        {
+            int end = buffer.Length - values.Length;
+            for (int i = 0; i <= end; i++)
+            {
+                if (Contains(buffer, i, values)) return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
         /// Pick item with the lowest score returned by evaluation function. In case of ties, the earliest item wins.
         /// </summary>
         public static T SelectMin<T>(IReadOnlyList<T> candidates, Func<T, int> fn)

@@ -1,6 +1,7 @@
 ﻿using SF2MusicCooker.Furnace;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -15,9 +16,9 @@ namespace SF2MusicCooker
         public readonly struct PCMSample
         {
             /// <summary>
-            /// Used to play the sample at different rates (1 is normal rate).
+            /// Frame period of this sample within the sound engine. Used to play the sample at different rates (1 is normal rate).
             /// </summary>
-            public readonly int FramePeriod; 
+            public readonly int Period; 
 
             /// <summary>
             /// The bank where the PCM sample data can be accessed.
@@ -41,7 +42,7 @@ namespace SF2MusicCooker
             {
                 string Hex(ushort x) => "0" + x.ToString("X") + "h";
                 ushort offset = (ushort)(Offset + baseOffset);
-                return string.Format("dw {0}, DAC_BANK_{1}, {2}, {3}", ((ushort)FramePeriod).ToString().PadLeft(2), (ushort)(Bank + 1), Hex((ushort)Length).PadLeft(6), Hex(offset));
+                return string.Format("dw {0}, DAC_BANK_{1}, {2}, {3}", ((ushort)Period).ToString().PadLeft(2), (ushort)(Bank + 1), Hex((ushort)Length).PadLeft(6), Hex(offset));
             }
 
             /// <summary>
@@ -58,25 +59,26 @@ namespace SF2MusicCooker
             }
 
             /// <summary>
-            /// Get playback rate from 'period' (borrowed from Wiz code).
+            /// Get sample rate from 'period' (borrowed from Wiz code).
             /// </summary>
-            public static int ComputePlaybackRate(int period)
+            public static int ComputeRate(int period)
             {
-                return (int)(3012000 * Math.Pow(period - (-32.07), -1.573) + 1005); // TODO: use this
+                return (int)(3012000 * Math.Pow(period + 32.07, -1.573) + 1005);
             }
 
             /// <summary>
-            /// Given a sample rate, compute the 'period' to the sample at roughly the supplied rate.
+            /// Given a sample 'rate', compute the period to play the sample at.
             /// </summary>
-            public static int ComputeFramePeriod(int rate)
+            public static int ComputePeriod(int rate)
             {
-                // TODO
-                return 1;
+                int[] periods = new int[255];
+                for (int i = 0; i < periods.Length; i++) periods[i] = i + 1;
+                return Tools.SelectMin(periods, period => Math.Abs(ComputeRate(period) - rate));
             }
 
-            public PCMSample(int framePeriod, int bank, int length, int offset)
+            public PCMSample(int period, int bank, int length, int offset)
             {
-                FramePeriod = framePeriod;
+                Period = period;
                 Bank = bank;
                 Length = length;
                 Offset = offset;
@@ -85,18 +87,75 @@ namespace SF2MusicCooker
 
         private readonly List<PCMSample> _catalog;
         private readonly byte[][] _banks;
+        private readonly string[] _names;
         private readonly int[] _cursors;
         private readonly int _baseOffset;
 
-        private bool Allocate(int bytes, out ushort bank, out ushort offset)
+        private bool FindOrAllocate(byte[] data, out int bank, out int offset, out bool allocated)
         {
-            // TODO
-            
-            // TODO: étudier la possibilité d'ajouter pcmbankext0 et pcmbankext1
+            // First try to find
+            for (int i = 0; i < _banks.Length; i++)
+            {
+                offset = Tools.IndexOf(_banks[i], data);
+                if (offset >= 0)
+                {
+                    bank = i;
+                    allocated = false;
+                    return true;
+                }
+            }
 
-            bank = 0;
-            offset = 0;
-            return true;
+            // Then try to allocate
+            for (int i = 0; i < _banks.Length; i++)
+            {
+                if (GetRemainingBytes(i) >= data.Length)
+                {
+                    bank = i;
+                    offset = _cursors[i];
+                    allocated = true;
+                    _cursors[i] += data.Length;
+                    Buffer.BlockCopy(data, 0, _banks[i], offset, data.Length);
+                    return true;
+                }
+            }
+
+            bank = -1;
+            offset = -1;
+            allocated = false;
+            return false;
+        }
+
+        private void Shift(int bank, int offset, int length)
+        {
+            byte[] data = _banks[bank];
+
+            // Shift data region
+            int count = data.Length - length - offset;
+            for (int i = 0; i < count; i++) data[offset + i] = data[offset + i + length];
+
+            // Fill end with zeroes
+            Tools.Fill(data, data.Length - length, length, 0);
+
+            // Update cursor
+            _cursors[bank] -= length;
+
+            // Update catalog
+            for (int i = 0; i < _catalog.Count; i++)
+            {
+                PCMSample sample = _catalog[i];
+
+                Debug.Assert(sample.Offset + sample.Length <= offset || sample.Offset >= offset + length);
+
+                if (sample.Bank == bank && sample.Offset >= offset + length)
+                {
+                    _catalog[i] = new PCMSample(sample.Period, bank, sample.Length, sample.Offset - length);
+                }
+            }
+        }
+
+        private static byte[] Resample(byte[] data, int fromRate, int toRate)
+        {
+            return data; // TODO: not implemented (NOTE: probably don't resample if close enough...)
         }
 
         /// <summary>
@@ -117,7 +176,7 @@ namespace SF2MusicCooker
         /// </summary>
         public string GetBankName(int bank)
         {
-            return "pcmbank" + bank;
+            return _names[bank];
         }
 
         /// <summary>
@@ -139,17 +198,14 @@ namespace SF2MusicCooker
         /// <summary>
         /// Add a new sample. Return false if the sample already exists.
         /// </summary>
-        public bool Add(byte[] data, ushort framePeriod)
+        public bool Add(byte[] data, int framePeriod)
         {
             if (data.Length > MAX_SAMPLE_LENGTH) throw new NotSupportedException("PCM sample must be under " + MAX_SAMPLE_LENGTH + " bytes");
 
-            // TODO
-            // TODO: find duplicate if it exists instead of cloning data!!
-
-            if (Allocate(data.Length, out ushort bank, out ushort offset))
+            if (FindOrAllocate(data, out int bank, out int offset, out bool allocated))
             {
-                // _catalog.Add(new PCMSample(framePeriod, bank, (ushort)data.Length, offset));
-                return true;
+                _catalog.Add(new PCMSample(framePeriod, bank, data.Length, offset));
+                return allocated;
             }
             else
             {
@@ -160,20 +216,16 @@ namespace SF2MusicCooker
         /// <summary>
         /// Add a new Furnace sample. Return false if the sample already exists.
         /// </summary>
-        public bool Add(Sample sample, bool print)
+        public bool Add(Sample sample, int shift, bool print)
         {
-            // TODO: probably transform the waveform depening on 'sample.Note' and the actual rate the sound driver can play samples at!
+            int actualPeriod = PCMSample.ComputePeriod(sample.Rate);
+            int actualRate = PCMSample.ComputeRate(actualPeriod);
+            byte[] data = Resample(sample.Data, sample.Rate, actualRate);
 
-            ushort framePeriod = (ushort)PCMSample.ComputeFramePeriod(sample.Rate);
-            int actualRate = PCMSample.ComputePlaybackRate(framePeriod);
-            byte[] data = sample.Data;
+            int playRate = PitchTable.ShiftFrequency(actualRate, shift);
+            int playPeriod = PCMSample.ComputePeriod(playRate);
 
-            if (sample.Rate != actualRate)
-            {
-                // TODO: resample 'data' I think
-            }
-
-            bool added = Add(data, framePeriod);
+            bool added = Add(data, playPeriod);
             if (print)
             {
                 if (added)
@@ -202,8 +254,9 @@ namespace SF2MusicCooker
                         if (!entry.Invalid)
                         {
                             Sample sample = file.Samples[entry.Sample];
+                            int shift = entry.Note - NoteBible.C4_VALUE;
 
-                            _ = Add(sample, print);
+                            _ = Add(sample, shift, print);
                         }
                     }
                 }
@@ -215,7 +268,35 @@ namespace SF2MusicCooker
         /// </summary>
         public void Remove(int index)
         {
-            // TODO: compact if no other sample in the catalog is using the removed region
+            _catalog.RemoveAt(index);
+        }
+
+        /// <summary>
+        /// Fill gaps and move sample/free cursors accordingly. Should be called after removing some samples.
+        /// </summary>
+        public void FillGaps(int bank)
+        {
+            byte[] data = _banks[bank];
+            int i = 0;
+
+            bool InUse(int position)
+            {
+                return _catalog.Exists(c => c.Bank == bank && position >= c.Offset && position < c.Offset + c.Length);
+            }
+
+            while (i < data.Length)
+            {
+                if (!InUse(i))
+                {
+                    int j = i + 1;
+                    while (j < data.Length && !InUse(j)) j++;
+
+                    Shift(bank, i, j - i);
+                    i = j;
+                }
+
+                i++;
+            }
         }
 
         /// <summary>
@@ -223,7 +304,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void FillGaps()
         {
-            // TODO
+            for (int bank = 0; bank < _banks.Length; bank++) FillGaps(bank);
         }
 
         /// <summary>
@@ -263,12 +344,12 @@ namespace SF2MusicCooker
 
             Clear();
 
-            for (int i = 0; i < banks.Length; i++)
+            for (int bank = 0; bank < banks.Length; bank++)
             {
-                if (banks[i].Length != _banks[i].Length)
-                    throw new FormatException("Bank '" + GetBankName(i) + "' must have " + _banks[i].Length + " bytes");
+                if (banks[bank].Length != _banks[bank].Length)
+                    throw new FormatException("Bank '" + GetBankName(bank) + "' must have " + _banks[bank].Length + " bytes");
 
-                Buffer.BlockCopy(banks[i], 0, _banks[i], 0, banks[i].Length);
+                Buffer.BlockCopy(banks[bank], 0, _banks[bank], 0, banks[bank].Length);
             }
 
             string[] lines = Tools.GetAllStringElements(pcmSamplesAsm, new Regex("dw(.+)"));
@@ -333,21 +414,25 @@ namespace SF2MusicCooker
             File.WriteAllText(Path.Combine(pcmSamplesPath, "pcm_samples-standard.asm"), sb.ToString().TrimEnd());
             Console.WriteLine("> Wrote 'pcm_samples-standard.asm' file!");
 
-            for (int i = 0; i < _banks.Length; i++)
+            for (int bank = 0; bank < _banks.Length; bank++)
             {
-                string filename = GetBankName(i) + "-standard.bin";
-                File.WriteAllBytes(Path.Combine(pcmBanksFolder, filename), _banks[i]);
+                string filename = GetBankName(bank) + "-standard.bin";
+                File.WriteAllBytes(Path.Combine(pcmBanksFolder, filename), _banks[bank]);
                 Console.WriteLine("> Wrote '{0}' file!", filename);
             }
         }
 
-        public PCMInstruments(int[] bankLengths, int baseOffset)
+        public PCMInstruments(int[] bankLengths, string[] bankNames, int baseOffset)
         {
             if (bankLengths == null) throw new ArgumentNullException(nameof(bankLengths));
+            if (bankNames == null) throw new ArgumentNullException(nameof(bankNames));
             if (baseOffset < 0) throw new ArgumentOutOfRangeException(nameof(baseOffset), "must be zero or positive");
+
+            if (bankLengths.Length != bankNames.Length) throw new ArgumentException("'bankLengths' and 'bankNames' must have the same length");
 
             _catalog = new List<PCMSample>();
             _banks = new byte[bankLengths.Length][];
+            _names = bankNames;
             _cursors = new int[bankLengths.Length];
             _baseOffset = baseOffset;
 

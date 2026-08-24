@@ -32,6 +32,14 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get shifted frequency of a note shift.
+        /// </summary>
+        public static int ShiftFrequency(int frequency, int shift)
+        {
+            return (int)Math.Round(frequency * Math.Pow(2.0, shift / 12f));
+        }
+
+        /// <summary>
         /// Get YM2612 frequency from its raw register value.
         /// </summary>
         public static int GetYMFrequency(int value)
