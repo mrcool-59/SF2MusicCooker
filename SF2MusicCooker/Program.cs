@@ -158,7 +158,7 @@ namespace SF2MusicCooker
                 Options options = new Options("[CUSTOM] " + name, null, arguments.IsolateChannel, !arguments.NoOptimizeNotes, arguments.DumpNotes);
 
                 // Generate the builder
-                Func<string> builder = Builder(false, fur, number, pairNumber, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
+                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
 
                 // Build ASM name
                 string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
@@ -216,12 +216,14 @@ namespace SF2MusicCooker
                 // Prepare the options
                 Options options = new Options("[CUSTOM] " + name, null, arguments.IsolateChannel, !arguments.NoOptimizeNotes, arguments.DumpNotes);
 
-                // Generate the builder
-                Func<string> builder = Builder(true, fur, number, 0, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
-
-                // Build ASM name and pointer name
-                string asmName = "SFX_CUSTOM_" + Tools.GetASMValidName(name);
+                // Pick a pointer name
                 string pointerName = "CSFX_" + sfxs.Count;
+
+                // Generate the builder
+                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
+
+                // Build ASM name
+                string asmName = "SFX_CUSTOM_" + Tools.GetASMValidName(name);
 
                 // Create a deferred sheet
                 Sheet sheet = Sheet.Later(builder);
@@ -235,7 +237,7 @@ namespace SF2MusicCooker
             output.AddOrReplaceSFX(sfxs.ToArray(), arguments.IncludeOriginalNames);
         }
 
-        static Func<string> Builder(bool sfx, FileInfo fur, int number, int pairNumber, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, bool dumpUncompressed)
+        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, bool dumpUncompressed)
         {
             return () =>
             {
@@ -268,8 +270,8 @@ namespace SF2MusicCooker
                     InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
 
                     // Write the ASM sheet of the music/SFX
-                    if (sfx)
-                        return AsmSheetWriter.WriteSFX(file, options, map, pitch, number);
+                    if (pointerName != null)
+                        return AsmSheetWriter.WriteSFX(file, options, map, pitch, pointerName);
                     else
                         return AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber);
                 }

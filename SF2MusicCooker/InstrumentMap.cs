@@ -38,7 +38,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void Check(FurnaceFile file, bool requiresDAC, out byte dac)
         {
-            bool channel6_dac = requiresDAC;
+            bool channel6_dac = requiresDAC || !file.HasPlayNoteCommand(5); // Also DAC mode if channel 6 is empty
 
             // TODO: complete this when samples are implemented
 

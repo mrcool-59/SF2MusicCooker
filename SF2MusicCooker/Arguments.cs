@@ -41,8 +41,8 @@ namespace SF2MusicCooker
             NoPostBuild = Exists("--nopostbuild") || Exists("-npb");
             NoOptimizeNotes = Exists("--nooptimize") || Exists("-no");
             IncludeOriginalNames = Exists("--includeoriginalnames") || Exists("-ion");
-            NukeMusic = Exists("--nukemusic") || Exists("-nm");
-            NukeSFX = Exists("--nukesfx") || Exists("-ns");
+            NukeMusic = Exists("--nukemusic") || Exists("-nm") || Exists("--nukeall") || Exists("-na");
+            NukeSFX = Exists("--nukesfx") || Exists("-ns") || Exists("--nukeall") || Exists("-na");
             AutoYes = Exists("--autoyes") || Exists("-ay");
             AutoNo = Exists("--autono") || Exists("-an");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");

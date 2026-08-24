@@ -1,5 +1,4 @@
 ﻿Version 0.9:
-- Nuke SFX broken!
 - DAC support (en ignorant les samples inutilisés)
 
 Version 1.0:

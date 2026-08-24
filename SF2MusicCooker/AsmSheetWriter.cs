@@ -137,7 +137,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an ASM SFX sheet.
         /// </summary>
-        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, SFXType type = SFXType.Automatic)
+        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, string pointerName, SFXType type = SFXType.Automatic)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -153,13 +153,14 @@ namespace SF2MusicCooker
             channels.Generate(file, options, map, pitch);
 
             // Write header (disclaimer is skipped for SFX)
-            sb.AppendFormat("Sfx_{0}:", number);
+            sb.Append(pointerName);
+            sb.Append(':');
             if (options.Title != null) sb.AppendFormat("\t\t; {0}", options.Title);
             sb.AppendLine();
             sb.AppendFormat(padding + "db {0}\t; SFX type", (byte)type); sb.AppendLine();
 
             // Write channels
-            channels.Write(sb, "Sfx_" + number, padding);
+            channels.Write(sb, pointerName, padding);
 
             // We have generated the full ASM to describe the SFX!
             string asm = sb.ToString();
@@ -174,9 +175,9 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an empty ASM SFX sheet.
         /// </summary>
-        public static string WriteSFXEmpty(int number)
+        public static string WriteSFXEmpty(string pointerName)
         {
-            return WriteSFX(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, number);
+            return WriteSFX(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, pointerName);
         }
     }
 }
