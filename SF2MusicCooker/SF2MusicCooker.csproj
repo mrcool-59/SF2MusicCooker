@@ -99,13 +99,16 @@
     <None Include="Test\%40music04-Test Tricky Loop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music41-Choose your Path.fur">
+    <None Include="Test\!%40music41-Choose your Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="sfxbank.asm.tpl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music05-Test Illegal Volume Ramp.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\%40music34-Silence.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="__Run.bat">

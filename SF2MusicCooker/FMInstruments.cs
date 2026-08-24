@@ -9,7 +9,9 @@ namespace SF2MusicCooker
 {
     public sealed class FMInstruments
     {
-        public const byte MAX_INSTRUMENTS = 141; // (= 4096 / 29)
+        public const int LENGTH = 4096;
+
+        public const byte MAX_INSTRUMENTS = LENGTH / Definition.LENGTH;
 
         public sealed class Definition : IEquatable<Definition>
         {
@@ -73,7 +75,7 @@ namespace SF2MusicCooker
         private byte Allocate()
         {
             int instrument = Array.FindIndex(_used, u => u == 0);
-            if (instrument < 0) throw new NotSupportedException("Sorry, it appears all " + _used.Length + " instruments are used, there is no free instrument slot!");
+            if (instrument < 0) throw new InvalidOperationException("Sorry, it appears all " + _used.Length + " instruments are used, there is no free instrument slot!");
             _used[instrument] = 1;
             return (byte)instrument;
         }
@@ -220,7 +222,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void Load(byte[] yminst)
         {
-            if (yminst == null || yminst.Length != 4096) throw new FormatException("Bad 'yminst' data: 4096 bytes expected");
+            if (yminst == null || yminst.Length != LENGTH) throw new FormatException("Bad 'yminst' data: " + LENGTH + " bytes expected");
 
             Buffer.BlockCopy(yminst, 0, _buffer, 0, _buffer.Length);
             for (int i = 0; i < _used.Length; i++) _used[i] = (byte)(Definition.Read(_buffer, (byte)i).Equals(Definition.Null) ? 0 : 1);
@@ -232,9 +234,9 @@ namespace SF2MusicCooker
                 throw new ArgumentOutOfRangeException(nameof(slots), "cannot be negative");
 
             if (slots > MAX_INSTRUMENTS)
-                throw new NotSupportedException(MAX_INSTRUMENTS + " instruments is the absolute maximum limit that can fit in 4096 bytes");
+                throw new NotSupportedException(MAX_INSTRUMENTS + " instruments is the absolute maximum limit that can fit in " + LENGTH + " bytes");
 
-            _buffer = new byte[4096];
+            _buffer = new byte[LENGTH];
             _used = new byte[slots];
 
             Tools.Fill(_buffer, 0, _buffer.Length, 0xFF);

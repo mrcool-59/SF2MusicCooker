@@ -13,6 +13,8 @@ namespace SF2MusicCooker
     {
         private const int MAX_SAMPLE_LENGTH = 0x3000; // This is not really a hard limit, more like a "insanity" limit
 
+        private const int MAX_ENTRIES = 0x7F; // Play sample commands have 7 bits
+
         public readonly struct PCMSample
         {
             /// <summary>
@@ -129,27 +131,24 @@ namespace SF2MusicCooker
         {
             byte[] data = _banks[bank];
 
+            // Update cursor
+            _cursors[bank] -= length;
+
             // Shift data region
-            int count = data.Length - length - offset;
+            int count = _cursors[bank] - offset;
             for (int i = 0; i < count; i++) data[offset + i] = data[offset + i + length];
 
             // Fill end with zeroes
-            Tools.Fill(data, data.Length - length, length, 0);
-
-            // Update cursor
-            _cursors[bank] -= length;
+            Tools.Fill(data, _cursors[bank], length, 0);
 
             // Update catalog
             for (int i = 0; i < _catalog.Count; i++)
             {
                 PCMSample sample = _catalog[i];
+                if (sample.Bank != bank) continue;
 
                 Debug.Assert(sample.Offset + sample.Length <= offset || sample.Offset >= offset + length);
-
-                if (sample.Bank == bank && sample.Offset >= offset + length)
-                {
-                    _catalog[i] = new PCMSample(sample.Period, bank, sample.Length, sample.Offset - length);
-                }
+                if (sample.Offset >= offset + length) _catalog[i] = new PCMSample(sample.Period, bank, sample.Length, sample.Offset - length);
             }
         }
 
@@ -202,6 +201,8 @@ namespace SF2MusicCooker
         {
             if (data.Length > MAX_SAMPLE_LENGTH) throw new NotSupportedException("PCM sample must be under " + MAX_SAMPLE_LENGTH + " bytes");
 
+            if (_catalog.Count >= MAX_ENTRIES) throw new InvalidOperationException("Sorry, it's not possible to have more than " + MAX_ENTRIES + " sample entries");
+
             if (FindOrAllocate(data, out int bank, out int offset, out bool allocated))
             {
                 _catalog.Add(new PCMSample(framePeriod, bank, data.Length, offset));
@@ -209,7 +210,7 @@ namespace SF2MusicCooker
             }
             else
             {
-                throw new NotSupportedException("Sorry, there is not enough free space to store PCM sample data in any of the PCM banks!");
+                throw new InvalidOperationException("Sorry, there is not enough free space to store PCM sample data in any of the PCM banks!");
             }
         }
 
@@ -270,6 +271,8 @@ namespace SF2MusicCooker
         /// </summary>
         public void Remove(int index)
         {
+            // TODO: this will break vanilla songs that rely on this sample index, set dummy data instead!
+
             _catalog.RemoveAt(index);
         }
 
@@ -288,16 +291,16 @@ namespace SF2MusicCooker
 
             while (i < _cursors[bank])
             {
-                if (!InUse(i))
+                if (InUse(i))
+                {
+                    i++;
+                }
+                else
                 {
                     int j = i + 1;
-                    while (j < data.Length && !InUse(j)) j++;
-
+                    while (j < _cursors[bank] && !InUse(j)) j++;
                     Shift(bank, i, j - i);
-                    i = j;
                 }
-
-                i++;
             }
         }
 

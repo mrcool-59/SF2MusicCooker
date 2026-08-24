@@ -129,7 +129,7 @@ namespace SF2MusicCooker
             {
                 Song song = target[i];
                 string asm = AsmSheetWriter.WriteEmpty(song.Number);
-                if (song.Name != null) song = song.UpdateName(song.Name + " [NUKED]");
+                if (song.Name != null) song = song.UpdateName(song.Name + " (NUKED)");
                 song = song.UpdateSheet(new Sheet(asm));
                 target[i] = song;
             }

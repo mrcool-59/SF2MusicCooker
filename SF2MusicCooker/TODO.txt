@@ -1,5 +1,7 @@
 ﻿Version 0.9:
-- SFX input support
+- Battlefield Death/Demon breath SFX: suspicious après NUKE des musics
+	=> A cause du décalage des sample index dans les SFX vanilla qui ont survécu au nuke :)
+///
 - DAC support (en ignorant les samples inutilisés)
 
 Version 1.0:

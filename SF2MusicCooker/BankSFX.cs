@@ -84,7 +84,7 @@ namespace SF2MusicCooker
             {
                 SFX sfx = target[i];
                 string asm = AsmSheetWriter.WriteSFXEmpty(sfx.Number);
-                sfx = sfx.UpdateName(sfx.Name + " [NUKED]");
+                sfx = sfx.UpdateName(sfx.Name + " (NUKED)");
                 sfx = sfx.UpdateSheet(new Sheet(asm));
                 target[i] = sfx;
             }

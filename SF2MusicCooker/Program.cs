@@ -21,7 +21,6 @@ namespace SF2MusicCooker
                 Output output = Output.CreateForSF2DISASM(rootFolder);
                 Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments, PCM samples)...");
                 output.LoadVanilla();
-                output.NukeVanilla(arguments.NukeMusic, arguments.NukeSFX);
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
                 List<Sheet> sheets = new List<Sheet>();
@@ -37,6 +36,9 @@ namespace SF2MusicCooker
                     DoMusics(sheets, musics, output, arguments);
                     DoSFXs(sheets, sfxs, output, arguments);
                 }
+
+                // Nuke vanilla
+                output.NukeVanilla(arguments.NukeMusic, arguments.NukeSFX);
 
                 // Pad the music banks
                 output.PadLast();
@@ -59,7 +61,7 @@ namespace SF2MusicCooker
                         autoNo = false;
                         Console.WriteLine("! Auto Y/N has been turned off because one of the Banks is overloaded and requires manual review.");
                     }
-                    Console.WriteLine("WARNING: At least 1 Bank is overloaded, assembling the ROM will probably fail!");
+                    Console.WriteLine("WARNING: At least 1 Bank is overloaded, assembling the ROM will either fail or produce broken results!");
                     Console.WriteLine("         For musics: you should move some musics from that Music Bank to Music Banks that still have remaining space.");
                     if (output.Name == "SF2DISASM" && !output.HasExtBanks)
                     {
@@ -74,12 +76,12 @@ namespace SF2MusicCooker
                     Console.WriteLine("The tool is about to write output files (Y/N).");
                     Console.WriteLine("* Press 'Y' to write output files directly to the appropriate locations in {0} folder.", output.Name);
                     Console.WriteLine("* Press 'N' to write to 'Output' folder instead (any existing 'Output' folder will be deleted beforehand).");
+                    WaitForYesNo(ref writeToDISASM);
 
-                    while (true)
+                    if (overloaded && writeToDISASM)
                     {
-                        ConsoleKeyInfo answer = Console.ReadKey(true);
-                        writeToDISASM = answer.Key == ConsoleKey.Y;
-                        if (answer.Key == ConsoleKey.Y || answer.Key == ConsoleKey.N) break;
+                        Console.WriteLine("Are you really sure? The ROM *will* be broken! (Y/N)");
+                        WaitForYesNo(ref writeToDISASM);
                     }
                 }
 
@@ -119,6 +121,16 @@ namespace SF2MusicCooker
                     WorkingDirectory = Path.GetDirectoryName(path),
                     Arguments = postBuild
                 });
+            }
+        }
+
+        static void WaitForYesNo(ref bool answer)
+        {
+            while (true)
+            {
+                ConsoleKeyInfo info = Console.ReadKey(true);
+                answer = info.Key == ConsoleKey.Y;
+                if (info.Key == ConsoleKey.Y || info.Key == ConsoleKey.N) break;
             }
         }
 
