@@ -218,6 +218,8 @@ namespace SF2MusicCooker
         /// </summary>
         public bool Add(Sample sample, int shift, bool print)
         {
+            // TODO: A4 tuning coeff to take in account
+
             int actualPeriod = PCMSample.ComputePeriod(sample.Rate);
             int actualRate = PCMSample.ComputeRate(actualPeriod);
             byte[] data = Resample(sample.Data, sample.Rate, actualRate);
@@ -321,17 +323,23 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Clear all samples, except those in the set.
+        /// Clear all samples, except those in the set. Return the number of samples removed.
         /// </summary>
-        public void ClearExcept(HashSet<int> set)
+        public int ClearExcept(HashSet<int> set)
         {
+            int removed = 0;
             int count = _catalog.Count;
             for (int i = 0; i < count; i++)
             {
                 int j = count - i - 1;
-                if (!set.Contains(j)) Remove(j);
+                if (!set.Contains(j))
+                {
+                    Remove(j);
+                    removed++;
+                }
             }
-            FillGaps();
+            if (removed > 0) FillGaps();
+            return removed;
         }
 
         /// <summary>

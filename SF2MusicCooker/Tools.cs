@@ -41,6 +41,17 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get all active files (i.e: files with name not prefixed with '!') in the specified 'folder' whose filename match 'pattern'.
+        /// </summary>
+        public static FileInfo[] GetActiveFiles(string folder, string pattern)
+        {
+            DirectoryInfo info = new DirectoryInfo(folder);
+            if (!info.Exists) return Array.Empty<FileInfo>();
+            FileInfo[] files = info.GetFiles(pattern);
+            return Array.FindAll(files, file => !file.Name.StartsWith("!"));
+        }
+
+        /// <summary>
         /// Given a possibly arbitrary string, return a close enough string that is legal in ASM code (i.e: to create labels).
         /// </summary>
         public static string GetASMValidName(string x)

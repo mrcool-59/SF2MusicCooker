@@ -8,6 +8,11 @@ namespace SF2MusicCooker
         private Func<string> _builder;
 
         /// <summary>
+        /// True if the sheet was built.
+        /// </summary>
+        public bool Built { get { return _asm != null; } }
+
+        /// <summary>
         /// Build the ASM. Does nothing if the ASM is already built.
         /// </summary>
         public void Build()

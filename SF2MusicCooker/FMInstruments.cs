@@ -1,6 +1,8 @@
 ﻿using SF2MusicCooker.Furnace;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace SF2MusicCooker
@@ -142,17 +144,20 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Clear all instruments, except those in the set.
+        /// Clear all instruments, except those in the set. Return the number of instruments removed.
         /// </summary>
-        public void ClearExcept(HashSet<int> set)
+        public int ClearExcept(HashSet<int> set)
         {
+            int removed = 0;
             for (int i = 0; i < _used.Length; i++)
             {
                 if (_used[i] == 1 && !set.Contains(i))
                 {
                     Remove((byte)i);
+                    removed++;
                 }
             }
+            return removed;
         }
 
         /// <summary>
@@ -184,6 +189,7 @@ namespace SF2MusicCooker
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("[{0}] ", _used.Count(u => u != 0));
             sb.Append("Used: ");
             for (int i = 0; i < _used.Length; i++)
             {
@@ -199,7 +205,18 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Load the contents of 'yminst.bin' and update instruments data and used slots.
+        /// Load the contents of specified 'yminst.bin' file and update instruments data and used slots.
+        /// </summary>
+        public void Load(string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            byte[] yminst = File.ReadAllBytes(path);
+            Load(yminst);
+        }
+
+        /// <summary>
+        /// Load the contents of specified 'yminst.bin' buffer and update instruments data and used slots.
         /// </summary>
         public void Load(byte[] yminst)
         {

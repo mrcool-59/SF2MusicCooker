@@ -199,8 +199,6 @@ namespace SF2MusicCooker
             Dictionary<int, string> number2name = _paths.MusicNamesTxt != null ? Tools.ReadNumberStringMap(_paths.MusicNamesTxt) : new Dictionary<int, string>(); // Load music names (for sound test)
             Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(_paths.MusicNumbersAndAsmNames); // Load numbers and ASM names
             Dictionary<int, string> sfx_number2enum = Tools.ReadASMEnumReverseMap(_paths.SfxNumbersAndAsmNames); // Load numbers and ASM names for SFXs
-            HashSet<int> usedInstruments = new HashSet<int>();
-            HashSet<int> usedSamples = new HashSet<int>();
             Regex regex = new Regex("^music([0-9]+)\\.asm$");
             Regex sfxPointerNameRegex = new Regex("dw[ \t]+(Sfx_[0-9]+)[ \t\r\n]");
             Regex sfxPointerNameLabelRegex = new Regex("(Sfx_[0-9]+):");
@@ -226,8 +224,6 @@ namespace SF2MusicCooker
                         Song song = new Song(number, name, asmName, new Sheet(asm));
                         Bank bank = SelectMusicBank(song.Number);
                         bank.Add(song, true);
-                        AsmSheetToolkit.FillInstruments(asm, usedInstruments);
-                        AsmSheetToolkit.FillSamples(asm, usedSamples);
 
                         // Special case for music 4 and 14
                         int pairNumber = GetPairedMusic(number);
@@ -270,22 +266,47 @@ namespace SF2MusicCooker
                     currentSfx++;
                 }
 
-                AsmSheetToolkit.FillInstruments(compositeAsm, usedInstruments);
-                AsmSheetToolkit.FillSamples(compositeAsm, usedSamples);
                 currentBank++;
             }
 
             // Verify that all puzzle pieces fit for SFXs (because of their channel pointers that can reference data defined in other SFXs...)
             _sfxNeededByMap = AsmSheetToolkit.VerifyAndGetDependencies(_sfxBanks);
 
-            // Load FM instruments and clear the unused ones
-            byte[] yminst = File.ReadAllBytes(_paths.YmInstBin);
-            Instruments.Load(yminst);
-            Instruments.ClearExcept(usedInstruments);
+            // Load FM instruments
+            Instruments.Load(_paths.YmInstBin);
 
             // Load PCM banks
             Samples.Load(_paths.PcmSamples, _paths.PcmBankFiles);
-            Samples.ClearExcept(usedSamples);
+        }
+
+        /// <summary>
+        /// Remove unused FM instruments and samples by examining music and SFX sheets. Sheets that haven't been built yet are ignored.
+        /// </summary>
+        public void RemoveUnusedAssets(bool print)
+        {
+            HashSet<int> usedInstruments = new HashSet<int>();
+            HashSet<int> usedSamples = new HashSet<int>();
+
+            void Process(Sheet sheet)
+            {
+                if (sheet.Built)
+                {
+                    AsmSheetToolkit.FillInstruments(sheet, usedInstruments);
+                    AsmSheetToolkit.FillSamples(sheet, usedSamples);
+                }
+            }
+
+            foreach (Song song in GetAllSongs(false)) Process(song.Sheet);
+            foreach (SFX sfx in GetAllSFXs(false)) Process(sfx.Sheet);
+
+            int removedInstruments = Instruments.ClearExcept(usedInstruments);
+            int removedSamples = Samples.ClearExcept(usedSamples);
+
+            if (removedInstruments > 0 && print)
+                Console.WriteLine("> Removed {0} unused FM instrument{1}", removedInstruments, removedInstruments > 1 ? "s" : "");
+
+            if (removedSamples > 0 && print)
+                Console.WriteLine("> Removed {0} unused sample{1}", removedSamples, removedSamples > 1 ? "s" : "");
         }
 
         /// <summary>

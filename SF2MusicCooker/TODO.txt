@@ -17,8 +17,6 @@ Version 1.1:
 
 Version 1.2:
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
-- Calculer les instruments FM/samples utilisés *après* avoir retiré les vanilla song pour pouvoir économiser de la place
-	=> Nécessite un rework important de l'enchainement des actions car il faut d'abord retirer les songs vanilla avant d'importer les customs (utiliser Defer de Sheet)
 - Possibilité d'ajouter des notes supplémentaires (sans changer la note et en mode 'sustain') pour pouvoir gérer les changements de volume / panning hors new note
 
 Version 1.2.1:

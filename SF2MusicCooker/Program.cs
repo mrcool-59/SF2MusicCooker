@@ -10,64 +10,46 @@ namespace SF2MusicCooker
     {
         static void Main(string[] args)
         {
-            // Options
-            bool Test(string x) => Array.Exists(args, arg => arg.Equals(x, StringComparison.OrdinalIgnoreCase));
-            bool noPause = Test("--nopause") || Test("-np");
-            bool noPostBuild = Test("--nopostbuild") || Test("-npb");
-            bool noOptimizeNotes = Test("--nooptimize") || Test("-no");
-            bool includeOriginalNames = Test("--includeoriginalnames") || Test("-ion");
-            bool autoYes = Test("--autoyes") || Test("-ay");
-            bool autoNo = Test("--autono") || Test("-an");
-            bool dumpUncompressed = Test("--dumpuncompressed") || Test("-du");
-            bool dumpNotes = Test("--dumpnotes") || Test("-dn");
-            bool test = Test("--test") || Test("-t");
-            int isolateChannel = -1;
-            int only = -1;
-            for (int i = 0; i < 9; i++) if (Test("--channel" + i) || Test("-c" + i)) isolateChannel = i;
-            for (int i = 1; i < SFX.NONE; i++) if (Test("--only" + i) || Test("-o" + i)) only = i;
-
-            // Arg to pass to postbuild script, if it needs to run
-            string postBuild = null;
+            Arguments arguments = new Arguments(args);
+            string postBuild = null; // Argument to pass to postbuild script, if it needs to run
 
             try
             {
-                if (args.Length == 0) throw new NotSupportedException("This program requires the path to the SF2DISASM folder as 1st argument.");
-
-                string rootFolder = Path.GetFullPath(args[0]);
-
+                arguments.ThrowIfInvalid();
+                string rootFolder = Path.GetFullPath(arguments.Path);
                 Console.WriteLine("Path to SF2DISASM: {0}", rootFolder);
                 Output output = Output.CreateForSF2DISASM(rootFolder);
                 Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments, PCM samples)...");
                 output.LoadVanilla();
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
-                FileInfo[] furs = new DirectoryInfo(test ? "Test" : "Input").GetFiles("*.fur");
-                FileInfo[] activeFurs = Array.FindAll(furs, fur => !fur.Name.StartsWith("!"));
-                HashSet<int> provided = new HashSet<int>();
+                List<Sheet> sheets = new List<Sheet>();
+                FileInfo[] musics = Tools.GetActiveFiles(arguments.Test ? "Test" : "Input", "*.fur");
+                FileInfo[] sfxs = Tools.GetActiveFiles(arguments.Test ? "Test-SFX" : "Input-SFX", "*.fur");
 
-                foreach (FileInfo fur in activeFurs)
+                if (musics.Length == 0 && sfxs.Length == 0)
                 {
-                    Tools.ExtractNumberAndName(fur.Name, out int number, out _, out _);
-
-                    if (!provided.Add(number)) throw new InvalidOperationException("Cannot provide multiple .fur files for music " + number);
+                    Console.WriteLine("WARNING: No input .fur file found! The tool can still proceed anyway...");
+                }
+                else
+                {
+                    DoMusics(sheets, musics, output, arguments);
+                    DoSFXs(sheets, sfxs, output, arguments);
                 }
 
-                foreach (FileInfo fur in activeFurs)
-                {
-                    Build(output, fur, provided, noOptimizeNotes, includeOriginalNames, dumpUncompressed, dumpNotes, isolateChannel, only);
-                }
-
-                if (activeFurs.Length == 0)
-                {
-                    Console.WriteLine("WARNING: No .fur file found in input folder! The tool can still proceed anyway...");
-                }
-
+                // Pad the music banks
                 output.PadLast();
 
-                // TODO: implement here SFX add/replace feature
+                // Remove unused assets
+                output.RemoveUnusedAssets(true);
+
+                // Build sheets that have been deferred
+                foreach (Sheet sheet in sheets) sheet.Build();
 
                 Console.WriteLine("Bank storage summary:");
                 bool overloaded = output.PrintSize();
+                bool autoYes = arguments.AutoYes;
+                bool autoNo = arguments.AutoNo;
                 if (overloaded)
                 {
                     if (autoYes || autoNo)
@@ -120,14 +102,14 @@ namespace SF2MusicCooker
                 Environment.ExitCode = 1;
             }
 
-            if (!noPause)
+            if (!arguments.NoPause)
             {
                 Console.WriteLine("-- Press a key to exit --");
                 _ = Console.ReadKey(true);
             }
 
             string path = Path.GetFullPath("POSTBUILD.bat");
-            if (postBuild != null && !noPostBuild && File.Exists(path))
+            if (postBuild != null && !arguments.NoPostBuild && File.Exists(path))
             {
                 Process.Start(new ProcessStartInfo()
                 {
@@ -139,74 +121,51 @@ namespace SF2MusicCooker
             }
         }
 
-        static void Build(Output output, FileInfo fur, HashSet<int> provided, bool noOptimizeNotes, bool includeOriginalNames, bool dumpUncompressed, bool dumpNotes, int isolateChannel, int only)
+        static void DoMusics(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments)
         {
-            Tools.ExtractNumberAndName(fur.Name, out int number, out int moveFrom, out string name);
+            HashSet<int> provided = new HashSet<int>();
 
-            if (only >= 0 && number != only) return;
-
-            FMInstruments instruments = output.Instruments;
-            PCMInstruments samples = output.Samples;
-            PitchTable pitch = output.Pitch;
-
-            using (FileStream stream = fur.OpenRead())
+            foreach (FileInfo fur in furs)
             {
-                Console.WriteLine("Reading '{0}' input file...", fur.Name);
+                Tools.ExtractNumberAndName(fur.Name, out int number, out _, out _);
 
-                // We first need to understand the contents of the .fur file
-                FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, dumpUncompressed ? ("UNCOMPRESSED_" + fur.Name) : null);
+                if (!provided.Add(number)) throw new InvalidOperationException("Cannot provide multiple .fur files for music " + number);
+            }
 
-                // Verify A-4 tuning value
-                if (file.A4Tuning != FurnaceFile.StandardA4Tuning) Console.WriteLine("! This tool doesn't support A-4 tuning different from {0} hz, end result will sound incorrect if you proceed", FurnaceFile.StandardA4Tuning);
+            foreach (FileInfo fur in furs)
+            {
+                Tools.ExtractNumberAndName(fur.Name, out int number, out int moveFrom, out string name);
 
-                // Remove notes we don't support in the note bible
-                int removed = file.RemoveUnsupportedNotes();
-                if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
-
-                // Identify the instruments that are really used
-                Instrument[] usedFurnaceInstruments = file.GetUsedInstruments();
-                int unused = file.Instruments.Length - usedFurnaceInstruments.Length;
-                if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
-
-                // Warn the user of unsupported effects the .fur file may have
-                AsmSheetWriter.PrintUnsupportedEffects(file);
-
-                // Warn the user of unsupported sample maps the .fur file may have
-                // AsmSheetWriter.PrintUnsupportedSampleMaps(usedFurnaceInstruments);
-
-                // Complete the global FM instruments by those present in this .fur file, if they are really used
-                instruments.AddMany(usedFurnaceInstruments, dumpNotes);
-
-                // Complete the global samples by those present in this .fur file, if they are really used
-                samples.AddMany(file, usedFurnaceInstruments, dumpNotes);
+                if (arguments.Only >= 0 && number != arguments.Only) return;
 
                 // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
                 int pairNumber = output.GetPairedMusic(number);
                 if (provided.Contains(pairNumber)) pairNumber = 0; // Both elements of the pair have been provided, no need to use this hack
 
                 // Prepare the options
-                Options options = new Options("[CUSTOM] " + name, null, isolateChannel, !noOptimizeNotes, dumpNotes);
+                Options options = new Options("[CUSTOM] " + name, null, arguments.IsolateChannel, !arguments.NoOptimizeNotes, arguments.DumpNotes);
 
-                // Prepare the Furnace to Cube instrument map
-                InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
-
-                // Write the ASM sheet of the music
-                string asm = AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber);
+                // Generate the builder
+                Func<string> builder = Builder(fur, number, pairNumber, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
 
                 // Build ASM name
                 string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
 
+                // Create a deferred sheet
+                Sheet sheet = Sheet.Later(builder);
+                sheets.Add(sheet);
+
                 // Send to output!
-                Song song = new Song(number, name, asmName, new Sheet(asm));
+                Song song = new Song(number, name, asmName, sheet);
                 if (moveFrom != 0)
                 {
                     if (moveFrom == number)
                     {
                         // Replace
-                        output.Replace(song, includeOriginalNames);
+                        output.Replace(song, arguments.IncludeOriginalNames);
                         if (pairNumber > 0)
                         {
-                            output.Replace(new Song(pairNumber, name, asmName, Sheet.Clone), includeOriginalNames);
+                            output.Replace(new Song(pairNumber, name, asmName, Sheet.Clone), arguments.IncludeOriginalNames);
                             Console.WriteLine("WARNING: music {0} will also be replaced by music {1} since they are linked in pairs", pairNumber, number);
                         }
                     }
@@ -220,7 +179,7 @@ namespace SF2MusicCooker
                         }
                         else
                         {
-                            output.MoveReplace(song, moveFrom, includeOriginalNames);
+                            output.MoveReplace(song, moveFrom, arguments.IncludeOriginalNames);
                         }
                     }
                 }
@@ -230,6 +189,52 @@ namespace SF2MusicCooker
                     output.Add(song);
                 }
             }
+        }
+
+        static void DoSFXs(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments)
+        {
+            // TODO: implement here SFX add/replace feature
+        }
+
+        static Func<string> Builder(FileInfo fur, int number, int pairNumber, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, bool dumpUncompressed)
+        {
+            return () =>
+            {
+                using (FileStream stream = fur.OpenRead())
+                {
+                    Console.WriteLine("Reading '{0}' input file...", fur.Name);
+
+                    // We first need to understand the contents of the .fur file
+                    FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, dumpUncompressed ? ("UNCOMPRESSED_" + fur.Name) : null);
+
+                    // Remove notes we don't support in the note bible
+                    int removed = file.RemoveUnsupportedNotes();
+                    if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
+
+                    // Identify the instruments that are really used
+                    Instrument[] usedFurnaceInstruments = file.GetUsedInstruments();
+                    int unused = file.Instruments.Length - usedFurnaceInstruments.Length;
+                    if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
+
+                    // Warn the user of unsupported effects the .fur file may have
+                    AsmSheetWriter.PrintUnsupportedEffects(file);
+
+                    // Warn the user of unsupported sample maps the .fur file may have
+                    // AsmSheetWriter.PrintUnsupportedSampleMaps(usedFurnaceInstruments);
+
+                    // Complete the global FM instruments by those present in this .fur file, if they are really used
+                    instruments.AddMany(usedFurnaceInstruments, options.DumpNotes);
+
+                    // Complete the global samples by those present in this .fur file, if they are really used
+                    samples.AddMany(file, usedFurnaceInstruments, options.DumpNotes);
+
+                    // Prepare the Furnace to Cube instrument map
+                    InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
+
+                    // Write the ASM sheet of the music
+                    return AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber);
+                }
+            };
         }
     }
 }
