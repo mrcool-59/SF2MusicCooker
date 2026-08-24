@@ -64,6 +64,7 @@ namespace SF2MusicCooker
             }
         }
 
+        /*
         /// <summary>
         /// Verify that all sample notes play their samples at C-4 otherwise print a warning.
         /// </summary>
@@ -89,6 +90,7 @@ namespace SF2MusicCooker
                 index++;
             }
         }
+        */
 
         /// <summary>
         /// Outputs an ASM music sheet.

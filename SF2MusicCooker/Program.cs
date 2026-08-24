@@ -41,7 +41,6 @@ namespace SF2MusicCooker
                 output.LoadVanilla();
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
-                FMInstruments instruments = output.Instruments;
                 FileInfo[] furs = new DirectoryInfo(test ? "Test" : "Input").GetFiles("*.fur");
                 FileInfo[] activeFurs = Array.FindAll(furs, fur => !fur.Name.StartsWith("!"));
                 HashSet<int> provided = new HashSet<int>();
@@ -55,91 +54,7 @@ namespace SF2MusicCooker
 
                 foreach (FileInfo fur in activeFurs)
                 {
-                    Tools.ExtractNumberAndName(fur.Name, out int number, out int moveFrom, out string name);
-
-                    if (only >= 0 && number != only) continue;
-
-                    using (FileStream stream = fur.OpenRead())
-                    {
-                        Console.WriteLine("Reading '{0}' input file...", fur.Name);
-
-                        // We first need to understand the contents of the .fur file
-                        FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, dumpUncompressed ? ("UNCOMPRESSED_" + fur.Name) : null);
-
-                        // Verify A-4 tuning value
-                        if (file.A4Tuning != FurnaceFile.StandardA4Tuning) Console.WriteLine("! This tool doesn't support A-4 tuning different from {0} hz, end result will sound incorrect if you proceed", FurnaceFile.StandardA4Tuning);
-                        
-                        // Remove notes we don't support in the note bible
-                        int removed = file.RemoveUnsupportedNotes();
-                        if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
-
-                        // Identify the instruments that are really used
-                        Instrument[] usedFurnaceInstruments = file.GetUsedInstruments();
-                        int unused = file.Instruments.Length - usedFurnaceInstruments.Length;
-                        if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
-
-                        // Warn the user of unsupported effects the .fur file may have
-                        AsmSheetWriter.PrintUnsupportedEffects(file);
-
-                        // Warn the user of unsupported sample maps the .fur file may have
-                        AsmSheetWriter.PrintUnsupportedSampleMaps(usedFurnaceInstruments);
-
-                        // Complete the global FM instruments by those present in this .fur file, if they are really used
-                        instruments.AddMany(usedFurnaceInstruments, dumpNotes);
-
-                        // Complete the global samples by those present in this .fur file, if they are really used
-                        output.Samples.AddMany(file, usedFurnaceInstruments, dumpNotes);
-
-                        // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
-                        int pairNumber = output.GetPairedMusic(number);
-                        if (provided.Contains(pairNumber)) pairNumber = 0; // Both elements of the pair have been provided, no need to use this hack
-
-                        // Prepare the options
-                        Options options = new Options("[CUSTOM] " + name, null, isolateChannel, !noOptimizeNotes, dumpNotes);
-
-                        // Prepare the Furnace to Cube instrument map
-                        InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
-
-                        // Write the ASM sheet of the music
-                        string asm = AsmSheetWriter.Write(file, options, map, output.Pitch, number, pairNumber);
-
-                        // Build ASM name
-                        string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
-
-                        // Send to output!
-                        Song song = new Song(number, name, asmName, new Sheet(asm));
-                        if (moveFrom != 0)
-                        {
-                            if (moveFrom == number)
-                            {
-                                // Replace
-                                output.Replace(song, includeOriginalNames);
-                                if (pairNumber > 0)
-                                {
-                                    output.Replace(new Song(pairNumber, name, asmName, Sheet.Clone), includeOriginalNames);
-                                    Console.WriteLine("WARNING: music {0} will also be replaced by music {1} since they are linked in pairs", pairNumber, number);
-                                }
-                            }
-                            else
-                            {
-                                // Move-replace
-                                if (pairNumber > 0)
-                                {
-                                    throw new NotSupportedException("Sorry, MOVE-REPLACE cannot be used on music " + number + " because it is paired with music " + pairNumber + Environment.NewLine
-                                        + "Please use REPLACE instead for these musics (keep in mind you can MOVE-REPLACE other musics to make room in Music Bank 0 if needed)");
-                                }
-                                else
-                                {
-                                    output.MoveReplace(song, moveFrom, includeOriginalNames);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Add
-                            output.Add(song);
-                        }
-                    }
+                    Build(output, fur, provided, noOptimizeNotes, includeOriginalNames, dumpUncompressed, dumpNotes, isolateChannel, only);
                 }
 
                 if (activeFurs.Length == 0)
@@ -221,6 +136,99 @@ namespace SF2MusicCooker
                     WorkingDirectory = Path.GetDirectoryName(path),
                     Arguments = postBuild
                 });
+            }
+        }
+
+        static void Build(Output output, FileInfo fur, HashSet<int> provided, bool noOptimizeNotes, bool includeOriginalNames, bool dumpUncompressed, bool dumpNotes, int isolateChannel, int only)
+        {
+            Tools.ExtractNumberAndName(fur.Name, out int number, out int moveFrom, out string name);
+
+            if (only >= 0 && number != only) return;
+
+            FMInstruments instruments = output.Instruments;
+            PCMInstruments samples = output.Samples;
+            PitchTable pitch = output.Pitch;
+
+            using (FileStream stream = fur.OpenRead())
+            {
+                Console.WriteLine("Reading '{0}' input file...", fur.Name);
+
+                // We first need to understand the contents of the .fur file
+                FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, dumpUncompressed ? ("UNCOMPRESSED_" + fur.Name) : null);
+
+                // Verify A-4 tuning value
+                if (file.A4Tuning != FurnaceFile.StandardA4Tuning) Console.WriteLine("! This tool doesn't support A-4 tuning different from {0} hz, end result will sound incorrect if you proceed", FurnaceFile.StandardA4Tuning);
+
+                // Remove notes we don't support in the note bible
+                int removed = file.RemoveUnsupportedNotes();
+                if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
+
+                // Identify the instruments that are really used
+                Instrument[] usedFurnaceInstruments = file.GetUsedInstruments();
+                int unused = file.Instruments.Length - usedFurnaceInstruments.Length;
+                if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
+
+                // Warn the user of unsupported effects the .fur file may have
+                AsmSheetWriter.PrintUnsupportedEffects(file);
+
+                // Warn the user of unsupported sample maps the .fur file may have
+                // AsmSheetWriter.PrintUnsupportedSampleMaps(usedFurnaceInstruments);
+
+                // Complete the global FM instruments by those present in this .fur file, if they are really used
+                instruments.AddMany(usedFurnaceInstruments, dumpNotes);
+
+                // Complete the global samples by those present in this .fur file, if they are really used
+                samples.AddMany(file, usedFurnaceInstruments, dumpNotes);
+
+                // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
+                int pairNumber = output.GetPairedMusic(number);
+                if (provided.Contains(pairNumber)) pairNumber = 0; // Both elements of the pair have been provided, no need to use this hack
+
+                // Prepare the options
+                Options options = new Options("[CUSTOM] " + name, null, isolateChannel, !noOptimizeNotes, dumpNotes);
+
+                // Prepare the Furnace to Cube instrument map
+                InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
+
+                // Write the ASM sheet of the music
+                string asm = AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber);
+
+                // Build ASM name
+                string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
+
+                // Send to output!
+                Song song = new Song(number, name, asmName, new Sheet(asm));
+                if (moveFrom != 0)
+                {
+                    if (moveFrom == number)
+                    {
+                        // Replace
+                        output.Replace(song, includeOriginalNames);
+                        if (pairNumber > 0)
+                        {
+                            output.Replace(new Song(pairNumber, name, asmName, Sheet.Clone), includeOriginalNames);
+                            Console.WriteLine("WARNING: music {0} will also be replaced by music {1} since they are linked in pairs", pairNumber, number);
+                        }
+                    }
+                    else
+                    {
+                        // Move-replace
+                        if (pairNumber > 0)
+                        {
+                            throw new NotSupportedException("Sorry, MOVE-REPLACE cannot be used on music " + number + " because it is paired with music " + pairNumber + Environment.NewLine
+                                + "Please use REPLACE instead for these musics (keep in mind you can MOVE-REPLACE other musics to make room in Music Bank 0 if needed)");
+                        }
+                        else
+                        {
+                            output.MoveReplace(song, moveFrom, includeOriginalNames);
+                        }
+                    }
+                }
+                else
+                {
+                    // Add
+                    output.Add(song);
+                }
             }
         }
     }

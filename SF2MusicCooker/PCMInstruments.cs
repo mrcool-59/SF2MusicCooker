@@ -284,7 +284,7 @@ namespace SF2MusicCooker
                 return _catalog.Exists(c => c.Bank == bank && position >= c.Offset && position < c.Offset + c.Length);
             }
 
-            while (i < data.Length)
+            while (i < _cursors[bank])
             {
                 if (!InUse(i))
                 {
