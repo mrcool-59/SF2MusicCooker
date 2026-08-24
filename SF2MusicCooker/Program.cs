@@ -21,6 +21,7 @@ namespace SF2MusicCooker
                 Output output = Output.CreateForSF2DISASM(rootFolder);
                 Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments, PCM samples)...");
                 output.LoadVanilla();
+                output.NukeVanilla(arguments.NukeMusic, arguments.NukeSFX);
                 Console.WriteLine("Loaded vanilla music data successfully!");
 
                 List<Sheet> sheets = new List<Sheet>();
@@ -218,9 +219,6 @@ namespace SF2MusicCooker
 
                     // Warn the user of unsupported effects the .fur file may have
                     AsmSheetWriter.PrintUnsupportedEffects(file);
-
-                    // Warn the user of unsupported sample maps the .fur file may have
-                    // AsmSheetWriter.PrintUnsupportedSampleMaps(usedFurnaceInstruments);
 
                     // Complete the global FM instruments by those present in this .fur file, if they are really used
                     instruments.AddMany(usedFurnaceInstruments, options.DumpNotes);

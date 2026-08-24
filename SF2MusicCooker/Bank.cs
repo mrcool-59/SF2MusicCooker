@@ -112,11 +112,27 @@ namespace SF2MusicCooker
         {
             if (Find(number, out _) == null)
             {
-                string asm = AsmSheetWriter.Write(Furnace.FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, number);
+                string asm = AsmSheetWriter.WriteEmpty(number);
                 _vanilla.Add(new Song(number, null, null, new Sheet(asm)));
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Replace musics by emptiness.
+        /// </summary>
+        public void Nuke(bool vanilla = true)
+        {
+            List<Song> target = vanilla ? _vanilla : _custom;
+            for (int i = 0; i < target.Count; i++)
+            {
+                Song song = target[i];
+                string asm = AsmSheetWriter.WriteEmpty(song.Number);
+                if (song.Name != null) song = song.UpdateName(song.Name + " [NUKED]");
+                song = song.UpdateSheet(new Sheet(asm));
+                target[i] = song;
+            }
         }
 
         /// <summary>

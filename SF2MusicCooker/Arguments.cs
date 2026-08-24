@@ -9,6 +9,8 @@ namespace SF2MusicCooker
         public readonly bool NoPostBuild;
         public readonly bool NoOptimizeNotes;
         public readonly bool IncludeOriginalNames;
+        public readonly bool NukeMusic;
+        public readonly bool NukeSFX;
         public readonly bool AutoYes;
         public readonly bool AutoNo;
         public readonly bool DumpUncompressed;
@@ -39,6 +41,8 @@ namespace SF2MusicCooker
             NoPostBuild = Exists("--nopostbuild") || Exists("-npb");
             NoOptimizeNotes = Exists("--nooptimize") || Exists("-no");
             IncludeOriginalNames = Exists("--includeoriginalnames") || Exists("-ion");
+            NukeMusic = Exists("--nukemusic") || Exists("-nm");
+            NukeSFX = Exists("--nukesfx") || Exists("-ns");
             AutoYes = Exists("--autoyes") || Exists("-ay");
             AutoNo = Exists("--autono") || Exists("-an");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");

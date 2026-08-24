@@ -53,5 +53,10 @@ namespace SF2MusicCooker
         {
             return new SFX(Number, Name, newAsmName, PointerName, Sheet);
         }
+
+        public SFX UpdateSheet(Sheet sheet)
+        {
+            return new SFX(Number, Name, ASMName, PointerName, sheet);
+        }
     }
 }

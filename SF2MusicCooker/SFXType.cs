@@ -3,6 +3,11 @@
     public enum SFXType
     {
         /// <summary>
+        /// Auto-detect the proper SFX type from Furnace file used channels.
+        /// </summary>
+        Automatic = 0,
+
+        /// <summary>
         /// Type 1 SFX that may use channel 9 and 10 (PSG square 3 and Noise).
         /// </summary>
         Type1_PSG_Square3_Noise = 1,

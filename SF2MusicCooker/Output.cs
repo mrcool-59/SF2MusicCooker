@@ -280,6 +280,24 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Replace vanilla musics/SFXs by emptiness.
+        /// </summary>
+        public void NukeVanilla(bool music, bool sfx)
+        {
+            if (music)
+            {
+                foreach (Bank bank in _banks) bank.Nuke();
+                Console.WriteLine("> Nuked vanilla musics!");
+            }
+
+            if (sfx)
+            {
+                foreach (BankSFX bank in _sfxBanks) bank.Nuke();
+                Console.WriteLine("> Nuked vanilla SFXs!");
+            }
+        }
+
+        /// <summary>
         /// Remove unused FM instruments and samples by examining music and SFX sheets. Sheets that haven't been built yet are ignored.
         /// </summary>
         public void RemoveUnusedAssets(bool print)

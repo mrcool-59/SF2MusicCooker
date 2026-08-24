@@ -72,6 +72,8 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 --autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
 --nooptimize				or		-no		Do not reduce the size of the music sheets with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --includeoriginalnames		or		-ion	Include original names of replaced musics (in the sound test)
+--nukemusic					or		-nm		Replace musics from vanilla game by empty musics (can be useful as a temporary bank size issue workaround)
+--nukesfx					or		-ns		Replace SFXs from vanilla game by empty SFXs (can be useful as a temporary bank size issue workaround)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
 --channelN					or		-cN		(N = 0..9) If present disable output of all channels except channel N (only useful for developers)

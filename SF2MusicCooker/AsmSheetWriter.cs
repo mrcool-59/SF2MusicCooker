@@ -64,33 +64,16 @@ namespace SF2MusicCooker
             }
         }
 
-        /*
         /// <summary>
-        /// Verify that all sample notes play their samples at C-4 otherwise print a warning.
+        /// Given a Furnace file, guess the expected SFX type to use.
         /// </summary>
-        public static void PrintUnsupportedSampleMaps(Instrument[] usedInstruments)
+        public static SFXType GuessSFXType(FurnaceFile file)
         {
-            int index = 0;
-            foreach (Instrument instrument in usedInstruments)
-            {
-                if (instrument.Type == Instrument.DAC)
-                {
-                    SampleMap sampleMap = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
-                    SampleMap.Entry[] pitchShiftedEntries = sampleMap.PitchShiftedEntries;
-
-                    if (pitchShiftedEntries.Length > 0)
-                    {
-                        Console.WriteLine("! The song contains sample map instrument #{0} with pitch-shifted samples (i.e: not played at C-4 rate)", index);
-                        Console.WriteLine("  Pitch-shifted samples are unsupported; end result will sound incorrect if you proceed without adjusting sample map");
-
-                        // NOTE: we could silently fix this for the user by duplicating the sample with the pitch-shifted rate and changing the map to point to this new sample at C-4 rate
-                        // But I think if you compose a Furnace track for the Sega Genesis you are probably not gonna pitch-shift your samples anyway
-                    }
-                }
-                index++;
-            }
+            if (file.Orders == 0 || file.HasPlayNoteCommand(3) || file.HasPlayNoteCommand(4) || file.HasPlayNoteCommand(5))
+                return SFXType.Type2_YM_Ch4_Ch5_Ch6DAC;
+            else
+                return SFXType.Type1_PSG_Square3_Noise;
         }
-        */
 
         /// <summary>
         /// Outputs an ASM music sheet.
@@ -144,12 +127,23 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Outputs an empty ASM music sheet.
+        /// </summary>
+        public static string WriteEmpty(int number)
+        {
+            return Write(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, number);
+        }
+
+        /// <summary>
         /// Outputs an ASM SFX sheet.
         /// </summary>
-        public static string WriteSFX(SFXType type, FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number)
+        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, SFXType type = SFXType.Automatic)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
+
+            // Auto-detect SFX type
+            if (type == SFXType.Automatic) type = GuessSFXType(file);
 
             // Configuration for SFX
             uint mask = type == SFXType.Type1_PSG_Square3_Noise ? ChannelCommands.Mask_SFX_1 : ChannelCommands.Mask_SFX_2;
@@ -175,6 +169,14 @@ namespace SF2MusicCooker
 
             // All done!
             return asm;
+        }
+
+        /// <summary>
+        /// Outputs an empty ASM SFX sheet.
+        /// </summary>
+        public static string WriteSFXEmpty(int number)
+        {
+            return WriteSFX(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, number);
         }
     }
 }

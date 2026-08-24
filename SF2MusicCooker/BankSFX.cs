@@ -75,6 +75,22 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Replace SFXs by emptiness.
+        /// </summary>
+        public void Nuke(bool vanilla = true)
+        {
+            List<SFX> target = vanilla ? _vanilla : _custom;
+            for (int i = 0; i < target.Count; i++)
+            {
+                SFX sfx = target[i];
+                string asm = AsmSheetWriter.WriteSFXEmpty(sfx.Number);
+                sfx = sfx.UpdateName(sfx.Name + " [NUKED]");
+                sfx = sfx.UpdateSheet(new Sheet(asm));
+                target[i] = sfx;
+            }
+        }
+
+        /// <summary>
         /// Find SFX by number in this bank.
         /// </summary>
         public SFX Find(int number, out bool vanilla)

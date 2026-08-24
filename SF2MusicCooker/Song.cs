@@ -32,5 +32,10 @@ namespace SF2MusicCooker
         {
             return new Song(Number, Name, newAsmName, Sheet);
         }
+
+        public Song UpdateSheet(Sheet sheet)
+        {
+            return new Song(Number, Name, ASMName, sheet);
+        }
     }
 }
