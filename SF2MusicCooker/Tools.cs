@@ -16,10 +16,10 @@ namespace SF2MusicCooker
         /// Parse 'filename' according to one of the valid patterns explained in the README file and return music number, move from number (0 for add) and music name.
         /// Throws an exception otherwise.
         /// </summary>
-        public static void ExtractNumberAndName(string filename, out int number, out int moveFrom, out string name)
+        public static void ExtractNumberAndName(string filename, bool allowMove, out int number, out int moveFrom, out string name)
         {
-            Match matchMove = regexMove.Match(filename);
-            if (matchMove.Success)
+            Match matchMove = allowMove ? regexMove.Match(filename) : null;
+            if (matchMove != null && matchMove.Success)
             {
                 number = int.Parse(matchMove.Groups[1].Value);
                 moveFrom = int.Parse(matchMove.Groups[2].Value);

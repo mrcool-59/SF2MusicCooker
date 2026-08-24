@@ -333,10 +333,10 @@ namespace SF2MusicCooker
             int removedSamples = Samples.ClearExcept(usedSamples);
 
             if (removedInstruments > 0 && print)
-                Console.WriteLine("> Removed {0} unused FM instrument{1}", removedInstruments, removedInstruments > 1 ? "s" : "");
+                Console.WriteLine("> Removed {0} unused FM instrument{1}!", removedInstruments, removedInstruments > 1 ? "s" : "");
 
             if (removedSamples > 0 && print)
-                Console.WriteLine("> Removed {0} unused sample{1}", removedSamples, removedSamples > 1 ? "s" : "");
+                Console.WriteLine("> Removed {0} unused sample{1}!", removedSamples, removedSamples > 1 ? "s" : "");
         }
 
         /// <summary>

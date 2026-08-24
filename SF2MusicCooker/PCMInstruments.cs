@@ -15,6 +15,8 @@ namespace SF2MusicCooker
 
         public const int MAX_SLOTS = 0x7F; // Sample commands have 7 bits, so this is the absolute limit
 
+        private const byte unusedByte = 0xFF;
+
         public readonly struct PCMSample
         {
             /// <summary>
@@ -143,8 +145,8 @@ namespace SF2MusicCooker
             int count = _cursors[bank] - offset;
             for (int i = 0; i < count; i++) data[offset + i] = data[offset + i + length];
 
-            // Fill end with zeroes
-            Tools.Fill(data, _cursors[bank], length, 0);
+            // Fill end with unused bytes
+            Tools.Fill(data, _cursors[bank], length, unusedByte);
 
             // Update slots
             for (int i = 0; i < _slots.Length; i++)
@@ -330,7 +332,7 @@ namespace SF2MusicCooker
 
             for (int i = 0; i < _banks.Length; i++)
             {
-                Tools.Fill(_banks[i], 0, _banks[i].Length, 0xFF);
+                Tools.Fill(_banks[i], 0, _banks[i].Length, unusedByte);
                 _cursors[i] = 0;
             }
         }

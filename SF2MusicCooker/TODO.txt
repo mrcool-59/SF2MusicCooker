@@ -1,7 +1,5 @@
 ﻿Version 0.9:
-- Battlefield Death/Demon breath SFX: suspicious après NUKE des musics
-	=> A cause du décalage des sample index dans les SFX vanilla qui ont survécu au nuke :)
-///
+- Nuke SFX broken!
 - DAC support (en ignorant les samples inutilisés)
 
 Version 1.0:
