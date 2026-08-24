@@ -11,7 +11,7 @@ namespace SF2MusicCooker
     {
         public const int LENGTH = 4096;
 
-        public const byte MAX_INSTRUMENTS = LENGTH / Definition.LENGTH;
+        public const byte MAX_SLOTS = LENGTH / Definition.LENGTH;
 
         public sealed class Definition : IEquatable<Definition>
         {
@@ -228,13 +228,13 @@ namespace SF2MusicCooker
             for (int i = 0; i < _used.Length; i++) _used[i] = (byte)(Definition.Read(_buffer, (byte)i).Equals(Definition.Null) ? 0 : 1);
         }
 
-        public FMInstruments(int slots = MAX_INSTRUMENTS)
+        public FMInstruments(int slots)
         {
             if (slots < 0)
                 throw new ArgumentOutOfRangeException(nameof(slots), "cannot be negative");
 
-            if (slots > MAX_INSTRUMENTS)
-                throw new NotSupportedException(MAX_INSTRUMENTS + " instruments is the absolute maximum limit that can fit in " + LENGTH + " bytes");
+            if (slots > MAX_SLOTS)
+                throw new NotSupportedException(MAX_SLOTS + " instruments is the absolute maximum limit that can fit in " + LENGTH + " bytes");
 
             _buffer = new byte[LENGTH];
             _used = new byte[slots];

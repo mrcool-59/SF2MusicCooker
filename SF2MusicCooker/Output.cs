@@ -42,7 +42,7 @@ namespace SF2MusicCooker
         /// </summary>
         public bool HasExtBanks { get { return Array.Exists(_banks, bank => bank.Name.Contains("musicbankext")); } }
 
-        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, string[] pcmNames, int pcmBaseOffset, int instrumentSlots = FMInstruments.MAX_INSTRUMENTS, int[] musicPairs = null, string soundTestTemplate = null)
+        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, string[] pcmNames, int pcmBaseOffset, int pcmSlots = PCMInstruments.MAX_SLOTS, int instrumentSlots = FMInstruments.MAX_SLOTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
@@ -65,7 +65,7 @@ namespace SF2MusicCooker
 
             Instruments = new FMInstruments(instrumentSlots);
 
-            Samples = new PCMInstruments(pcmBanks, pcmNames, pcmBaseOffset);
+            Samples = new PCMInstruments(pcmSlots, pcmBanks, pcmNames, pcmBaseOffset);
 
             Pitch = new PitchTable(paths.YmFrequencies, paths.NoteNames);
         }
@@ -88,6 +88,8 @@ namespace SF2MusicCooker
             Bank[] banks;
             int[] pcmBanks;
             string[] pcmNames;
+            int pcmSlots;
+            int instrumentSlots;
 
             if (hasExtBanks)
             {
@@ -114,6 +116,10 @@ namespace SF2MusicCooker
                     "pcmbankext0",
                     "pcmbankext1",
                 };
+
+                pcmSlots = PCMInstruments.MAX_SLOTS;
+
+                instrumentSlots = FMInstruments.MAX_SLOTS;
             }
             else
             {
@@ -134,6 +140,10 @@ namespace SF2MusicCooker
                     "pcmbank0",
                     "pcmbank1",
                 };
+
+                pcmSlots = 17; // FIXME: maybe it's possible to increase it a little without crashing
+
+                instrumentSlots = 80; // FIXME: maybe it's possible to increase it to the theorical max without issue
             }
 
             BankSFX[] sfxBanks = new BankSFX[1]
@@ -142,7 +152,9 @@ namespace SF2MusicCooker
                 new BankSFX("sfxbank", 0x2000)
             };
 
-            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmNames, 0x8000, FMInstruments.MAX_INSTRUMENTS, new int[] { 3, 4, 13, 14 }, "soundtest-standard.asm.tpl");
+            int[] musicPairs = new int[] { 3, 4, 13, 14 };
+
+            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmNames, 0x8000, pcmSlots, instrumentSlots, musicPairs, "soundtest-standard.asm.tpl");
         }
 
         private Bank SelectMusicBank(int number)

@@ -13,7 +13,7 @@ namespace SF2MusicCooker
     {
         private const int MAX_SAMPLE_LENGTH = 0x3000; // This is not really a hard limit, more like a "insanity" limit
 
-        private const int MAX_ENTRIES = 0x7F; // Play sample commands have 7 bits
+        public const int MAX_SLOTS = 0x7F; // Sample commands have 7 bits, so this is the absolute limit
 
         public readonly struct PCMSample
         {
@@ -85,9 +85,14 @@ namespace SF2MusicCooker
                 Length = length;
                 Offset = offset;
             }
+
+            /// <summary>
+            /// An empty sample slot.
+            /// </summary>
+            public static readonly PCMSample Empty = new PCMSample(0, 0, 0, 0);
         }
 
-        private readonly List<PCMSample> _catalog;
+        private readonly PCMSample[] _slots;
         private readonly byte[][] _banks;
         private readonly string[] _names;
         private readonly int[] _cursors;
@@ -141,14 +146,14 @@ namespace SF2MusicCooker
             // Fill end with zeroes
             Tools.Fill(data, _cursors[bank], length, 0);
 
-            // Update catalog
-            for (int i = 0; i < _catalog.Count; i++)
+            // Update slots
+            for (int i = 0; i < _slots.Length; i++)
             {
-                PCMSample sample = _catalog[i];
-                if (sample.Bank != bank) continue;
+                PCMSample sample = _slots[i];
+                if (sample.Bank != bank || sample.Length == 0) continue;
 
                 Debug.Assert(sample.Offset + sample.Length <= offset || sample.Offset >= offset + length);
-                if (sample.Offset >= offset + length) _catalog[i] = new PCMSample(sample.Period, bank, sample.Length, sample.Offset - length);
+                if (sample.Offset >= offset + length) _slots[i] = new PCMSample(sample.Period, bank, sample.Length, sample.Offset - length);
             }
         }
 
@@ -197,20 +202,21 @@ namespace SF2MusicCooker
         /// <summary>
         /// Add a new sample. Return false if the sample already exists.
         /// </summary>
-        public bool Add(byte[] data, int framePeriod)
+        public bool Add(byte[] data, int period)
         {
             if (data.Length > MAX_SAMPLE_LENGTH) throw new NotSupportedException("PCM sample must be under " + MAX_SAMPLE_LENGTH + " bytes");
 
-            if (_catalog.Count >= MAX_ENTRIES) throw new InvalidOperationException("Sorry, it's not possible to have more than " + MAX_ENTRIES + " sample entries");
-
             if (FindOrAllocate(data, out int bank, out int offset, out bool allocated))
             {
-                _catalog.Add(new PCMSample(framePeriod, bank, data.Length, offset));
+                int index = Array.FindIndex(_slots, slot => slot.Length == 0);
+                if (index < 0) throw new InvalidOperationException("Cannot add sample: there is no empty slot!");
+
+                _slots[index] = new PCMSample(period, bank, data.Length, offset);
                 return allocated;
             }
             else
             {
-                throw new InvalidOperationException("Sorry, there is not enough free space to store PCM sample data in any of the PCM banks!");
+                throw new InvalidOperationException("There is not enough free space to store PCM sample data in any of the PCM banks!");
             }
         }
 
@@ -267,13 +273,13 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Remove a sample and free its data region in the PCM bank. This will update offsets of all samples and each bank cursor.
+        /// Clear a sample.
         /// </summary>
         public void Remove(int index)
         {
-            // TODO: this will break vanilla songs that rely on this sample index, set dummy data instead!
+            if (index < 0 || index >= _slots.Length) throw new ArgumentOutOfRangeException(nameof(index));
 
-            _catalog.RemoveAt(index);
+            _slots[index] = PCMSample.Empty;
         }
 
         /// <summary>
@@ -286,7 +292,7 @@ namespace SF2MusicCooker
 
             bool InUse(int position)
             {
-                return _catalog.Exists(c => c.Bank == bank && position >= c.Offset && position < c.Offset + c.Length);
+                return Array.Exists(_slots, slot => slot.Bank == bank && position >= slot.Offset && position < slot.Offset + slot.Length);
             }
 
             while (i < _cursors[bank])
@@ -317,10 +323,14 @@ namespace SF2MusicCooker
         /// </summary>
         public void Clear()
         {
-            _catalog.Clear();
+            for (int i = 0; i < _slots.Length; i++)
+            {
+                _slots[i] = PCMSample.Empty;
+            }
+
             for (int i = 0; i < _banks.Length; i++)
             {
-                Tools.Fill(_banks[i], 0, _banks[i].Length, 0);
+                Tools.Fill(_banks[i], 0, _banks[i].Length, 0xFF);
                 _cursors[i] = 0;
             }
         }
@@ -331,13 +341,11 @@ namespace SF2MusicCooker
         public int ClearExcept(HashSet<int> set)
         {
             int removed = 0;
-            int count = _catalog.Count;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < _slots.Length; i++)
             {
-                int j = count - i - 1;
-                if (!set.Contains(j))
+                if (!set.Contains(i))
                 {
-                    Remove(j);
+                    Remove(i);
                     removed++;
                 }
             }
@@ -353,8 +361,6 @@ namespace SF2MusicCooker
             if (pcmSamplesAsm == null) throw new ArgumentNullException(nameof(pcmSamplesAsm));
             if (banks.Length != _banks.Length) throw new ArgumentException("must have length " + _banks.Length, nameof(banks));
 
-            Clear();
-
             for (int bank = 0; bank < banks.Length; bank++)
             {
                 if (banks[bank].Length != _banks[bank].Length)
@@ -364,6 +370,7 @@ namespace SF2MusicCooker
             }
 
             string[] lines = Tools.GetAllStringElements(pcmSamplesAsm, new Regex("dw(.+)"));
+            int index = 0;
 
             foreach (string line in lines)
             {
@@ -371,13 +378,14 @@ namespace SF2MusicCooker
 
                 if (values.Length == 4)
                 {
-                    int framePeriod = Tools.ConvertASMValue(values[0].Trim());
+                    int period = Tools.ConvertASMValue(values[0].Trim());
                     int bank = PCMSample.ParseBankString(values[1].Trim(), banks.Length);
                     int length = Tools.ConvertASMValue(values[2].Trim());
                     int offset = Tools.ConvertASMValue(values[3].Trim()) - _baseOffset;
 
-                    _catalog.Add(new PCMSample(framePeriod, bank, length, offset));
                     _cursors[bank] = Math.Max(_cursors[bank], length + offset);
+                    _slots[index] = new PCMSample(period, bank, length, offset);
+                    index++;
                 }
                 else
                 {
@@ -417,7 +425,7 @@ namespace SF2MusicCooker
             sb.AppendLine();
             sb.AppendLine();
             sb.AppendLine("PCM_SAMPLE_ENTRIES:");
-            foreach (PCMSample sample in _catalog)
+            foreach (PCMSample sample in _slots)
             {
                 sb.Append("    ");
                 sb.AppendLine(sample.ToAsmLine(_baseOffset));
@@ -433,15 +441,16 @@ namespace SF2MusicCooker
             }
         }
 
-        public PCMInstruments(int[] bankLengths, string[] bankNames, int baseOffset)
+        public PCMInstruments(int slots, int[] bankLengths, string[] bankNames, int baseOffset)
         {
             if (bankLengths == null) throw new ArgumentNullException(nameof(bankLengths));
             if (bankNames == null) throw new ArgumentNullException(nameof(bankNames));
-            if (baseOffset < 0) throw new ArgumentOutOfRangeException(nameof(baseOffset), "must be zero or positive");
-
             if (bankLengths.Length != bankNames.Length) throw new ArgumentException("'bankLengths' and 'bankNames' must have the same length");
+            if (baseOffset < 0) throw new ArgumentOutOfRangeException(nameof(baseOffset), "must be zero or positive");
+            if (slots <= 0) throw new ArgumentOutOfRangeException(nameof(slots), "cannot be zero or negative");
+            if (slots > MAX_SLOTS) throw new NotSupportedException(MAX_SLOTS + " sample slots is the absolute maximum limit");
 
-            _catalog = new List<PCMSample>();
+            _slots = new PCMSample[slots];
             _banks = new byte[bankLengths.Length][];
             _names = bankNames;
             _cursors = new int[bankLengths.Length];
@@ -449,10 +458,10 @@ namespace SF2MusicCooker
 
             for (int i = 0; i < bankLengths.Length; i++)
             {
-                byte[] buffer = new byte[bankLengths[i]];
-                Tools.Fill(buffer, 0, buffer.Length, 0xFF);
-                _banks[i] = buffer;
+                _banks[i] = new byte[bankLengths[i]];
             }
+
+            Clear();
         }
     }
 }
