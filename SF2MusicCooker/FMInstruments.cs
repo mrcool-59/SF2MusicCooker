@@ -107,7 +107,8 @@ namespace SF2MusicCooker
         }
         
         /// <summary>
-        /// Add an instrument and return its associated instrument number. This method will throw if we don't have room for more instruments.
+        /// Add an instrument and return its associated instrument number. This method won't check for an existing duplicate instrument.
+        /// This method will throw if we don't have room for more instruments.
         /// </summary>
         public byte Add(Definition definition)
         {

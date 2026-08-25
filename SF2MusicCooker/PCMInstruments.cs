@@ -100,7 +100,29 @@ namespace SF2MusicCooker
         private readonly int[] _cursors;
         private readonly int _baseOffset;
 
-        private bool FindOrAllocate(byte[] data, out int bank, out int offset, out bool allocated)
+        private static void Prepare(Sample sample, int a4tuning, int note, out byte[] data, out int period)
+        {
+            int actualPeriod = PCMSample.ComputePeriod(sample.Rate);
+            int actualRate = PCMSample.ComputeRate(actualPeriod);
+            data = Resample(sample.Data, sample.Rate, actualRate);
+            HalfwayShiftInPlace(data);
+
+            float coeff = (float)a4tuning / FurnaceFile.StandardA4Tuning;
+            int playRate = PitchTable.ShiftFrequency(actualRate, note - NoteBible.C4_VALUE, coeff);
+            period = PCMSample.ComputePeriod(playRate);
+        }
+
+        private static byte[] Resample(byte[] data, int fromRate, int toRate)
+        {
+            return (byte[])data.Clone(); // TODO: not implemented (NOTE: probably don't resample if close enough...)
+        }
+
+        private static void HalfwayShiftInPlace(byte[] data)
+        {
+            for (int i = 0; i < data.Length; i++) data[i] = (byte)(0x80 + data[i]);
+        }
+
+        private bool FindOrAllocate(byte[] data, bool canAllocate, out int bank, out int offset)
         {
             // First try to find
             for (int i = 0; i < _banks.Length; i++)
@@ -109,28 +131,28 @@ namespace SF2MusicCooker
                 if (offset >= 0)
                 {
                     bank = i;
-                    allocated = false;
                     return true;
                 }
             }
 
             // Then try to allocate
-            for (int i = 0; i < _banks.Length; i++)
+            if (canAllocate)
             {
-                if (GetRemainingBytes(i) >= data.Length)
+                for (int i = 0; i < _banks.Length; i++)
                 {
-                    bank = i;
-                    offset = _cursors[i];
-                    allocated = true;
-                    _cursors[i] += data.Length;
-                    Buffer.BlockCopy(data, 0, _banks[i], offset, data.Length);
-                    return true;
+                    if (GetRemainingBytes(i) >= data.Length)
+                    {
+                        bank = i;
+                        offset = _cursors[i];
+                        _cursors[i] += data.Length;
+                        Buffer.BlockCopy(data, 0, _banks[i], offset, data.Length);
+                        return true;
+                    }
                 }
             }
 
             bank = -1;
             offset = -1;
-            allocated = false;
             return false;
         }
 
@@ -157,11 +179,6 @@ namespace SF2MusicCooker
                 Debug.Assert(sample.Offset + sample.Length <= offset || sample.Offset >= offset + length);
                 if (sample.Offset >= offset + length) _slots[i] = new PCMSample(sample.Period, bank, sample.Length, sample.Offset - length);
             }
-        }
-
-        private static byte[] Resample(byte[] data, int fromRate, int toRate)
-        {
-            return data; // TODO: not implemented (NOTE: probably don't resample if close enough...)
         }
 
         /// <summary>
@@ -202,19 +219,34 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Add a new sample. Return false if the sample already exists.
+        /// Add a new sample if necessary. Return index of the sample slot.
         /// </summary>
-        public bool Add(byte[] data, int period)
+        public int Add(byte[] data, int period, out bool added)
         {
             if (data.Length > MAX_SAMPLE_LENGTH) throw new NotSupportedException("PCM sample must be under " + MAX_SAMPLE_LENGTH + " bytes");
 
-            if (FindOrAllocate(data, out int bank, out int offset, out bool allocated))
+            if (FindOrAllocate(data, true, out int bank, out int offset))
             {
-                int index = Array.FindIndex(_slots, slot => slot.Length == 0);
-                if (index < 0) throw new InvalidOperationException("Cannot add sample: there is no empty slot!");
-
-                _slots[index] = new PCMSample(period, bank, data.Length, offset);
-                return allocated;
+                int index = Array.FindIndex(_slots, slot => slot.Period == period && slot.Bank == bank && slot.Offset == offset && slot.Length == data.Length);
+                if (index >= 0)
+                {
+                    added = false;
+                    return index;
+                }
+                else
+                {
+                    index = Array.FindIndex(_slots, slot => slot.Length == 0);
+                    if (index >= 0)
+                    {
+                        _slots[index] = new PCMSample(period, bank, data.Length, offset);
+                        added = true;
+                        return index;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Cannot add sample: there is no empty slot!");
+                    }
+                }
             }
             else
             {
@@ -223,27 +255,27 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Add a new Furnace sample. Return false if the sample already exists.
+        /// Add a new Furnace sample if necessary. Return index of the sample slot.
         /// </summary>
-        public bool Add(Sample sample, int a4tuning, int shift, bool print)
+        public int Add(Sample sample, int a4tuning, int note, out bool added)
         {
-            int actualPeriod = PCMSample.ComputePeriod(sample.Rate);
-            int actualRate = PCMSample.ComputeRate(actualPeriod);
-            byte[] data = Resample(sample.Data, sample.Rate, actualRate);
+            Prepare(sample, a4tuning, note, out byte[] data, out int period);
 
-            float coeff = (float)a4tuning / FurnaceFile.StandardA4Tuning;
-            int playRate = PitchTable.ShiftFrequency(actualRate, shift, coeff);
-            int playPeriod = PCMSample.ComputePeriod(playRate);
+            return Add(data, period, out added);
+        }
 
-            bool added = Add(data, playPeriod);
-            if (print)
+        /// <summary>
+        /// Find the sample slot for the provided sample. Throws an exception if the sample couldn't be found.
+        /// </summary>
+        public int Find(Sample sample, int a4tuning, int note)
+        {
+            Prepare(sample, a4tuning, note, out byte[] data, out int period);
+
+            if (FindOrAllocate(data, false, out int bank, out int offset))
             {
-                if (added)
-                    Console.WriteLine("+ Added sample '{0}' to PCM bank! [{1} bytes]", sample.Name, data.Length);
-                else
-                    Console.WriteLine("! A duplicate of sample '{0}' already exists in the PCM bank! [{1} bytes]", sample.Name, data.Length);
+                return Array.FindIndex(_slots, slot => slot.Period == period && slot.Bank == bank && slot.Offset == offset && slot.Length == data.Length);
             }
-            return added;
+            throw new KeyNotFoundException("Sample couldn't be found in the sample slots, maybe it wasn't added...");
         }
 
         /// <summary>
@@ -251,9 +283,9 @@ namespace SF2MusicCooker
         /// </summary>
         public void AddMany(FurnaceFile file, Instrument[] usedInstruments, bool print)
         {
-            foreach (Instrument instrument in file.Instruments)
+            foreach (Instrument instrument in usedInstruments)
             {
-                if (instrument.Type == Instrument.DAC && Array.IndexOf(usedInstruments, instrument) >= 0)
+                if (instrument.Type == Instrument.DAC && Array.IndexOf(file.Instruments, instrument) >= 0)
                 {
                     SampleMap map = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
 
@@ -266,9 +298,16 @@ namespace SF2MusicCooker
                             // Sample is only added if it is used in channel 6
 
                             Sample sample = file.Samples[entry.Sample];
-                            int shift = entry.Note - NoteBible.C4_VALUE;
 
-                            _ = Add(sample, file.A4Tuning, shift, print);
+                            int index = Add(sample, file.A4Tuning, entry.Note, out bool added);
+
+                            if (print)
+                            {
+                                if (added)
+                                    Console.WriteLine("+ Added sample '{0}' to PCM bank! [{1}]", sample.Name, index);
+                                else
+                                    Console.WriteLine("! A duplicate of sample '{0}' already exists in the PCM bank! [{1}]", sample.Name, index);
+                            }
                         }
                     }
                 }
@@ -445,22 +484,35 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Generate a file-to-global sample instrument map for the given Furnace instrument array.
+        /// Generate a file-to-global sample instrument map for the given Furnace file.
         /// </summary>
-        public Dictionary<ushort, byte> Map(Instrument[] instruments, HashSet<Instrument> usedSet = null)
+        public Dictionary<ushort, byte> Map(FurnaceFile file, HashSet<Instrument> usedSet = null)
         {
-            Dictionary<ushort, byte> map = new Dictionary<ushort, byte>();
+            Dictionary<ushort, byte> lookup = new Dictionary<ushort, byte>();
+            Instrument[] instruments = file.Instruments;
             for (int i = 0; i < instruments.Length; i++)
             {
                 Instrument instrument = instruments[i];
                 if (instrument.Type == Instrument.DAC && (usedSet == null || usedSet.Contains(instrument)))
                 {
-                    // TODO
-                    // Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
-                    // map.Add((byte)i, Find(def));
+                    SampleMap map = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
+
+                    for (int note = NoteBible.BASE_VALUE; note <= NoteBible.LAST_VALUE; note++)
+                    {
+                        SampleMap.Entry entry = map.Read(note);
+
+                        if (!entry.Invalid && file.HasPlayNoteCommand(5, note))
+                        {
+                            Sample sample = file.Samples[entry.Sample];
+
+                            int index = Find(sample, file.A4Tuning, entry.Note);
+
+                            lookup.Add(InstrumentMap.GetInstrumentAndNoteKey((byte)i, (byte)note), (byte)index);
+                        }
+                    }
                 }
             }
-            return map;
+            return lookup;
         }
 
         public PCMInstruments(int slots, int[] bankLengths, string[] bankNames, int baseOffset)

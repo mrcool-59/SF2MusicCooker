@@ -44,9 +44,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void Check(FurnaceFile file, bool requiresDAC, out byte dac)
         {
-            bool channel6_dac = requiresDAC || !file.HasPlayNoteCommand(5); // Also DAC mode if channel 6 is empty
-
-            // TODO: complete this when samples are implemented
+            bool channel6_dac = requiresDAC || instrument_note2sample.Count > 0 || !file.HasPlayNoteCommand(5); // Also DAC mode if channel 6 is empty
 
             foreach (byte fmInstrument in instrument2fm.Keys)
             {
@@ -64,12 +62,12 @@ namespace SF2MusicCooker
             dac = (byte)(channel6_dac ? 0 : 1);
         }
 
-        public InstrumentMap(FMInstruments instruments, PCMInstruments samples, Instrument[] furnaceInstruments, Instrument[] usedFurnaceInstruments)
+        public InstrumentMap(FMInstruments instruments, PCMInstruments samples, FurnaceFile file, Instrument[] usedInstruments)
         {
-            HashSet<Instrument> usedSet = new HashSet<Instrument>(usedFurnaceInstruments);
+            HashSet<Instrument> usedSet = new HashSet<Instrument>(usedInstruments);
 
-            instrument2fm = instruments.Map(furnaceInstruments, usedSet);
-            instrument_note2sample = samples.Map(furnaceInstruments, usedSet);
+            instrument2fm = instruments.Map(file.Instruments, usedSet);
+            instrument_note2sample = samples.Map(file, usedSet);
 
             // TODO: PSG
         }

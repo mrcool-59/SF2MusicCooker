@@ -253,21 +253,21 @@ namespace SF2MusicCooker
                     if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
 
                     // Identify the instruments that are really used
-                    Instrument[] usedFurnaceInstruments = file.GetUsedInstruments();
-                    int unused = file.Instruments.Length - usedFurnaceInstruments.Length;
+                    Instrument[] usedInstruments = file.GetUsedInstruments();
+                    int unused = file.Instruments.Length - usedInstruments.Length;
                     if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
 
                     // Warn the user of unsupported effects the .fur file may have
                     AsmSheetWriter.PrintUnsupportedEffects(file);
 
                     // Complete the global FM instruments by those present in this .fur file, if they are really used
-                    instruments.AddMany(usedFurnaceInstruments, options.DumpNotes);
+                    instruments.AddMany(usedInstruments, options.DumpNotes);
 
                     // Complete the global samples by those present in this .fur file, if they are really used
-                    samples.AddMany(file, usedFurnaceInstruments, options.DumpNotes);
+                    samples.AddMany(file, usedInstruments, options.DumpNotes);
 
                     // Prepare the Furnace to Cube instrument map
-                    InstrumentMap map = new InstrumentMap(instruments, samples, file.Instruments, usedFurnaceInstruments);
+                    InstrumentMap map = new InstrumentMap(instruments, samples, file, usedInstruments);
 
                     // Write the ASM sheet of the music/SFX
                     if (pointerName != null)

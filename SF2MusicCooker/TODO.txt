@@ -1,6 +1,5 @@
 ﻿Version 0.9:
-- Faire marcher "Test Samples"
-- DAC support (en ignorant les samples inutilisés)
+- Suspicious speed: "Test Samples"
 
 Version 1.0:
 - Amélioration de la précision du rendu: fréquence
