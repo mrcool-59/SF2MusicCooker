@@ -33,12 +33,25 @@ HOW TO USE
 
 
 
+HOW TO USE (SFX)
+----------------
+
+- You can also replace SFXs (sound effects) by naming slightly differently your .fur files in the "Input" folder:
+	+sfxZZ-My new sound effect.fur			[ADD = ZZ is a SFX number NOT USED by vanilla SF2 SFXs, between 121-126] (yes it's quite tight)
+	@sfxWW-My replacement sound effect.fur	[REPLACE = WW is a SFX number USED by a vanilla SF2 SFXs, please refer to "disasm/enum/sfxs.asm" for the available list]
+- For SFXs, you cannot MOVE-REPLACE EXISTING SFXS. You can only ADD NEW SFXS or REPLACE EXISTING SFXS.
+- Everything that applies above to musics also apply to SFXs.
+- Except for this: in vanilla game SFX data, some SFXs depend on other SFXs (due to shared pointers).
+- If you replace a SFX that is a dependency to other SFXs, the tool will error unless you replace ALL involved SFXs, all at once.
+
+
+
 GOLDEN RULES (this section is especially relevant to music composers)
 ------------
 
 1. Please create custom Sega Genesis songs in Furnace in the most basic way: no macros, no extreme octave notes, no exotic effects (see "LIMITATIONS" below for more details).
 2. Your song should rely mostly on the standard 5 FM channels + the 6th channel.
-3. [NOT AVAILABLE YET] You can use samples in channel 6 (but you won't be able to it as FM channel for the *full* song). Samples should be small and you can't have too many of them.
+3. You can use samples in channel 6 (but you won't be able to it as FM channel for the *full* song). Samples should be small and you can't have too many of them.
 4. Important instruments should use FM channels 0, 1, 2 because other channels can be borrowed by sound effects during SF2 gameplay.
 5. Space in the ROM is limited and you should avoid extremely long songs with a ludicrous number of FM instruments / samples ( but you can still try ;-) ).
 
@@ -60,6 +73,12 @@ As you can see, the Music Bank 1 range was cut down compared to the vanilla game
 
 The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0 and Music Bank Ext 1.
 
+For SFXs, it appears the SFX Bank from the vanilla game still has some space available, so space should (hopefully) not be a concern here.
+There is no Extra Bank feature for SFX Bank, you have to fit everything into a single bank.
+
+For musics and SFXs that use samples, the vanilla game comes with 2 PCM banks (PCM Bank 0 and PCM Bank 1) that are pretty much full.
+[NOT YET AVAILABLE] Two Extra PCM banks (PCM Bank Ext 0 and PCM Bank Ext 1) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some breathing room.
+
 
 
 OPTIONS
@@ -75,6 +94,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 --nukemusic					or		-nm		Replace musics from vanilla game by empty musics (can be useful as a temporary bank size issue workaround)
 --nukesfx					or		-ns		Replace SFXs from vanilla game by empty SFXs (can be useful as a temporary bank size issue workaround)
 --nukeall					or		-na		Replace everything from vanilla game by emptiness (equivalent to --nukemusic --nukesfx)
+--mutesamples				or		-ms		Process Furnace files as if they had empty samples (can be useful to check if issues are caused by samples)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
 --channelN					or		-cN		(N = 0..9) If present disable output of all channels except channel N (only useful for developers)
@@ -87,10 +107,14 @@ LIMITATIONS
 -----------
 
 SF2 Music Cooker currently supports:
-- FM channels 1 to 5 + Channel 6 in FM mode
+- FM channels 1 to 5
+- Channel 6 in FM mode
+- Channel 6 in DAC mode (samples) 
 - Notes between C-0 and B-9 on Furnace side (120 notes), unsupported notes are suppressed
+- Furnace notes are mapped to the SF2 engine notes in a best effort fashion
 - Arbitrary tempo, though it is expected songs will play between 40 and 80 hz
 - New FM instruments, these will get added to the vanilla SF2 instruments
+- New samples, these will get added to the vanilla SF2 samples (almost impossible to do without using expanded PCM banks)
 - Effects supported by the SF2 sound driver, such as volume, panning, vibrato
 - Song loop/end marker effects, as well as "jump to next pattern" effect
 - Song size reduction by detecting "repeated command patterns" and replacing them with counted loops
@@ -98,18 +122,17 @@ SF2 Music Cooker currently supports:
 - New songs will appear in the Sound Test; the Sound Test is also improved with better SFX names and circular navigation
 
 SF2 Music Cooker doesn't currently support but will in the future (because I want to do it):
-- Channel 6 in DAC mode (samples) 
-- PSG channels (3 square + 1 noise)
-- Add/replace SFXs, in the same way musics are handled (caveat: I'm not sure implementing extra banks will be possible for this feature)
+- PSG channels (3 square + 1 noise) with enveloppe macros
+- Additional Furnace effects and better mapping from Furnace to SF2 sound engine
 
-SF2 Music Cooker doesn't plan to support (unless there is an overwhelming demand for the feature):
-- Furnace features such as "macros" (for FM instruments, PSG instruments or samples), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
+SF2 Music Cooker doesn't plan to support (unless there is an *overwhelming* demand for the feature):
+- Furnace features such as "macros" (for FM instruments or samples), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
 - Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool (the 'vgm2fur' Python tool is promising here)
-- Shining Force 1 (maybe most of the puzzle pieces are already solved and it wouldn't require *that* much effort, but I didn't look at SF1 music engine at all)
+- Shining Force 1 (maybe most of the puzzle pieces are already solved and it wouldn't require *that* much effort, but I didn't look at SF1 DISASM and music engine at all)
 
 Special caveat for replacing music pairs (3, 4) and (13, 14):
 - Vanilla SF2 musics "Mitula Shrine" and "Elven Town" (13, 14) are closely related and combined together in the SF2DISASM music assembly files
 - The same applies for "Promoted Attack" and "Promoted Attack Loop" (3, 4)
-- This makes it very inconvenient to replace each music separately without affecting the other (this might change if SF2DISASM is reorganized in a better way for those musics)
+- This makes it very inconvenient to replace each music separately without affecting the other
 - You CAN replace these musics, but if you don't provide a replacement for the other music in the pair, the music you provided will also replace the other music in the pair
 - You CANNOT move-replace these musics

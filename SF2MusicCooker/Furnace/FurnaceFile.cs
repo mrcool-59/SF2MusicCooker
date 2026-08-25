@@ -210,6 +210,17 @@ namespace SF2MusicCooker.Furnace
             return removed;
         }
 
+        /// <summary>
+        /// Mute all samples in the file.
+        /// </summary>
+        public void MuteSamples()
+        {
+            for (int i = 0; i < Samples.Length; i++)
+            {
+                Samples[i] = Sample.Muted;
+            }
+        }
+
         public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playbackRate, int a4tuning)
         {
             KeyByChannelAndOrder = keyByChannelAndOrder;

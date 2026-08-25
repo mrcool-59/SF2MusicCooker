@@ -11,6 +11,7 @@ namespace SF2MusicCooker
         public readonly bool IncludeOriginalNames;
         public readonly bool NukeMusic;
         public readonly bool NukeSFX;
+        public readonly bool MuteSamples;
         public readonly bool AutoYes;
         public readonly bool AutoNo;
         public readonly bool DumpUncompressed;
@@ -43,6 +44,7 @@ namespace SF2MusicCooker
             IncludeOriginalNames = Exists("--includeoriginalnames") || Exists("-ion");
             NukeMusic = Exists("--nukemusic") || Exists("-nm") || Exists("--nukeall") || Exists("-na");
             NukeSFX = Exists("--nukesfx") || Exists("-ns") || Exists("--nukeall") || Exists("-na");
+            MuteSamples = Exists("--mutesamples") || Exists("-ms");
             AutoYes = Exists("--autoyes") || Exists("-ay");
             AutoNo = Exists("--autono") || Exists("-an");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");

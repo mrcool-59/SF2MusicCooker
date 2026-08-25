@@ -23,12 +23,12 @@ namespace SF2MusicCooker
                 output.LoadVanilla();
 
                 List<Sheet> sheets = new List<Sheet>();
-                FileInfo[] musics = Tools.GetActiveFiles(arguments.Test ? "Test" : "Input", "*.fur");
-                FileInfo[] sfxs = Tools.GetActiveFiles(arguments.Test ? "Test-SFX" : "Input-SFX", "*.fur");
+                FileInfo[] musics = Tools.GetActiveFiles(arguments.Test ? "Test" : "Input", "*music*.fur");
+                FileInfo[] sfxs = Tools.GetActiveFiles(arguments.Test ? "Test" : "Input", "*sfx*.fur");
 
                 if (musics.Length == 0 && sfxs.Length == 0)
                 {
-                    Console.WriteLine("WARNING: No input .fur file found! The tool can still proceed anyway...");
+                    Console.WriteLine("WARNING: No recognized input .fur file found! The tool can still proceed anyway...");
                 }
                 else
                 {
@@ -158,7 +158,7 @@ namespace SF2MusicCooker
                 Options options = new Options("[CUSTOM] " + name, null, arguments.IsolateChannel, !arguments.NoOptimizeNotes, arguments.DumpNotes);
 
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
+                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Pitch, options, arguments.MuteSamples, arguments.DumpUncompressed);
 
                 // Build ASM name
                 string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
@@ -220,7 +220,7 @@ namespace SF2MusicCooker
                 string pointerName = "CSFX_" + sfxs.Count;
 
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Pitch, options, arguments.DumpUncompressed);
+                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Pitch, options, arguments.MuteSamples, arguments.DumpUncompressed);
 
                 // Build ASM name
                 string asmName = "SFX_CUSTOM_" + Tools.GetASMValidName(name);
@@ -237,7 +237,7 @@ namespace SF2MusicCooker
             output.AddOrReplaceSFX(sfxs.ToArray(), arguments.IncludeOriginalNames);
         }
 
-        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, bool dumpUncompressed)
+        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, bool muteSamples, bool dumpUncompressed)
         {
             return () =>
             {
@@ -256,6 +256,14 @@ namespace SF2MusicCooker
                     Instrument[] usedInstruments = file.GetUsedInstruments();
                     int unused = file.Instruments.Length - usedInstruments.Length;
                     if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
+
+                    // Mute samples switch
+                    int numSamples = file.Samples.Length;
+                    if (muteSamples && numSamples > 0)
+                    {
+                        file.MuteSamples();
+                        Console.WriteLine("> Muted {0} samples (--mutesamples)", numSamples);
+                    }
 
                     // Warn the user of unsupported effects the .fur file may have
                     AsmSheetWriter.PrintUnsupportedEffects(file);

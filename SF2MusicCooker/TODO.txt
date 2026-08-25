@@ -1,5 +1,5 @@
 ﻿Version 0.9:
-- Suspicious speed: "Test Samples"
+- Suspicious speed: "Test Samples" (YM timer set to 00h !)
 
 Version 1.0:
 - Amélioration de la précision du rendu: fréquence

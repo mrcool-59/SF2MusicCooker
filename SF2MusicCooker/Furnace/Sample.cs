@@ -36,5 +36,10 @@ namespace SF2MusicCooker.Furnace
             if (Length != Data.Length)
                 throw new FormatException("Data length is not consistent with declared length");
         }
+
+        /// <summary>
+        /// The muted sample that has the smallest size and produces no sound.
+        /// </summary>
+        public static readonly Sample Muted = new Sample("-Muted-", 1, 5000, 0x08, 0, -1, -1, new byte[1] { 0x00 });
     }
 }
