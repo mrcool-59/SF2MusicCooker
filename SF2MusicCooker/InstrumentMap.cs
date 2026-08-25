@@ -7,6 +7,12 @@ namespace SF2MusicCooker
     public sealed class InstrumentMap
     {
         private readonly Dictionary<byte, byte> instrument2fm;
+        private readonly Dictionary<ushort, byte> instrument_note2sample;
+
+        internal static ushort GetInstrumentAndNoteKey(byte instrument, byte note)
+        {
+            return (ushort)((instrument << 8) | note);
+        }
 
         /// <summary>
         /// Return true if the provided instrument is a FM instrument and return its index.
@@ -19,10 +25,10 @@ namespace SF2MusicCooker
         /// <summary>
         /// Return true if the provided instrument is a sample instrument and return its index.
         /// </summary>
-        public bool Sample(byte instrument, out byte sample)
+        public bool Sample(byte instrument, byte note, out byte sample)
         {
-            sample = 0;
-            return false; // TODO
+            ushort key = GetInstrumentAndNoteKey(instrument, note);
+            return instrument_note2sample.TryGetValue(key, out sample);
         }
 
         /// <summary>
@@ -58,18 +64,20 @@ namespace SF2MusicCooker
             dac = (byte)(channel6_dac ? 0 : 1);
         }
 
-        public InstrumentMap(FMInstruments instruments, Instrument[] furnaceInstruments, Instrument[] usedFurnaceInstruments)
+        public InstrumentMap(FMInstruments instruments, PCMInstruments samples, Instrument[] furnaceInstruments, Instrument[] usedFurnaceInstruments)
         {
             HashSet<Instrument> usedSet = new HashSet<Instrument>(usedFurnaceInstruments);
 
             instrument2fm = instruments.Map(furnaceInstruments, usedSet);
+            instrument_note2sample = samples.Map(furnaceInstruments, usedSet);
 
-            // TODO: samples, PSG
+            // TODO: PSG
         }
 
         private InstrumentMap()
         {
             instrument2fm = new Dictionary<byte, byte>();
+            instrument_note2sample = new Dictionary<ushort, byte>();
         }
 
         /// <summary>

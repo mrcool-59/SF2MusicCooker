@@ -267,7 +267,7 @@ namespace SF2MusicCooker
                     samples.AddMany(file, usedFurnaceInstruments, options.DumpNotes);
 
                     // Prepare the Furnace to Cube instrument map
-                    InstrumentMap map = new InstrumentMap(instruments, file.Instruments, usedFurnaceInstruments);
+                    InstrumentMap map = new InstrumentMap(instruments, samples, file.Instruments, usedFurnaceInstruments);
 
                     // Write the ASM sheet of the music/SFX
                     if (pointerName != null)

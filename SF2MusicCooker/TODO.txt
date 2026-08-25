@@ -1,4 +1,5 @@
 ﻿Version 0.9:
+- Faire marcher "Test Samples"
 - DAC support (en ignorant les samples inutilisés)
 
 Version 1.0:

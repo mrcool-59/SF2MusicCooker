@@ -34,9 +34,9 @@ namespace SF2MusicCooker
         /// <summary>
         /// Get shifted frequency of a note shift.
         /// </summary>
-        public static int ShiftFrequency(int frequency, int shift)
+        public static int ShiftFrequency(int frequency, int shift, float coeff = 1f)
         {
-            return (int)Math.Round(frequency * Math.Pow(2.0, shift / 12f));
+            return (int)Math.Round(frequency * coeff * Math.Pow(2.0, shift / 12f));
         }
 
         /// <summary>

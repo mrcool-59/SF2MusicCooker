@@ -225,15 +225,14 @@ namespace SF2MusicCooker
         /// <summary>
         /// Add a new Furnace sample. Return false if the sample already exists.
         /// </summary>
-        public bool Add(Sample sample, int shift, bool print)
+        public bool Add(Sample sample, int a4tuning, int shift, bool print)
         {
-            // TODO: A4 tuning coeff to take in account
-
             int actualPeriod = PCMSample.ComputePeriod(sample.Rate);
             int actualRate = PCMSample.ComputeRate(actualPeriod);
             byte[] data = Resample(sample.Data, sample.Rate, actualRate);
 
-            int playRate = PitchTable.ShiftFrequency(actualRate, shift);
+            float coeff = (float)a4tuning / FurnaceFile.StandardA4Tuning;
+            int playRate = PitchTable.ShiftFrequency(actualRate, shift, coeff);
             int playPeriod = PCMSample.ComputePeriod(playRate);
 
             bool added = Add(data, playPeriod);
@@ -262,12 +261,14 @@ namespace SF2MusicCooker
                     {
                         SampleMap.Entry entry = map.Read(note);
 
-                        if (!entry.Invalid)
+                        if (!entry.Invalid && file.HasPlayNoteCommand(5, note))
                         {
+                            // Sample is only added if it is used in channel 6
+
                             Sample sample = file.Samples[entry.Sample];
                             int shift = entry.Note - NoteBible.C4_VALUE;
 
-                            _ = Add(sample, shift, print);
+                            _ = Add(sample, file.A4Tuning, shift, print);
                         }
                     }
                 }
@@ -441,6 +442,25 @@ namespace SF2MusicCooker
                 File.WriteAllBytes(Path.Combine(pcmBanksFolder, filename), _banks[bank]);
                 Console.WriteLine("> Wrote '{0}' file!", filename);
             }
+        }
+
+        /// <summary>
+        /// Generate a file-to-global sample instrument map for the given Furnace instrument array.
+        /// </summary>
+        public Dictionary<ushort, byte> Map(Instrument[] instruments, HashSet<Instrument> usedSet = null)
+        {
+            Dictionary<ushort, byte> map = new Dictionary<ushort, byte>();
+            for (int i = 0; i < instruments.Length; i++)
+            {
+                Instrument instrument = instruments[i];
+                if (instrument.Type == Instrument.DAC && (usedSet == null || usedSet.Contains(instrument)))
+                {
+                    // TODO
+                    // Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
+                    // map.Add((byte)i, Find(def));
+                }
+            }
+            return map;
         }
 
         public PCMInstruments(int slots, int[] bankLengths, string[] bankNames, int baseOffset)

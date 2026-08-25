@@ -85,6 +85,22 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Verify if the specified channel has at least a play note command with the specified note.
+        /// </summary>
+        public bool HasPlayNoteCommand(int channel, int note)
+        {
+            foreach (Pattern pattern in GetAllPatternsForChannel(channel))
+            {
+                for (int i = 0; i < pattern.Rows; i++)
+                {
+                    PatternCell cell = pattern.Get(i);
+                    if (cell.Note == note) return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Verify if the specified channel has at least a volume command.
         /// </summary>
         public bool HasVolumeCommand(int channel)

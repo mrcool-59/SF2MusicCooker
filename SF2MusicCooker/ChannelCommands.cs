@@ -211,10 +211,15 @@ namespace SF2MusicCooker
                             commands.Add("vol " + BYTE(currentVolume));
                         }
 
-                        // TODO: sample / sampleL commands
-
-                        // Finally, write the note itself
-                        WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
+                        // Finally, write note/sample command
+                        if (map.Sample(currentInstrument, cell.Note, out byte sample))
+                        {
+                            WriteSample(sample, tick.NoteRelease, tick.NoteLength);
+                        }
+                        else
+                        {
+                            WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
+                        }
                     }
                     else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                     {
@@ -300,7 +305,17 @@ namespace SF2MusicCooker
 
             void WriteNote(byte note, int release, int length)
             {
-                int cappedLength = Math.Min(length, release + 0x7F); // After releasing a note, we can't have it play for more than 0x7F ticks
+                WriteNoteOrSample(NOTE(note), release, length, "note  ", "noteL ");
+            }
+
+            void WriteSample(byte sample, int release, int length)
+            {
+                WriteNoteOrSample(BYTE(sample), release, length, "sample  ", "sampleL ");
+            }
+
+            void WriteNoteOrSample(string value, int release, int length, string command, string commandL)
+            {
+                int cappedLength = Math.Min(length, release + 0x7F); // After releasing a command, we can't have it play for more than 0x7F ticks
                 int extraSilence = length - cappedLength;
 
                 length = cappedLength;
@@ -308,19 +323,19 @@ namespace SF2MusicCooker
                 while (length > 0)
                 {
                     if (length >= 0x100)
-                        WriteSetReleaseOrSustain(-1); // This note is sustained because it goes above the max length of a single note (i.e: another note is required)
+                        WriteSetReleaseOrSustain(-1); // This command is sustained because it goes above the max length of a single command (i.e: another one is required)
                     else
-                        WriteSetReleaseOrSustain(length - release); // This note will end, we can also set when it should be released
+                        WriteSetReleaseOrSustain(length - release); // This command will end, we can also set when it should be released
 
                     byte newLength = (byte)Math.Min(0xFF, length);
                     if (currentLength != newLength)
                     {
                         currentLength = newLength;
-                        commands.Add("noteL " + NOTE(note) + "," + BYTE(currentLength));
+                        commands.Add(commandL + value + "," + BYTE(currentLength));
                     }
                     else
                     {
-                        commands.Add("note  " + NOTE(note));
+                        commands.Add(command + value);
                     }
                     release -= newLength;
                     length -= newLength;
