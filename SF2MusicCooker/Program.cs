@@ -252,8 +252,8 @@ namespace SF2MusicCooker
                     int removed = file.RemoveUnsupportedNotes();
                     if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
 
-                    // Identify the instruments that are really used
-                    Instrument[] usedInstruments = file.GetUsedInstruments();
+                    // Identify the instruments that are really used and verify their usage is valid
+                    Instrument[] usedInstruments = file.GetUsedInstruments(true, true, true);
                     int unused = file.Instruments.Length - usedInstruments.Length;
                     if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
 

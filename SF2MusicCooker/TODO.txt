@@ -1,5 +1,13 @@
 ﻿Version 0.9:
+- Per-music/SFX arguments
 - Suspicious speed: "Test Samples" (YM timer set to 00h !)
+	=> Pareil aussi pour Illegal Volume Ramp
+	=> VITESSE MINIMALE: 13 hz, afficher un warning si un .fur demande en dessous de ça
+		=> Alternative plus stylée: dédoubler les patterns en multiplant la fréquence par 2 à chaque fois
+			=> Pouvoir multiplier par N = 2, 3, 4, 5...
+			=> Pourrait servir à fix plus tard les SFX qui ont une vitesse altérée du fait d'un timer exotique
+			=> Attention: il ne faut pas faire ça si l'input file contient un effet 'set tick rate'
+	=> Compléter le README concernant le tempo raisonnable
 
 Version 1.0:
 - Amélioration de la précision du rendu: fréquence

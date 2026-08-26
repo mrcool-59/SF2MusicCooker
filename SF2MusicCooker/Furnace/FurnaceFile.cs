@@ -141,14 +141,27 @@ namespace SF2MusicCooker.Furnace
 
         /// <summary>
         /// Return all Furnace instruments that are really used.
+        /// Also can verify the correct use of instruments depending on their types and throw an exception if a misuse is detected.
         /// </summary>
-        public Instrument[] GetUsedInstruments()
+        public Instrument[] GetUsedInstruments(bool verifyFM, bool verifyDAC, bool verifyPSG)
         {
             List<Instrument> usedInstruments = new List<Instrument>();
             for (int i = 0; i < Instruments.Length; i++)
             {
-                if (GetInstrumentUsage((byte)i).Length > 0)
-                    usedInstruments.Add(Instruments[i]);
+                var instrument = Instruments[i];
+                int[] channels = GetInstrumentUsage((byte)i);
+
+                if (verifyFM && instrument.Type == Instrument.FM && Array.Exists(channels, channel => channel > 5))
+                    throw new NotSupportedException("Instrument '" + instrument.Name + "' is a FM instrument and can only be used in channels 1 to 6");
+
+                if (verifyDAC && instrument.Type == Instrument.DAC && Array.Exists(channels, channel => channel != 5))
+                    throw new NotSupportedException("Instrument '" + instrument.Name + "' is a sample instrument and can only be used in channel 6");
+
+                if (verifyPSG && instrument.Type == Instrument.PSG && Array.Exists(channels, channel => channel <= 5))
+                    throw new NotSupportedException("Instrument '" + instrument.Name + "' is a PSG instrument and can only be used in channels 7 to 10");
+
+                if (channels.Length > 0)
+                    usedInstruments.Add(instrument);
             }
             return usedInstruments.ToArray();
         }

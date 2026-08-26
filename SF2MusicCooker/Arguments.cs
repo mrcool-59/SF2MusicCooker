@@ -50,7 +50,7 @@ namespace SF2MusicCooker
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             Test = Exists("--test") || Exists("-t");
-            for (int i = 0; i < 9; i++) if (Exists("--channel" + i) || Exists("-c" + i)) IsolateChannel = i;
+            for (int i = 1; i <= 10; i++) if (Exists("--channel" + i) || Exists("-c" + i)) IsolateChannel = i - 1;
             for (int i = 1; i < SFX.NONE; i++) if (Exists("--only" + i) || Exists("-o" + i)) Only = i;
         }
     }
