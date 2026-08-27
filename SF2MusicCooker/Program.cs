@@ -23,8 +23,10 @@ namespace SF2MusicCooker
                 output.LoadVanilla();
 
                 List<Sheet> sheets = new List<Sheet>();
-                FileInfo[] musics = Tools.GetActiveFiles(arguments.Test ? "Test" : "Input", "*music*.fur");
-                FileInfo[] sfxs = Tools.GetActiveFiles(arguments.Test ? "Test" : "Input", "*sfx*.fur");
+                string folder = arguments.Test ? "Test" : "Input";
+                FileInfo[] musics = Tools.GetActiveFiles(folder, "*music*.fur");
+                FileInfo[] sfxs = Tools.GetActiveFiles(folder, "*sfx*.fur");
+                Dictionary<int, Options> overrides = Options.ReadOverrideOptions(folder);
 
                 if (musics.Length == 0 && sfxs.Length == 0)
                 {
@@ -32,8 +34,8 @@ namespace SF2MusicCooker
                 }
                 else
                 {
-                    DoMusics(sheets, musics, output, arguments);
-                    DoSFXs(sheets, sfxs, output, arguments);
+                    DoMusics(sheets, musics, output, arguments, overrides);
+                    DoSFXs(sheets, sfxs, output, arguments, overrides);
                 }
 
                 // Nuke vanilla
@@ -133,7 +135,7 @@ namespace SF2MusicCooker
             }
         }
 
-        static void DoMusics(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments)
+        static void DoMusics(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments, Dictionary<int, Options> overrides)
         {
             HashSet<int> provided = new HashSet<int>();
 
@@ -155,10 +157,10 @@ namespace SF2MusicCooker
                 if (provided.Contains(pairNumber)) pairNumber = 0; // Both elements of the pair have been provided, no need to use this hack
 
                 // Prepare the options
-                Options options = new Options("[CUSTOM] " + name, null, arguments.IsolateChannel, !arguments.NoOptimizeNotes, arguments.DumpNotes);
+                Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
 
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Pitch, options, arguments.MuteSamples, arguments.DumpUncompressed);
+                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Pitch, options, name);
 
                 // Build ASM name
                 string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
@@ -203,7 +205,7 @@ namespace SF2MusicCooker
             }
         }
 
-        static void DoSFXs(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments)
+        static void DoSFXs(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments, Dictionary<int, Options> overrides)
         {
             List<SFX> sfxs = new List<SFX>(furs.Length);
 
@@ -214,13 +216,13 @@ namespace SF2MusicCooker
                 if (arguments.Only >= 0 && number != arguments.Only) continue;
 
                 // Prepare the options
-                Options options = new Options("[CUSTOM] " + name, null, arguments.IsolateChannel, !arguments.NoOptimizeNotes, arguments.DumpNotes);
+                Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
 
                 // Pick a pointer name
                 string pointerName = "CSFX_" + sfxs.Count;
 
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Pitch, options, arguments.MuteSamples, arguments.DumpUncompressed);
+                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Pitch, options, name);
 
                 // Build ASM name
                 string asmName = "SFX_CUSTOM_" + Tools.GetASMValidName(name);
@@ -237,7 +239,7 @@ namespace SF2MusicCooker
             output.AddOrReplaceSFX(sfxs.ToArray(), arguments.IncludeOriginalNames);
         }
 
-        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, bool muteSamples, bool dumpUncompressed)
+        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, string name)
         {
             return () =>
             {
@@ -246,7 +248,7 @@ namespace SF2MusicCooker
                     Console.WriteLine("Reading '{0}' input file...", fur.Name);
 
                     // We first need to understand the contents of the .fur file
-                    FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, dumpUncompressed ? ("UNCOMPRESSED_" + fur.Name) : null);
+                    FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, options.DumpUncompressed ? Path.Combine("Uncompressed", fur.Name) : null);
 
                     // Remove notes we don't support in the note bible
                     int removed = file.RemoveUnsupportedNotes();
@@ -259,7 +261,7 @@ namespace SF2MusicCooker
 
                     // Mute samples switch
                     int numSamples = file.Samples.Length;
-                    if (muteSamples && numSamples > 0)
+                    if (options.MuteSamples && numSamples > 0)
                     {
                         file.MuteSamples();
                         Console.WriteLine("> Muted {0} samples (--mutesamples)", numSamples);
@@ -277,11 +279,14 @@ namespace SF2MusicCooker
                     // Prepare the Furnace to Cube instrument map
                     InstrumentMap map = new InstrumentMap(instruments, samples, file, usedInstruments);
 
+                    // Prepare the title
+                    string title = "[CUSTOM] " + name;
+
                     // Write the ASM sheet of the music/SFX
                     if (pointerName != null)
-                        return AsmSheetWriter.WriteSFX(file, options, map, pitch, pointerName);
+                        return AsmSheetWriter.WriteSFX(file, options, map, pitch, pointerName, SFXType.Automatic, title);
                     else
-                        return AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber);
+                        return AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber, title);
                 }
             };
         }

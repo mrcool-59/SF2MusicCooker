@@ -86,20 +86,29 @@ OPTIONS
 
 SF2 Music Cooker can be run with the following option switches to alter its behavior: (must appear after the 1st argument)
 
---nopause					or		-np		Do not ask to press a key to quit the program
---autoyes					or		-ay		Automatically confirm to write files to SF2DISASM folder
---autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
---nooptimize				or		-no		Do not reduce the size of the music sheets with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --includeoriginalnames		or		-ion	Include original names of replaced musics (in the sound test)
 --nukemusic					or		-nm		Replace musics from vanilla game by empty musics (can be useful as a temporary bank size issue workaround)
 --nukesfx					or		-ns		Replace SFXs from vanilla game by empty SFXs (can be useful as a temporary bank size issue workaround)
 --nukeall					or		-na		Replace everything from vanilla game by emptiness (equivalent to --nukemusic --nukesfx)
---mutesamples				or		-ms		Process Furnace files as if they had empty samples (can be useful to check if issues are caused by samples)
---dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheets (only useful for developers or curious people)
---dumpuncompressed			or		-du		Write a copy of input Furnace files into the working directory, but uncompressed (only useful for developers)
---channelN					or		-cN		(N = 1..10) If present disable output of all channels except channel N (only useful for developers)
---onlyN						or		-oN		(N = 1..126) Only process the .fur file for the given music/SFX number and ignore the rest (only useful for developers)
+--nopause					or		-np		Do not ask to press a key to quit the program
+--nopostbuild				or		-npb	Do not run POSTBUILD.bat, even if it's provided
+--autoyes					or		-ay		Automatically confirm to write files to SF2DISASM folder
+--autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
 --test						or		-t		Read files in "Test" folder instead of "Input" folder (only useful for developers)
+--onlyN						or		-oN		(N = 1..126) Only process the .fur file for the given music/SFX number and ignore the rest (only useful for developers)
+
+The following options can be specified globally or per-music/per-SFX:
+
+--mutesamples				or		-ms		Process Furnace file as if it had empty samples (can be useful to check if issues are caused by samples)
+--nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
+--dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
+--dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
+--channelN					or		-cN		(N = 1..10) If present disable output of all channels except channel N (only useful for developers)
+
+To apply options per-music/per-SFX, provide an "options.txt" file in the "Input" folder.
+Example file (dump notes of music 33 and mute samples of music 41):
+	33 = --dumpnotes
+	41 = --mutesamples
 
 
 

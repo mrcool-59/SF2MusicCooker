@@ -323,7 +323,11 @@ namespace SF2MusicCooker.Furnace
                     uncompressedStream.Seek(0, SeekOrigin.Begin);
 
                     // For our file format analysis convenience under a hex editor
-                    if (dumpPath != null) File.WriteAllBytes(dumpPath, uncompressedStream.ToArray());
+                    if (dumpPath != null)
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(dumpPath));
+                        File.WriteAllBytes(dumpPath, uncompressedStream.ToArray());
+                    }
 
                     return Load(uncompressedStream);
                 }

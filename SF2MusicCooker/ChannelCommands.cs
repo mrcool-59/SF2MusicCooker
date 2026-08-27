@@ -127,7 +127,7 @@ namespace SF2MusicCooker
             if (firstNoteTicks == 0) return "channel_end";
 
             // Volume to cube helper
-            Volume volume = Volume.FromStrategy(options.VolumeStrategy);
+            Volume volume = Volume.FromStrategy(null); // TODO
             byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume);
 
             // Prepare state

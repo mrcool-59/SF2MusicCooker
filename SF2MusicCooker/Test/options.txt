@@ -1,0 +1,2 @@
+;05 = --dumpnotes
+;33 = --dumpuncompressed

@@ -78,7 +78,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an ASM music sheet.
         /// </summary>
-        public static string Write(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, int pairNumber = 0)
+        public static string Write(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, int pairNumber = 0, string title = null)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -99,7 +99,7 @@ namespace SF2MusicCooker
 
             // Write header
             sb.AppendFormat("Music_{0}:", number);
-            if (options.Title != null) sb.AppendFormat("\t\t; {0}", options.Title);
+            if (title != null) sb.AppendFormat("\t\t; {0}", title);
             sb.AppendLine();
             if (pairNumber > 0) { sb.AppendFormat("Music_{0}:\t\t; Special case, these two musics are paired", pairNumber); sb.AppendLine(); }
             sb.AppendFormat(padding + "db 0\t; Must be zero"); sb.AppendLine();
@@ -137,7 +137,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an ASM SFX sheet.
         /// </summary>
-        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, string pointerName, SFXType type = SFXType.Automatic)
+        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, string pointerName, SFXType type = SFXType.Automatic, string title = null)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -155,7 +155,7 @@ namespace SF2MusicCooker
             // Write header (disclaimer is skipped for SFX)
             sb.Append(pointerName);
             sb.Append(':');
-            if (options.Title != null) sb.AppendFormat("\t\t; {0}", options.Title);
+            if (title != null) sb.AppendFormat("\t\t; {0}", title);
             sb.AppendLine();
             sb.AppendFormat(padding + "db {0}\t; SFX type", (byte)type); sb.AppendLine();
 

@@ -101,8 +101,8 @@ namespace SF2MusicCooker
                     int disabledIndex = line.IndexOf(';');
                     if (disabledIndex >= 0 && disabledIndex < index) continue;
 
-                    string key = line.Substring(0, index);
-                    string value = line.Substring(index + 1);
+                    string key = line.Substring(0, index).Trim();
+                    string value = line.Substring(index + 1).Trim();
                     map.Add(int.Parse(key), value);
                 }
             }

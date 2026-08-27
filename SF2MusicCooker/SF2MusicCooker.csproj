@@ -126,6 +126,9 @@
     <None Include="Test\%40music33-The First Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Include="Test\options.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="TODO.txt" />
     <None Include="POSTBUILD_Example.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
