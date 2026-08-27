@@ -99,7 +99,7 @@
     <None Include="Test\%40music04-Test Tricky Loop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\!%40music41-Choose your Path.fur">
+    <None Include="Test\%40music41-Choose your Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="sfxbank.asm.tpl">
