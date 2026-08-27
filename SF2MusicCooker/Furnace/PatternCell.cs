@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace SF2MusicCooker.Furnace
@@ -45,14 +46,6 @@ namespace SF2MusicCooker.Furnace
             Effects = effects ?? Array.Empty<Effect>();
         }
 
-        /// <summary>
-        /// Multiply pattern cell by N and return the resulting cell. This only does something for cells that have effects related to tick rate.
-        /// </summary>
-        public PatternCell Multiply(int n)
-        {
-            return this; // TODO: setTickRate and other effects
-        }
-
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
@@ -94,6 +87,43 @@ namespace SF2MusicCooker.Furnace
             }
             effect = Effect.Absent;
             return false;
+        }
+
+        /// <summary>
+        /// Multiply pattern cell by N and return the resulting cell as well as the last padding cell (that will hold effects related to navigation).
+        /// This method only does something when a time effect is present on the pattern cell.
+        /// </summary>
+        public PatternCell Multiply(int n, out PatternCell beforeNextCell)
+        {
+            beforeNextCell = null;
+            if (Effects.Length > 0)
+            {
+                List<Effect> remainingEffects = new List<Effect>(Effects.Length);
+                List<Effect> delayedEffects = new List<Effect>(0);
+                foreach (Effect effect in Effects)
+                {
+                    switch (effect.Type)
+                    {
+                        case Effect.GoNext:
+                            delayedEffects.Add(new Effect(effect.Type, (byte)Math.Min(0xFF, effect.Value * n)));
+                            break;
+                        case Effect.GoTo:
+                        case Effect.End:
+                            delayedEffects.Add(effect);
+                            break;
+                        default:
+                            // TODO: setTickRate
+                            remainingEffects.Add(effect);
+                            break;
+                    }
+                }
+                if (delayedEffects.Count > 0)
+                {
+                    beforeNextCell = new PatternCell(NoteAbsent, InstrumentAbsent, VolumeAbsent, delayedEffects.ToArray());
+                }
+                return new PatternCell(Note, Instrument, Volume, remainingEffects.ToArray());
+            }
+            return this;
         }
 
         /// <summary>

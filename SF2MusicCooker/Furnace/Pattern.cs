@@ -34,7 +34,15 @@
         public Pattern Multiply(int n)
         {
             Pattern pattern = new Pattern(Rows * n);
-            for (int i = 0; i < Rows; i++) pattern.Set(i * n, cells[i]?.Multiply(n));
+            for (int i = 0; i < Rows; i++)
+            {
+                if (cells[i] != null)
+                {
+                    PatternCell newCell = cells[i].Multiply(n, out PatternCell beforeNextCell);
+                    pattern.Set(i * n, newCell);
+                    pattern.Set((i + 1) * n - 1, beforeNextCell);
+                }
+            }
             return pattern;
         }
     }

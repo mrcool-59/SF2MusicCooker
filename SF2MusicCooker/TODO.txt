@@ -1,8 +1,4 @@
-﻿Version 0.9:
-- Retester: "Test Samples" (YM timer set to 00h !)
-	=> Pareil aussi pour Illegal Volume Ramp
-
-Version 1.0:
+﻿Version 1.0:
 - Amélioration de la précision du rendu: fréquence
 	=> Il y a 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64

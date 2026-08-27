@@ -70,7 +70,7 @@ namespace SF2MusicCooker
         public static void AdjustPlayRate(ref FurnaceFile file, bool sfx, bool enabled)
         {
             int R(float x) => (int)Math.Round(x);
-            float D(float a, float b) => Math.Abs(Math.Max(a, b) / Math.Min(a, b) % 1f);
+            int D(float x, float y) => R(Math.Abs(x - y));
 
             float originalPlayRate = file.PlayRate;
             int N = 1;
@@ -78,21 +78,25 @@ namespace SF2MusicCooker
             if (enabled)
             {
                 float min = sfx ? 57.999f : 12.999f;
-                float max = sfx ? 62.001f : 960.001f; // For music, don't go all the way up to 3329 hz
+                float max = sfx ? 62.001f : 3329.001f;
 
                 // Basically we try to find the N that put us above min, below max and that gives the lowest SFX speed alteration
+                // SFXs seem to play correctly when music play rate is between 30 and 60 hz
 
                 int[] candidateN = new int[49];
                 for (int i = 0; i < candidateN.Length; i++) candidateN[i] = i + 1;
 
                 N = Tools.SelectMin(candidateN, n =>
                 {
-                    if (n * originalPlayRate > max)
+                    float rate = n * originalPlayRate;
+                    if (rate > max)
                         return 3000 + n;
-                    else if (n * originalPlayRate < min)
+                    else if (rate < min)
                         return 2000 + n;
+                    else if (D(rate, 30f) == 0 || D(rate, 60f) == 0)
+                        return 0; // Perfect
                     else
-                        return (int)Math.Round(D(n * originalPlayRate, 60f) * 1000);
+                        return D(rate, sfx ? 60f : 45f); // Pretty good
                 });
             }
 
@@ -105,14 +109,14 @@ namespace SF2MusicCooker
 
             if (sfx)
             {
-                // Verify resulting rate is within acceptable range for SFXs
+                // Verify new rate is within acceptable range for SFXs
 
                 if (file.PlayRate < 57.999f || file.PlayRate > 62.001f)
                     Console.WriteLine("! Play rate of SFX should be between 58~62 hz, it will play at a noticeably incorrect speed ingame");
             }
             else
             {
-                // Verify resulting rate is within acceptable range for musics
+                // Verify new rate is within acceptable range for musics
 
                 if (file.PlayRate < 12.999f)
                     Console.WriteLine("! Play rate of music is below minimum of 13 hz, it will play faster ingame");
@@ -120,14 +124,10 @@ namespace SF2MusicCooker
                 if (file.PlayRate > 3329.001f)
                     Console.WriteLine("! Play rate of music is above maximum of 3329 hz, it will play slower ingame");
 
-                // Verify resulting rate will result in SFXs playing at the correct speed
+                // Verify new rate will result in SFXs playing at the correct speed
 
-                float a = file.PlayRate;
-                float b = 60f;
-                float r = D(a, b);
-
-                if (r > 0.05f)
-                    Console.WriteLine("! Play rate of music is {0} hz, SFXs will play at a noticeably incorrect speed ingame (r={1:0.000})", R(a), r);
+                if (file.PlayRate < 29.999f || file.PlayRate > 60.001f)
+                    Console.WriteLine("! Play rate of music is outside 30~60 hz range, SFXs will play slower/faster ingame");
             }
         }
 

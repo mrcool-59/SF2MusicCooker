@@ -100,7 +100,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 The following options can be specified globally or per-music/per-SFX:
 
 --mutesamples				or		-ms		Process Furnace file as if it had empty samples (can be useful to check if issues are caused by samples)
---preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed with musics with exotic tick rates (see caveat below for explanations)
+--preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed (see caveat below for explanations)
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
@@ -136,19 +136,19 @@ SF2 Music Cooker doesn't currently support but will in the future (because I wan
 - Additional Furnace effects and better mapping from Furnace to SF2 sound engine
 
 SF2 Music Cooker doesn't plan to support (unless there is an *overwhelming* demand for the feature):
+- Additional song size reduction by detecting voltas (repeats with different endings)
 - Furnace features such as "macros" (for FM instruments or samples), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
 - Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool (the 'vgm2fur' Python tool is promising here)
 - Shining Force 1 (maybe most of the puzzle pieces are already solved and it wouldn't require *that* much effort, but I didn't look at SF1 DISASM and music engine at all)
 
 Special caveat about tick rates:
-- Musics can have a tick rate between 13 hz and 3329 hz (this is the possible frequency range for the YM2612 timer)
+- Musics can theorically have a tick rate between 13 hz and 3329 hz (this is the possible frequency range for the YM2612 timer)
 - Most SF2 vanilla musics play at 60 hz
-- Musics above 960 hz should be considered risky as the Z80 might be unable to keep up at some point (I didn't test this)
-- SFXs *cannot* specify a tick rate, and its effective value is based on the music tick rate and its mathematical divisibility
-- Some music tick rates such as 72 hz will cause the SFXs to play slower, whereas 60 hz will allow SFXs to play at the correct speed
+- SFXs *cannot* specify a tick rate, and their effective speed is based on the music tick rate
+- SFXs seem to play at the correct speed if music is between 30 and 60 hz (lower makes SFXs play slower, higher makes SFXs play faster)
 - Furnace files for SFXs should have a play rate between 58 and 62 hz (files slower than 30 hz will be multiplied to land in this range if possible)
 - This tool will try to artificially multiply frequency and pattern rows of musics to reach a tick rate >= 13 hz that plays nice with the SFXs
-- TL;DR / To summarize: Furnace files should play at 60 hz for SFXs, and somewhere between 40~80 hz for musics
+- TL;DR / To summarize: Furnace files should play at 60 hz for SFXs, and somewhere between 30~60 hz for musics
 
 Special caveat for replacing music pairs (3, 4) and (13, 14):
 - Vanilla SF2 musics "Mitula Shrine" and "Elven Town" (13, 14) are closely related and combined together in the SF2DISASM music assembly files
