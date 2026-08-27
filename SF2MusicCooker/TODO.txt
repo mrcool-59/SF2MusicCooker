@@ -1,13 +1,6 @@
 ﻿Version 0.9:
-- Per-music/SFX arguments
-- Suspicious speed: "Test Samples" (YM timer set to 00h !)
+- Retester: "Test Samples" (YM timer set to 00h !)
 	=> Pareil aussi pour Illegal Volume Ramp
-	=> VITESSE MINIMALE: 13 hz, afficher un warning si un .fur demande en dessous de ça
-		=> Alternative plus stylée: dédoubler les patterns en multiplant la fréquence par 2 à chaque fois
-			=> Pouvoir multiplier par N = 2, 3, 4, 5...
-			=> Pourrait servir à fix plus tard les SFX qui ont une vitesse altérée du fait d'un timer exotique
-			=> Attention: il ne faut pas faire ça si l'input file contient un effet 'set tick rate'
-	=> Compléter le README concernant le tempo raisonnable
 
 Version 1.0:
 - Amélioration de la précision du rendu: fréquence
@@ -15,6 +8,7 @@ Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - Support for important effects (marked with '#' in ChannelCommands.cs)
+	=> Attention aux effets qui dépendent du tick rate, à en tenir compte dans PatternCell.Multiply
 
 Version 1.1:
 - PSG output in sheet writing
@@ -29,7 +23,3 @@ Version 1.2:
 Version 1.2.1:
 - Focus on bug fixes
 - Auto-bank assignment feature
-- SFX ralentit quand The First Battle (72 hz) joue, probablement à cause du timer altéré, mais pourquoi le son ralentit au lieu d'accélérer?
-	=> Enquêter un peu mais ne rien faire...
-	=> Peut être qu'il y a une compensation côté SFX, mais qu'il faut que la clock SFX et clock Music soit une multiple l'un de l'autre
-	=> Voir comment les musics du jeu original utilisent setYMTimer...

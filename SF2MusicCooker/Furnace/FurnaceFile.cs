@@ -31,7 +31,7 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// The rate at which the chip timer should tick (in hz). Values around 40 to 80 hz should be considered typical.
         /// </summary>
-        public readonly float PlaybackRate;
+        public readonly float PlayRate;
 
         /// <summary>
         /// A-4 tuning value.
@@ -234,13 +234,26 @@ namespace SF2MusicCooker.Furnace
             }
         }
 
-        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playbackRate, int a4tuning)
+        /// <summary>
+        /// Generate a new Furnace file that plays identically but with play rate multiplied by N. Return the original Furnace file if multiplier is 1.
+        /// </summary>
+        public FurnaceFile Multiply(int n)
+        {
+            if (n <= 0) throw new ArgumentOutOfRangeException(nameof(n), "cannot be zero or negative");
+            if (n == 1) return this;
+
+            Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
+            foreach (var pair in PatternByKey) patternByKey.Add(pair.Key, pair.Value.Multiply(n));
+            return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, PlayRate * n, A4Tuning);
+        }
+
+        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playRate, int a4tuning)
         {
             KeyByChannelAndOrder = keyByChannelAndOrder;
             PatternByKey = patternByKey;
             Instruments = instruments;
             Samples = samples;
-            PlaybackRate = playbackRate;
+            PlayRate = playRate;
             A4Tuning = a4tuning;
         }
 

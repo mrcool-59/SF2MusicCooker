@@ -27,5 +27,15 @@
             if (cell != null && cell.IsEmpty) cell = null;
             cells[row] = cell;
         }
+
+        /// <summary>
+        /// Multiply pattern rows by N and return the resulting pattern.
+        /// </summary>
+        public Pattern Multiply(int n)
+        {
+            Pattern pattern = new Pattern(Rows * n);
+            for (int i = 0; i < Rows; i++) pattern.Set(i * n, cells[i]?.Multiply(n));
+            return pattern;
+        }
     }
 }

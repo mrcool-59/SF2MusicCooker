@@ -45,6 +45,14 @@ namespace SF2MusicCooker.Furnace
             Effects = effects ?? Array.Empty<Effect>();
         }
 
+        /// <summary>
+        /// Multiply pattern cell by N and return the resulting cell. This only does something for cells that have effects related to tick rate.
+        /// </summary>
+        public PatternCell Multiply(int n)
+        {
+            return this; // TODO: setTickRate and other effects
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();

@@ -257,7 +257,7 @@ namespace SF2MusicCooker
             string[] finalCommands = commands.ToArray();
 
             // Apply optimization (only if dumping is disabled)
-            if (options.OptimizeNotes && !options.DumpNotes) finalCommands = optimizer.Optimize(finalCommands);
+            if (!options.NoOptimize && !options.DumpNotes) finalCommands = optimizer.Optimize(finalCommands);
 
             // Get the assembly
             string asm = string.Join(_separator, finalCommands);

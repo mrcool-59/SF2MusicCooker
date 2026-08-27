@@ -267,6 +267,9 @@ namespace SF2MusicCooker
                         Console.WriteLine("> Muted {0} samples (--mutesamples)", numSamples);
                     }
 
+                    // Adjust the playback rate to play nice with YM2612 timer and SFXs play speed
+                    AsmSheetWriter.AdjustPlayRate(ref file, pointerName != null, !options.PreserveRate);
+
                     // Warn the user of unsupported effects the .fur file may have
                     AsmSheetWriter.PrintUnsupportedEffects(file);
 

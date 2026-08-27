@@ -7,7 +7,8 @@ namespace SF2MusicCooker
     public sealed class Options
     {
         public readonly bool MuteSamples;
-        public readonly bool OptimizeNotes;
+        public readonly bool PreserveRate;
+        public readonly bool NoOptimize;
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
         public readonly int IsolateChannel = -1;
@@ -21,7 +22,8 @@ namespace SF2MusicCooker
                 throw new ArgumentNullException(nameof(other));
 
             return new Options(other.MuteSamples || MuteSamples,
-                               other.OptimizeNotes || OptimizeNotes,
+                               other.PreserveRate || PreserveRate,
+                               other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
                                other.DumpUncompressed || DumpUncompressed,
                                other.IsolateChannel >= 0 ? other.IsolateChannel : IsolateChannel);
@@ -58,16 +60,18 @@ namespace SF2MusicCooker
         {
             bool Exists(string x) => Array.Exists(args, arg => arg.Equals(x, StringComparison.OrdinalIgnoreCase));
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
-            OptimizeNotes = !(Exists("--nooptimize") || Exists("-no"));
+            PreserveRate = Exists("--preserverate") || Exists("-pr");
+            NoOptimize = Exists("--nooptimize") || Exists("-no");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
             for (int i = 1; i <= 10; i++) if (Exists("--channel" + i) || Exists("-c" + i)) IsolateChannel = i - 1;
         }
 
-        private Options(bool muteSamples, bool optimizeNotes, bool dumpNotes, bool dumpUncompressed, int isolateChannel)
+        private Options(bool muteSamples, bool preserveRate, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int isolateChannel)
         {
             MuteSamples = muteSamples;
-            OptimizeNotes = optimizeNotes;
+            PreserveRate = preserveRate;
+            NoOptimize = noOptimize;
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
             IsolateChannel = isolateChannel;
@@ -76,6 +80,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(false, false, false, false, -1);
+        public static readonly Options Default = new Options(false, false, false, false, false, -1);
     }
 }
