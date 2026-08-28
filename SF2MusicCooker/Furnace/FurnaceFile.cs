@@ -69,6 +69,27 @@ namespace SF2MusicCooker.Furnace
         public Position End { get { return new Position(Orders, 0); } }
 
         /// <summary>
+        /// Drop extended channel 3 and revert it to plain channel 3.
+        /// </summary>
+        public FurnaceFile DropExtended()
+        {
+            if (Channels != 13) return this; // Not in extended channel 3 mode
+
+            int[,] keyByChannelAndOrder = new int[10, Orders];
+            int[] selector = new int[10] { 0, 1, 5, 6, 7, 8, 9, 10, 11, 12 };
+
+            for (int c = 0; c < 10; c++)
+            {
+                for (int i = 0; i < Orders; i++)
+                {
+                    keyByChannelAndOrder[c, i] = KeyByChannelAndOrder[selector[c], i];
+                }
+            }
+
+            return new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, PlayRate, A4Tuning);
+        }
+
+        /// <summary>
         /// Verify if the specified channel has at least a play note command.
         /// </summary>
         public bool HasPlayNoteCommand(int channel)
@@ -392,7 +413,9 @@ namespace SF2MusicCooker.Furnace
                     int patternCount = reader.ReadInt32();
 
                     byte[] systems = reader.ReadBytes(32);
-                    if (systems[0] != 0x83) throw new FormatException("First chip of song must be 'YM2612' chip");
+                    bool isCh3Extended = systems[0] == 0xA0;
+
+                    if (systems[0] != 0x83 && !isCh3Extended) throw new FormatException("First chip of song must be 'YM2612' chip");
                     if (systems[1] != 0x03) throw new FormatException("Second chip of song must be 'SN76489' chip");
                     if (systems[2] != 0x00) throw new FormatException("Song must contain exactly 2 chips");
 
@@ -402,7 +425,7 @@ namespace SF2MusicCooker.Furnace
 
                     // By virtue of the previous constraints
                     const int chipCount = 2;
-                    const int channels = 10;
+                    int channels = isCh3Extended ? 13 : 10;
 
                     byte[] volumes = reader.ReadBytes(32);
                     byte[] panning = reader.ReadBytes(32);

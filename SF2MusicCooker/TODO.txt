@@ -1,17 +1,23 @@
-﻿Version 1.0:
+﻿Version 0.95:
 - Amélioration de la précision du rendu: fréquence
 	=> Il y a 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h
+- Panning seems reversed (Self Discipline)
+- Implémenter Legato
+- Suspicious looping channel desync: Last Area (Abridged) et peut être aussi Shop
+	=> Retester une fois Legato implémenté
+	=> Fix aussi avec le Legato les percussions de Last Area / Final (et probablement Shop aussi)
+- Support for .fur files taken from WizAssets repository (bonus feature)
+	=> This would require ad-hoc macro support for PSG instrument
+
+Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - Support for important effects (marked with '#' in ChannelCommands.cs)
 	=> Attention aux effets qui dépendent du tick rate, à en tenir compte dans PatternCell.Multiply
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
-- Support for .fur files taken from WizAssets repository (bonus feature)
-	=> This would require ad-hoc macro support for PSG instrument
 
 Version 1.1:
-- Autoriser .fur avec [Extended channel 3]
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
 - Possibilité d'ajouter des notes supplémentaires (sans changer la note et en mode 'sustain') pour pouvoir gérer les changements de volume / panning hors new note
 

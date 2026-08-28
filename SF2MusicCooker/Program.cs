@@ -250,6 +250,14 @@ namespace SF2MusicCooker
                     // We first need to understand the contents of the .fur file
                     FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, options.DumpUncompressed ? Path.Combine("Uncompressed", fur.Name) : null);
 
+                    // We can't work with extended channel 3, but we can cut the channels back to standard 10
+                    FurnaceFile newFile = file.DropExtended();
+                    if (newFile != file)
+                    {
+                        file = newFile;
+                        Console.WriteLine("! YM2612 is in Extended Channel 3 mode, it is unsupported and the extra channels will be ignored");
+                    }
+
                     // Remove notes we don't support in the note bible
                     int removed = file.RemoveUnsupportedNotes();
                     if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
