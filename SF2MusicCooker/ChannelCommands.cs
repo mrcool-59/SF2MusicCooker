@@ -133,6 +133,7 @@ namespace SF2MusicCooker
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
             HashSet<string> warnings = new HashSet<string>();
+            bool legato = false;
             ushort currentInstrument = 0x0000;
             byte currentVolume = VOL_F2C(0x7F); // Max volume by default
             byte currentPan = PAN_F2C(0x00);
@@ -188,6 +189,7 @@ namespace SF2MusicCooker
                     ReadInstrument(tick);
                     ReadVolume(tick, true);
                     ReadPan(tick, false);
+                    ReadLegato(tick);
 
                     // Apply note change
                     if (cell.HasNewNote)
@@ -336,7 +338,9 @@ namespace SF2MusicCooker
 
                 while (length > 0)
                 {
-                    if (length >= 0x100)
+                    if (legato && length == release)
+                        WriteSetReleaseOrSustain(-1); // Legato is enabled and this note doesn't have a key release
+                    else if (length >= 0x100)
                         WriteSetReleaseOrSustain(-1); // This command is sustained because it goes above the max length of a single command (i.e: another one is required)
                     else
                         WriteSetReleaseOrSustain(length - release); // This command will end, we can also set when it should be released
@@ -441,6 +445,16 @@ namespace SF2MusicCooker
                         currentPan = newPan;
                         panChanged = true;
                     }
+                }
+            }
+
+            void ReadLegato(Tick tick)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Legato, out Effect effect))
+                {
+                    legato = effect.Value != 0x00;
                 }
             }
 

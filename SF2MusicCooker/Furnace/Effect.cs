@@ -7,6 +7,15 @@
         public const byte End = 0xFF;
         public const byte Pan = 0x08;
         public const byte PanTrinary = 0x80;
+        public const byte Legato = 0xEA;
+
+        /// <summary>
+        /// List of supported effects.
+        /// </summary>
+        public static readonly byte[] SupportedEffects = new byte[]
+        {
+            GoTo, GoNext, End, Pan, PanTrinary, Legato
+        };
 
         public readonly byte Type;
         public readonly byte Value;

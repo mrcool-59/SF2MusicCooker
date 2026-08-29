@@ -10,11 +10,6 @@ namespace SF2MusicCooker
     {
         const string padding = "\t\t";
 
-        private static readonly byte[] supportedEffects = new byte[]
-        {
-            Effect.GoTo, Effect.GoNext, Effect.End, Effect.Pan, Effect.PanTrinary
-        };
-
         /// <summary>
         /// Get the optimal "Timer B" value to play the song at the intended rate.
         /// </summary>
@@ -47,7 +42,7 @@ namespace SF2MusicCooker
         public static void PrintUnsupportedEffects(FurnaceFile file)
         {
             HashSet<byte> set = file.GetAllEffectTypes();
-            set.ExceptWith(supportedEffects);
+            set.ExceptWith(Effect.SupportedEffects);
             if (set.Count > 0)
             {
                 StringBuilder sb = new StringBuilder(set.Count * 5);
