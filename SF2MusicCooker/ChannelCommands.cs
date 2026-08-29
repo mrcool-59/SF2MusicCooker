@@ -239,7 +239,7 @@ namespace SF2MusicCooker
                     // TODO: PSG channel grammar
                 }
 
-                if (tick.NextPosition <= tick.Position)
+                if (tick.NextPosition <= tick.Position && tick.NextPosition == loopStart)
                 {
                     // Mark ending of loop and exit
                     commands.Add("mainLoopEnd");
