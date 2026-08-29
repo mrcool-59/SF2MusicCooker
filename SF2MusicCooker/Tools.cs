@@ -257,6 +257,17 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Return hexadecimal representation of one short.
+        /// </summary>
+        public static string Hex2(ushort x, bool pad = true)
+        {
+            if (pad || x >= 0x100)
+                return Hex(new byte[2] { (byte)(x >> 8), (byte)x });
+            else
+                return Hex1((byte)x);
+        }
+
+        /// <summary>
         /// Return hexadecimal representation of byte array.
         /// </summary>
         public static string Hex(byte[] x)

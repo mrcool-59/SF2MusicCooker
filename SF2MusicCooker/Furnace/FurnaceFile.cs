@@ -140,14 +140,14 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// Return the channels that really use the specified instrument number. Return an empty array if no channel uses this instrument number.
         /// </summary>
-        public int[] GetInstrumentUsage(byte instrument)
+        public int[] GetInstrumentUsage(int instrument)
         {
             if (instrument >= Instruments.Length) throw new ArgumentOutOfRangeException(nameof(instrument));
 
             List<int> channels = new List<int>(Channels);
             for (int channel = 0; channel < Channels; channel++)
             {
-                bool active = instrument == 0x00;
+                bool active = instrument == 0;
                 foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
                 {
                     var cell = tick.ActiveChannelCell;
@@ -170,7 +170,7 @@ namespace SF2MusicCooker.Furnace
             for (int i = 0; i < Instruments.Length; i++)
             {
                 var instrument = Instruments[i];
-                int[] channels = GetInstrumentUsage((byte)i);
+                int[] channels = GetInstrumentUsage(i);
 
                 if (verifyFM && instrument.Type == Instrument.FM && Array.Exists(channels, channel => channel > 5))
                     throw new NotSupportedException("Instrument '" + instrument.Name + "' is a FM instrument and can only be used in channels 1 to 6");
@@ -420,7 +420,7 @@ namespace SF2MusicCooker.Furnace
                     if (systems[2] != 0x00) throw new FormatException("Song must contain exactly 2 chips");
 
                     // Sanity checks
-                    if (instrumentCount > 250) throw new FormatException("Sorry, please limit your song to 250 instruments (sanity check)");
+                    if (instrumentCount > 1000) throw new FormatException("Sorry, please limit your song to 1000 instruments (sanity check)");
                     if (sampleCount > 250) throw new FormatException("Sorry, please limit your song to 250 samples (sanity check)");
 
                     // By virtue of the previous constraints
@@ -623,13 +623,13 @@ namespace SF2MusicCooker.Furnace
                                     }
 
                                     byte note = PatternCell.NoteAbsent;
-                                    byte instrument = PatternCell.InstrumentAbsent;
+                                    ushort instrument = PatternCell.InstrumentAbsent;
                                     byte volume = PatternCell.VolumeAbsent;
                                     List<Effect> effects = null;
 
                                     if (notePresent) note = reader.ReadByte();
                                     if (instrumentPresent) instrument = reader.ReadByte();
-                                    if (volumePresent) volume = reader.ReadByte();
+                                    if (volumePresent) volume = Math.Min((byte)(PatternCell.VolumeAbsent - 1), reader.ReadByte());
 
                                     for (int e = 0; e < effectTypePresent.Length; e++)
                                     {
@@ -740,7 +740,14 @@ namespace SF2MusicCooker.Furnace
                                 }
                                 else if (featureCode == "MA")
                                 {
-                                    throw new NotSupportedException("Please do not use macros in your instruments");
+                                    if (type == Instrument.PSG)
+                                    {
+                                        data = reader.ReadBytes(blockLength);
+                                    }
+                                    else
+                                    {
+                                        throw new NotSupportedException("Please do not use macros in your instruments (except for PSG instruments)");
+                                    }
                                 }
                                 else if (featureCode == "NA")
                                 {

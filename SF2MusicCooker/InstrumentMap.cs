@@ -6,18 +6,18 @@ namespace SF2MusicCooker
 {
     public sealed class InstrumentMap
     {
-        private readonly Dictionary<byte, byte> instrument2fm;
-        private readonly Dictionary<ushort, byte> instrument_note2sample;
+        private readonly Dictionary<int, byte> instrument2fm;
+        private readonly Dictionary<int, byte> instrument_note2sample;
 
-        internal static ushort GetInstrumentAndNoteKey(byte instrument, byte note)
+        internal static int GetInstrumentAndNoteKey(ushort instrument, byte note)
         {
-            return (ushort)((instrument << 8) | note);
+            return (instrument << 8) | note;
         }
 
         /// <summary>
         /// Return true if the provided instrument is a FM instrument and return its index.
         /// </summary>
-        public bool FM(byte instrument, out byte fmInstrument)
+        public bool FM(ushort instrument, out byte fmInstrument)
         {
             return instrument2fm.TryGetValue(instrument, out fmInstrument);
         }
@@ -25,9 +25,9 @@ namespace SF2MusicCooker
         /// <summary>
         /// Return true if the provided instrument is a sample instrument and return its index.
         /// </summary>
-        public bool Sample(byte instrument, byte note, out byte sample)
+        public bool Sample(ushort instrument, byte note, out byte sample)
         {
-            ushort key = GetInstrumentAndNoteKey(instrument, note);
+            int key = GetInstrumentAndNoteKey(instrument, note);
             return instrument_note2sample.TryGetValue(key, out sample);
         }
 
@@ -46,15 +46,15 @@ namespace SF2MusicCooker
         {
             bool channel6_dac = requiresDAC || instrument_note2sample.Count > 0 || !file.HasPlayNoteCommand(5); // Also DAC mode if channel 6 is empty
 
-            foreach (byte fmInstrument in instrument2fm.Keys)
+            foreach (int instrument in instrument2fm.Keys)
             {
-                int[] channels = file.GetInstrumentUsage(fmInstrument);
+                int[] channels = file.GetInstrumentUsage(instrument);
 
                 if (Array.Exists(channels, channel => channel >= 6))
-                    throw new NotSupportedException("FM instrument " + Tools.Hex1(fmInstrument) + " can only be used in YM channels (1 to 6)");
+                    throw new NotSupportedException("FM instrument " + instrument + " can only be used in YM channels (1 to 6)");
 
                 if (channel6_dac && Array.IndexOf(channels, 5) >= 0)
-                    throw new NotSupportedException("FM instrument " + Tools.Hex1(fmInstrument) + " cannot be used in channel 6 because this channel is in DAC mode");
+                    throw new NotSupportedException("FM instrument " + instrument + " cannot be used in channel 6 because this channel is in DAC mode");
             }
 
             // TODO: complete this when PSG is implemented
@@ -74,8 +74,8 @@ namespace SF2MusicCooker
 
         private InstrumentMap()
         {
-            instrument2fm = new Dictionary<byte, byte>();
-            instrument_note2sample = new Dictionary<ushort, byte>();
+            instrument2fm = new Dictionary<int, byte>();
+            instrument_note2sample = new Dictionary<int, byte>();
         }
 
         /// <summary>

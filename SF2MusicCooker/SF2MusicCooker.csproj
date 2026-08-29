@@ -99,6 +99,9 @@
     <None Include="Test\%40music04-Test Tricky Loop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test\%40music24-SF1 Attack.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test\%40music25-First Area.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -127,7 +127,7 @@ namespace SF2MusicCooker
                 // Verify new rate will result in SFXs playing at the correct speed
 
                 if (file.PlayRate < 29.999f || file.PlayRate > 60.001f)
-                    Console.WriteLine("! Play rate of music is outside 30~60 hz range, SFXs will play slower/faster ingame");
+                    Console.WriteLine("! Play rate of music is outside 30~60 hz range, SFXs might play slower/faster ingame");
             }
         }
 

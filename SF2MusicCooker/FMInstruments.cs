@@ -166,16 +166,16 @@ namespace SF2MusicCooker
         /// <summary>
         /// Generate a file-to-global FM instrument map for the given Furnace instrument array.
         /// </summary>
-        public Dictionary<byte, byte> Map(Instrument[] instruments, HashSet<Instrument> usedSet = null)
+        public Dictionary<int, byte> Map(Instrument[] instruments, HashSet<Instrument> usedSet = null)
         {
-            Dictionary<byte, byte> map = new Dictionary<byte, byte>();
+            Dictionary<int, byte> map = new Dictionary<int, byte>();
             for (int i = 0; i < instruments.Length; i++)
             {
                 Instrument instrument = instruments[i];
                 if (instrument.Type == Instrument.FM && (usedSet == null || usedSet.Contains(instrument)))
                 {
                     Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
-                    map.Add((byte)i, Find(def));
+                    map.Add(i, Find(def));
                 }
             }
             return map;

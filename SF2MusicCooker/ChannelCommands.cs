@@ -136,7 +136,7 @@ namespace SF2MusicCooker
             bool instrumentChanged = true;
             bool volumeChanged = true;
             bool panChanged = true;
-            byte currentInstrument = 0x00;
+            ushort currentInstrument = 0x0000;
             byte currentVolume = VOL_F2C(0x7F); // Max volume by default
             byte currentPan = PAN_F2C(0x00);
             byte currentRelease = 0xFF; // Will force the first note to set release

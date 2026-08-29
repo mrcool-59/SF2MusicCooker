@@ -1,4 +1,5 @@
 ﻿Version 0.95:
+- Broken boundary crossing of loops (best test song to check out this bug: SF1)
 - Amélioration de la précision du rendu: fréquence
 	=> Il y a 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h
 - Panning seems reversed (Self Discipline)
@@ -6,8 +7,6 @@
 - Suspicious looping channel desync: Last Area (Abridged) et peut être aussi Shop
 	=> Retester une fois Legato implémenté
 	=> Fix aussi avec le Legato les percussions de Last Area / Final (et probablement Shop aussi)
-- Support for .fur files taken from WizAssets repository (bonus feature)
-	=> This would require ad-hoc macro support for PSG instrument
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64

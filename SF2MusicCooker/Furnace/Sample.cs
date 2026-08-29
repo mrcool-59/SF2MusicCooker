@@ -23,6 +23,9 @@ namespace SF2MusicCooker.Furnace
             LoopStart = loopStart;
             LoopEnd = loopEnd;
             Data = data;
+
+            // HACK for bogus CubeAssets
+            if (Depth == 16 && data.Length == length) Depth = 8;
         }
 
         public void Verify()

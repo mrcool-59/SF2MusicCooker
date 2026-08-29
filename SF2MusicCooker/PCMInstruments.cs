@@ -486,9 +486,9 @@ namespace SF2MusicCooker
         /// <summary>
         /// Generate a file-to-global sample instrument map for the given Furnace file.
         /// </summary>
-        public Dictionary<ushort, byte> Map(FurnaceFile file, HashSet<Instrument> usedSet = null)
+        public Dictionary<int, byte> Map(FurnaceFile file, HashSet<Instrument> usedSet = null)
         {
-            Dictionary<ushort, byte> lookup = new Dictionary<ushort, byte>();
+            Dictionary<int, byte> lookup = new Dictionary<int, byte>();
             Instrument[] instruments = file.Instruments;
             for (int i = 0; i < instruments.Length; i++)
             {
@@ -506,8 +506,9 @@ namespace SF2MusicCooker
                             Sample sample = file.Samples[entry.Sample];
 
                             int index = Find(sample, file.A4Tuning, entry.Note);
+                            if (index >= 0x100) throw new OverflowException("Cannot have more than 255 samples");
 
-                            lookup.Add(InstrumentMap.GetInstrumentAndNoteKey((byte)i, (byte)note), (byte)index);
+                            lookup.Add(InstrumentMap.GetInstrumentAndNoteKey((ushort)i, (byte)note), (byte)index);
                         }
                     }
                 }

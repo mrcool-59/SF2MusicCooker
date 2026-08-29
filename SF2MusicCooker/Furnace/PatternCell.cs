@@ -12,11 +12,11 @@ namespace SF2MusicCooker.Furnace
         public const byte NoteRelease = 181;
         // public const byte MacroRelease = 182;
         public const byte NoteAbsent = 255;
-        public const byte InstrumentAbsent = 255;
+        public const ushort InstrumentAbsent = 65535;
         public const byte VolumeAbsent = 255;
 
         public readonly byte Note;
-        public readonly byte Instrument;
+        public readonly ushort Instrument;
         public readonly byte Volume;
         public readonly Effect[] Effects;
 
@@ -38,7 +38,7 @@ namespace SF2MusicCooker.Furnace
             Effects = Array.Empty<Effect>();
         }
 
-        public PatternCell(byte note, byte instrument, byte volume, Effect[] effects)
+        public PatternCell(byte note, ushort instrument, byte volume, Effect[] effects)
         {
             Note = note;
             Instrument = instrument;
@@ -50,7 +50,7 @@ namespace SF2MusicCooker.Furnace
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(GetNoteString(Note));
-            sb.Append(Instrument == InstrumentAbsent ? ".." : Tools.Hex1(Instrument));
+            sb.Append(Instrument == InstrumentAbsent ? ".." : Tools.Hex2(Instrument, false));
             sb.Append(Volume == VolumeAbsent ? ".." : Tools.Hex1(Volume));
             foreach (Effect effect in Effects) sb.Append(effect.ToStringHex());
             return sb.ToString();
