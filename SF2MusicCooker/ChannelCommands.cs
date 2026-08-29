@@ -440,8 +440,8 @@ namespace SF2MusicCooker
 
             byte PAN3_F2C(byte trinaryPan)
             {
-                if (trinaryPan == 0x00) return 1 << 6; // LEFT
-                else if (trinaryPan == 0xFF) return 1 << 7; // RIGHT
+                if (trinaryPan == 0x00) return 1 << 7; // LEFT
+                else if (trinaryPan == 0xFF) return 1 << 6; // RIGHT
                 else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
             }
 
