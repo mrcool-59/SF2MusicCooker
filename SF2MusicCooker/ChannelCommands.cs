@@ -166,10 +166,7 @@ namespace SF2MusicCooker
                 ticks++;
 
                 // For troubleshooting
-                if (options.DumpNotes) commands.Add("; " + tick.Position + "  " + cell);
-
-                // Prove that we determine correctly the note release / length
-                DumpLength(commands, tick);
+                if (options.DumpNotes) commands.Add("; " + tick.Dump());
 
                 // Verify that note/silence length we got is not absurd
                 VerifyExtremeLength(tick, maxPredictLength);
@@ -480,20 +477,6 @@ namespace SF2MusicCooker
                 note -= OFFSET;
                 // TODO: 'shifting' to reach normally unsupported octaves?
                 return pitch.GetYMNoteName(note);
-            }
-        }
-
-        [Conditional("DUMP_LENGTH")]
-        private static void DumpLength(List<string> commands, Tick tick)
-        {
-            if (tick.SilenceLength > 0)
-            {
-                commands.Add("; Silence length = " + tick.SilenceLength);
-            }
-            else if (tick.NoteLength > 0)
-            {
-                commands.Add("; Note release in = " + tick.NoteRelease);
-                commands.Add("; Note length = " + tick.NoteLength);
             }
         }
 

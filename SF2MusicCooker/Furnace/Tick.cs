@@ -41,5 +41,37 @@
             NoteLength = noteLength;
             SilenceLength = silenceLength;
         }
+
+        /// <summary>
+        /// Get a friendly representation of a tick.
+        /// </summary>
+        public string Dump()
+        {
+            string suffix = string.Empty;
+            string next = string.Empty;
+
+            if (SilenceLength > 0)
+            {
+                suffix = "  silence length = " + SilenceLength;
+            }
+            else if (NoteLength > 0)
+            {
+                if (NoteRelease == NoteLength)
+                {
+                    suffix = "  note length = " + NoteLength;
+                }
+                else
+                {
+                    suffix = "  note release in = " + NoteRelease + ", note length = " + NoteLength;
+                }
+            }
+
+            if (NextPosition <= Position)
+            {
+                next = "  [go to " + NextPosition + "]";
+            }
+
+            return Position + "  " + ActiveChannelCell + suffix + next;
+        }
     }
 }
