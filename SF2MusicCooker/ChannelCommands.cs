@@ -133,14 +133,17 @@ namespace SF2MusicCooker
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
             HashSet<string> warnings = new HashSet<string>();
-            bool instrumentChanged = true;
-            bool volumeChanged = true;
-            bool panChanged = true;
             ushort currentInstrument = 0x0000;
             byte currentVolume = VOL_F2C(0x7F); // Max volume by default
             byte currentPan = PAN_F2C(0x00);
-            byte currentRelease = 0xFF; // Will force the first note to set release
-            byte currentLength = 0x00; // Will force the first note or silence to set length
+            byte currentRelease;
+            byte currentLength;
+            bool instrumentChanged;
+            bool volumeChanged;
+            bool panChanged;
+
+            // Initial state
+            ForceRefresh();
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
@@ -174,6 +177,8 @@ namespace SF2MusicCooker
                 if (tick.Position == loopStart)
                 {
                     commands.Add("mainLoopStart");
+                    ForceRefresh(); // Otherwise we would have wrong note lengths etc. after crossing the loop!
+                    // FIXME: we can save a bunch of bytes here if we only refresh what is necessary, but that would make the code more convoluted.
                 }
 
                 // Is it FM or PSG channel?
@@ -269,6 +274,15 @@ namespace SF2MusicCooker
             return asm;
 
             // ------------------------------ Helpers -------------------------------
+
+            void ForceRefresh()
+            {
+                currentRelease = 0xFF; // Will force the first note to set release
+                currentLength = 0x00; // Will force the first note or silence to set length
+                instrumentChanged = true;
+                volumeChanged = true;
+                panChanged = true;
+            }
 
             void Warning(string what, Tick tick)
             {
