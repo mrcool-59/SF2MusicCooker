@@ -120,7 +120,7 @@ namespace SF2MusicCooker
             if ((_mask & (1 << channel)) == 0) return null;
 
             // Do not generate channels that are empty or muted
-            if (!file.HasPlayNoteCommand(channel) || (options.IsolateChannel >= 0 && channel != options.IsolateChannel)) return "channel_end";
+            if (!file.HasPlayNoteCommand(channel) || options.IsMuted(channel)) return "channel_end";
 
             // We must be able to reach the first note
             int firstNoteTicks = FindFirstNote(file, channel, options.DumpNotes);

@@ -6,12 +6,24 @@ namespace SF2MusicCooker
 {
     public sealed class Options
     {
+        public readonly int Mute;
+        public readonly int Isolate;
         public readonly bool MuteSamples;
         public readonly bool PreserveRate;
         public readonly bool NoOptimize;
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
-        public readonly int IsolateChannel = -1;
+
+        /// <summary>
+        /// Return true if 'channel' should be muted.
+        /// </summary>
+        public bool IsMuted(int channel)
+        {
+            if (channel < 0 || channel > 9) throw new ArgumentOutOfRangeException(nameof(channel));
+
+            int mask = 1 << channel;
+            return (Mute & mask) != 0 || (Isolate != 0 && (Isolate & mask) == 0);
+        }
 
         /// <summary>
         /// Override options and return a new options object.
@@ -21,12 +33,13 @@ namespace SF2MusicCooker
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
-            return new Options(other.MuteSamples || MuteSamples,
+            return new Options(other.Mute | Mute,
+                               other.Isolate | Isolate,
+                               other.MuteSamples || MuteSamples,
                                other.PreserveRate || PreserveRate,
                                other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
-                               other.DumpUncompressed || DumpUncompressed,
-                               other.IsolateChannel >= 0 ? other.IsolateChannel : IsolateChannel);
+                               other.DumpUncompressed || DumpUncompressed);
         }
 
         /// <summary>
@@ -59,27 +72,29 @@ namespace SF2MusicCooker
         public Options(string[] args)
         {
             bool Exists(string x) => Array.Exists(args, arg => arg.Equals(x, StringComparison.OrdinalIgnoreCase));
+            for (int i = 1; i <= 10; i++) if (Exists("--mute" + i) || Exists("-m" + i)) Mute |= 1 << (i - 1);
+            for (int i = 1; i <= 10; i++) if (Exists("--isolate" + i) || Exists("-i" + i)) Isolate |= 1 << (i - 1);
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
             PreserveRate = Exists("--preserverate") || Exists("-pr");
             NoOptimize = Exists("--nooptimize") || Exists("-no");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
-            for (int i = 1; i <= 10; i++) if (Exists("--channel" + i) || Exists("-c" + i)) IsolateChannel = i - 1;
         }
 
-        private Options(bool muteSamples, bool preserveRate, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int isolateChannel)
+        private Options(int mute, int isolate, bool muteSamples, bool preserveRate, bool noOptimize, bool dumpNotes, bool dumpUncompressed)
         {
+            Mute = mute;
+            Isolate = isolate;
             MuteSamples = muteSamples;
             PreserveRate = preserveRate;
             NoOptimize = noOptimize;
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
-            IsolateChannel = isolateChannel;
         }
 
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(false, false, false, false, false, -1);
+        public static readonly Options Default = new Options(0, 0, false, false, false, false, false);
     }
 }

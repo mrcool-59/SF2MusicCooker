@@ -99,12 +99,13 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 
 The following options can be specified globally or per-music/per-SFX:
 
+--muteN						or		-mN		(N = 1..10) If present disable output of channel N (you can stack multiple --muteN options)
+--isolateN					or		-iN		(N = 1..10) If present disable output of all channels except channel N (you can stack multiple --isolateN options)
 --mutesamples				or		-ms		Process Furnace file as if it had empty samples (can be useful to check if issues are caused by samples)
 --preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed (see caveat below for explanations)
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
---channelN					or		-cN		(N = 1..10) If present disable output of all channels except channel N (only useful for developers)
 
 To apply options per-music/per-SFX, provide an "options.txt" file in the "Input" folder.
 Example file (dump notes of music 33 and mute samples of music 41):
