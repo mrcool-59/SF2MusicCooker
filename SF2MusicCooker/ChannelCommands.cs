@@ -191,29 +191,7 @@ namespace SF2MusicCooker
                     // Apply note change
                     if (cell.HasNewNote)
                     {
-                        // Apply pan change
-                        if (panChanged)
-                        {
-                            panChanged = false;
-                            commands.Add("stereo " + BYTE_HEX(currentPan));
-                        }
-
-                        // Apply instrument change
-                        if (instrumentChanged)
-                        {
-                            instrumentChanged = false;
-                            if (map.FM(currentInstrument, out byte inst))
-                            {
-                                commands.Add("inst " + BYTE(inst));
-                            }
-                        }
-
-                        // Apply volume change
-                        if (volumeChanged)
-                        {
-                            volumeChanged = false;
-                            commands.Add("vol " + BYTE(currentVolume));
-                        }
+                        FlushPendingChanges();
 
                         // Finally, write note/sample command
                         if (map.Sample(currentInstrument, cell.Note, out byte sample))
@@ -227,6 +205,8 @@ namespace SF2MusicCooker
                     }
                     else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                     {
+                        FlushPendingChanges();
+
                         // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                         WriteSilence(tick.SilenceLength);
                     }
@@ -281,6 +261,33 @@ namespace SF2MusicCooker
                 instrumentChanged = true;
                 volumeChanged = true;
                 panChanged = true;
+            }
+
+            void FlushPendingChanges()
+            {
+                // Apply pan change
+                if (panChanged)
+                {
+                    panChanged = false;
+                    commands.Add("stereo " + BYTE_HEX(currentPan));
+                }
+
+                // Apply instrument change
+                if (instrumentChanged)
+                {
+                    instrumentChanged = false;
+                    if (map.FM(currentInstrument, out byte inst))
+                    {
+                        commands.Add("inst " + BYTE(inst));
+                    }
+                }
+
+                // Apply volume change
+                if (volumeChanged)
+                {
+                    volumeChanged = false;
+                    commands.Add("vol " + BYTE(currentVolume));
+                }
             }
 
             void Warning(string what, Tick tick)
@@ -629,6 +636,7 @@ o Goto end
 These can be implemented by using a Cube command:
 =================================================
 o Panning
+o Legato
 # Vibrato
 # Detune (all operators)
 # Portamento (Set Pitch Slides)
@@ -652,10 +660,6 @@ These could be implemented by directly altering the patterns:
      => Verify Furnace behavior and how the effect is stopped
 + Retrigger = repeats current note every x ticks, as long as the effect is present on the row
      => Compliant with Furnace: add new notes as needed
-- Legato = while on, new notes instantly change the pitch of the currently playing sound instead of starting it over
-     => Compliant with Furnace: (must verify) set sustain for first note, and remove note release/OFF commands until the last note of the legato
-     => Technically legato cannot be implemented purely by altering the patterns as we need to enable 'sustain' on the first note
-     => Verify Furnace behavior and how the effect is stopped
 
 These effects cannot be implemented because we can't alter pitch/volume/pan/... between 2 notes:
 ================================================================================================

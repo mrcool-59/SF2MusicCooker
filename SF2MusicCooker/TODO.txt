@@ -1,8 +1,6 @@
 ﻿Version 0.95:
 - Amélioration de la précision du rendu: fréquence
 	=> Il y a 'shifting' de disponible, le jeu original utilise les valeurs 00h, 10h, 20h
-- Last Area issues:
-	- Loop qui desync (peut être récupérer mes stashes changes pour fix ça...)
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64

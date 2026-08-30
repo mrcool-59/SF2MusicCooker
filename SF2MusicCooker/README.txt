@@ -103,6 +103,8 @@ The following options can be specified globally or per-music/per-SFX:
 --isolateN					or		-iN		(N = 1..10) If present disable output of all channels except channel N (you can stack multiple --isolateN options)
 --mutesamples				or		-ms		Process Furnace file as if it had empty samples (can be useful to check if issues are caused by samples)
 --preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed (see caveat below for explanations)
+--removerelease				or		-rr		Remove all note release commands (===) in all channels
+--removeoff					or		-ro		Remove all note off commands (OFF) in all channels
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)

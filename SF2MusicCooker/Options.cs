@@ -10,6 +10,8 @@ namespace SF2MusicCooker
         public readonly int Isolate;
         public readonly bool MuteSamples;
         public readonly bool PreserveRate;
+        public readonly bool RemoveRelease;
+        public readonly bool RemoveOff;
         public readonly bool NoOptimize;
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
@@ -37,6 +39,8 @@ namespace SF2MusicCooker
                                other.Isolate | Isolate,
                                other.MuteSamples || MuteSamples,
                                other.PreserveRate || PreserveRate,
+                               other.RemoveRelease || RemoveRelease,
+                               other.RemoveOff || RemoveOff,
                                other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
                                other.DumpUncompressed || DumpUncompressed);
@@ -76,17 +80,21 @@ namespace SF2MusicCooker
             for (int i = 1; i <= 10; i++) if (Exists("--isolate" + i) || Exists("-i" + i)) Isolate |= 1 << (i - 1);
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
             PreserveRate = Exists("--preserverate") || Exists("-pr");
+            RemoveRelease = Exists("--removerelease") || Exists("-rr");
+            RemoveOff = Exists("--removeoff") || Exists("-ro");
             NoOptimize = Exists("--nooptimize") || Exists("-no");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
         }
 
-        private Options(int mute, int isolate, bool muteSamples, bool preserveRate, bool noOptimize, bool dumpNotes, bool dumpUncompressed)
+        private Options(int mute, int isolate, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed)
         {
             Mute = mute;
             Isolate = isolate;
             MuteSamples = muteSamples;
             PreserveRate = preserveRate;
+            RemoveRelease = removeRelease;
+            RemoveOff = removeOff;
             NoOptimize = noOptimize;
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
@@ -95,6 +103,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, false, false, false, false, false);
+        public static readonly Options Default = new Options(0, 0, false, false, false, false, false, false, false);
     }
 }

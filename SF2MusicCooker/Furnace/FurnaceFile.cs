@@ -219,6 +219,30 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Remove a specific note from all patterns and return the number of cells changed.
+        /// </summary>
+        public int RemoveNotes(byte note)
+        {
+            if (note == PatternCell.NoteAbsent)
+                throw new ArgumentException(nameof(note));
+
+            int removed = 0;
+            foreach (Pattern pattern in PatternByKey.Values)
+            {
+                for (int i = 0; i < pattern.Rows; i++)
+                {
+                    PatternCell cell = pattern.Get(i);
+                    if (cell.Note == note)
+                    {
+                        removed++;
+                        pattern.Set(i, new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects));
+                    }
+                }
+            }
+            return removed;
+        }
+
+        /// <summary>
         /// Remove unsupported notes from all patterns and return the number of cells changed.
         /// </summary>
         public int RemoveUnsupportedNotes()

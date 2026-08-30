@@ -82,8 +82,16 @@ namespace SF2MusicCooker.Furnace
                     {
                         foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
+                            if (silenceLength == 0)
+                            {
+                                // Silence must always last 1 tick at bare minimum!
+                                silenceLength++;
+                                continue;
+                            }
+
                             // See how long the silence will last
-                            if (tick.ActiveChannelCell.HasNewNote)
+                            var cell = tick.ActiveChannelCell;
+                            if (cell.HasNewNote || cell.Note == PatternCell.NoteOff)
                                 break;
                             else
                                 silenceLength++;
