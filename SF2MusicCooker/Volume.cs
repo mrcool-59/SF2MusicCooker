@@ -15,9 +15,9 @@ namespace SF2MusicCooker
         /// <summary>
         /// Convert YM volume to the closest equivalent Cube volume.
         /// </summary>
-        public byte Y2C(byte ymVolume)
+        public byte Y2C(byte ymVolume, float masterVolume = 1f)
         {
-            ymVolume = (byte)Math.Max(0, Math.Min(0x7F, _remapper(ymVolume)));
+            ymVolume = (byte)Math.Max(0, Math.Min(0x7F, (int)Math.Round(_remapper(ymVolume) * masterVolume)));
             if (_useTable)
                 return ym2cube[ymVolume];
             else

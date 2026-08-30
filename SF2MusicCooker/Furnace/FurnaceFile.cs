@@ -29,9 +29,24 @@ namespace SF2MusicCooker.Furnace
         public readonly Sample[] Samples;
 
         /// <summary>
-        /// The rate at which the chip timer should tick (in hz). Values around 40 to 80 hz should be considered typical.
+        /// Master volume value.
         /// </summary>
-        public readonly float PlayRate;
+        public readonly float MasterVolume;
+
+        /// <summary>
+        /// The tick rate of the music.
+        /// </summary>
+        public readonly float TickRate;
+
+        /// <summary>
+        /// Rate coefficient to multiply the tick rate by.
+        /// </summary>
+        public readonly float RateCoeff;
+
+        /// <summary>
+        /// The rate at which the chip timer should tick (in hz).
+        /// </summary>
+        public float PlayRate { get { return TickRate * RateCoeff; } }
 
         /// <summary>
         /// A-4 tuning value.
@@ -86,7 +101,7 @@ namespace SF2MusicCooker.Furnace
                 }
             }
 
-            return new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, PlayRate, A4Tuning);
+            return new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff, A4Tuning);
         }
 
         /// <summary>
@@ -289,23 +304,25 @@ namespace SF2MusicCooker.Furnace
 
             Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
             foreach (var pair in PatternByKey) patternByKey.Add(pair.Key, pair.Value.Multiply(n));
-            return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, PlayRate * n, A4Tuning);
+            return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff * n, A4Tuning);
         }
 
-        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float playRate, int a4tuning)
+        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float masterVolume, float tickRate, float rateCoeff, int a4tuning)
         {
             KeyByChannelAndOrder = keyByChannelAndOrder;
             PatternByKey = patternByKey;
             Instruments = instruments;
             Samples = samples;
-            PlayRate = playRate;
+            MasterVolume = masterVolume;
+            TickRate = tickRate;
+            RateCoeff = rateCoeff;
             A4Tuning = a4tuning;
         }
 
         /// <summary>
         /// Gives an empty file.
         /// </summary>
-        public static readonly FurnaceFile Empty = new FurnaceFile(new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 59, StandardA4Tuning);
+        public static readonly FurnaceFile Empty = new FurnaceFile(new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 1f, 59, 1f, StandardA4Tuning);
 
         private static int ComputeKey(byte channel, short index)
         {
@@ -866,12 +883,12 @@ namespace SF2MusicCooker.Furnace
                         }
                     }
 
-                    // --- Compute playback rate ---
+                    // --- Compute rate ---
 
-                    float playbackRate = ticksPerSecond * virtualTempoNumerator / (virtualTempoDenominator * speed1);
+                    float rateCoeff = (float)virtualTempoNumerator / (virtualTempoDenominator * speed1);
                     int a4tuningRounded = (int)Math.Round(a4tuning);
 
-                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, playbackRate, a4tuningRounded);
+                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, masterVolume, ticksPerSecond, rateCoeff, a4tuningRounded);
                 }
             }
             catch (Exception ex)

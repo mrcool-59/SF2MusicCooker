@@ -141,12 +141,13 @@ namespace SF2MusicCooker
 
             // Volume to cube helper
             Volume volume = Volume.FromStrategy(null); // TODO
-            byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume);
+            byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume, file.MasterVolume);
 
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
             HashSet<string> warnings = new HashSet<string>();
             bool legato = false;
+            float newTimer = 0f;
             ushort currentInstrument = 0x0000;
             byte currentVolume = VOL_F2C(0x7F); // Max volume by default
             byte currentPan = PAN_F2C(0x00);
@@ -197,6 +198,7 @@ namespace SF2MusicCooker
                     ReadVolume(tick, true);
                     ReadPan(tick, false);
                     ReadLegato(tick);
+                    ReadNewTimer(tick, true);
 
                     // Apply note change
                     if (cell.HasNewNote)
@@ -275,6 +277,13 @@ namespace SF2MusicCooker
 
             void FlushPendingChanges()
             {
+                // Apply timer change
+                if (newTimer != 0f)
+                {
+                    commands.Add("ymTimer " + BYTE_HEX(AsmSheetWriter.GetOptimalTimerB(newTimer)));
+                    newTimer = 0f;
+                }
+
                 // Apply pan change
                 if (panChanged)
                 {
@@ -472,6 +481,39 @@ namespace SF2MusicCooker
                 }
             }
 
+            void ReadNewTimer(Tick tick, bool disallow)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.SetTempo, out Effect effect))
+                {
+                    Apply(effect.Value / 2.5f);
+                }
+
+                for (int i = 0; i <= 3; i++)
+                {
+                    byte type = (byte)(Effect.SetTickRateBase + i);
+                    if (cell.TryGetEffect(type, out effect))
+                    {
+                        Apply(i * 0x100 + effect.Value);
+                    }
+                }
+
+                void Apply(float tickRate)
+                {
+                    if (disallow)
+                    {
+                        Warning("Play rate change effects must be put on a PSG channel, otherwise they will be ignored", tick);
+                        return;
+                    }
+
+                    if (!cell.HasNewNote)
+                        Warning("Play rate change will be delayed because it can only be applied when a new note plays.", tick);
+
+                    newTimer = tickRate * file.RateCoeff;
+                }
+            }
+
             byte PAN_F2C(byte pan)
             {
                 bool disableLeft = (pan & 0x0F) != 0;
@@ -611,6 +653,7 @@ For PSG channels:
                 commands.Add("setRelease " + BYTE_HEX(0x05));
                 commands.Add("vibrato " + BYTE_HEX(0x4C));
                 commands.Add("shifting " + BYTE_HEX(0x10));
+                commands.Add("ymTimer " + BYTE_HEX(0xC8));
 
 -------------------- EFFECTS IMPLEMENTATION ANALYSIS --------------------
 
@@ -638,34 +681,40 @@ These can be implemented by using a Cube command:
 =================================================
 o Panning
 o Legato
+o Set tick rate / tempo
 # Vibrato
+# Set vibrato shape
 # Detune (all operators)
 # Portamento (Set Pitch Slides)
-# Set Pitch (00: -1 semitone, 80: base, FF: +1 semitone)
 # Note/Frequency Shifting
-# Set tick rate
-# Set volume of left/right/rear left/rear right channel (< 80: OFF, >= 80: ON), yet another way of altering pan...
-+ Sample offset: can be faked by introducing a new sample declaration in the sample list with desired offset, this one might be reasonable if used carefully
-- Replace FM operator property effects: could be somewhat faked by adding a new instrument everytime a property changes, but this would get out of hand very quickly
+# Setup LFO
 
 NOTE: these affects are only applied when a new note plays; a warning must be issued if the user tries to use the effect elsewhere
      => Verify Furnace behavior before implementing any of them, especially when the effect is declared on cells without a new note
 
 These could be implemented by directly altering the patterns:
 =============================================================
-# Note cut/delay/release = observe Furnace behavior carefully before implementing this...
++ Note cut/delay/release = observe Furnace behavior carefully before implementing this...
      => Compliant with Furnace: rewrite patterns as needed... (annoying)
 + Arpeggio = this effect produces a rapid cycle between the current note, the note plus x semitones and the note plus y semitones
      => Compliant with Furnace: produce an artificial cycle of 3 notes: [current, current + x semitones, current + y semitones]
-     => Arpeggio speed: delay between artificial notes can be changed (default 1)
+     => Arpeggio speed: delay between artificial notes can be changed (default 1) [modify PatternCell.Multiply method!]
      => Verify Furnace behavior and how the effect is stopped
-+ Retrigger = repeats current note every x ticks, as long as the effect is present on the row
++ Retrigger = repeats current note every x ticks [modify PatternCell.Multiply method!], as long as the effect is present on the row
      => Compliant with Furnace: add new notes as needed
++ Sample offset: can be faked by introducing a new sample declaration in the sample list with desired offset, this one might be reasonable if used carefully
+- Replace FM operator property effects: could be somewhat faked by adding a new instrument everytime a property changes, but this would get out of hand very quickly
+- Set panning of left/right channel: tedious because we need to keep track of previous panning commands, not just Cube current panning value
 
 These effects cannot be implemented because we can't alter pitch/volume/pan/... between 2 notes:
 ================================================================================================
 - Volume Portamento = slides the volume/pitch to the target volume/note. x is the slide speed.
 - Tremolo = changes volume to be "wavy" with a sine LFO. x is the speed. y is the depth.
 - Panning slide
+
+These effects cannot be implemented because of limitations of Cube sound driver:
+================================================================================
+- Set pitch (00: -1 note, 80: base, FF: +1 note): we don't have enough leeway to adjust frequencies between 2 notes (can only do +/- 14 hz)
+- Single tick pitch up/down: same as above, we cannot shift further than 14 hz and this would consume a ton of space
 
 */

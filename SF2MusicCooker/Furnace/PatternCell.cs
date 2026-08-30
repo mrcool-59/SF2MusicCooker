@@ -91,7 +91,7 @@ namespace SF2MusicCooker.Furnace
 
         /// <summary>
         /// Multiply pattern cell by N and return the resulting cell as well as the last padding cell (that will hold effects related to navigation).
-        /// This method only does something when a time effect is present on the pattern cell.
+        /// This method only does something when a navigation effect is present on the pattern cell.
         /// </summary>
         public PatternCell Multiply(int n, out PatternCell beforeNextCell)
         {
@@ -112,7 +112,6 @@ namespace SF2MusicCooker.Furnace
                             delayedEffects.Add(effect);
                             break;
                         default:
-                            // TODO: setTickRate
                             remainingEffects.Add(effect);
                             break;
                     }
