@@ -131,7 +131,7 @@ namespace SF2MusicCooker.Furnace
                 if (data.Length != 484)
                     throw new FormatException("Data payload must contain 484 bytes because sample map is expected");
 
-                note2sample = new SampleMap.Entry[SampleMap.MAP_LENGTH];
+                note2sample = new SampleMap.Entry[NoteBible.LENGTH];
 
                 for (int i = 0; i < note2sample.Length; i++)
                 {

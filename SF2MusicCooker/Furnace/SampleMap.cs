@@ -53,8 +53,6 @@ namespace SF2MusicCooker.Furnace
             }
         }
 
-        public const int MAP_LENGTH = NoteBible.LAST_VALUE - NoteBible.BASE_VALUE + 1;
-
         private readonly int _defaultSample;
         private readonly Entry[] _note2sample;
 
@@ -63,8 +61,7 @@ namespace SF2MusicCooker.Furnace
         /// </summary>
         public Entry Read(int note)
         {
-            if (note < NoteBible.BASE_VALUE || note > NoteBible.LAST_VALUE)
-                throw new ArgumentOutOfRangeException(nameof(note), "note must be between " + NoteBible.BASE_VALUE + " and " + NoteBible.LAST_VALUE);
+            NoteBible.Verify(note);
 
             if (_note2sample != null)
                 return _note2sample[note - NoteBible.BASE_VALUE];
@@ -88,8 +85,8 @@ namespace SF2MusicCooker.Furnace
 
         public SampleMap(int defaultSample, Entry[] note2sample = null)
         {
-            if (note2sample != null && note2sample.Length != MAP_LENGTH)
-                throw new ArgumentException(nameof(note2sample), "must have length " + MAP_LENGTH);
+            if (note2sample != null && note2sample.Length != NoteBible.LENGTH)
+                throw new ArgumentException(nameof(note2sample), "must have length " + NoteBible.LENGTH);
 
             _defaultSample = defaultSample;
             _note2sample = note2sample;

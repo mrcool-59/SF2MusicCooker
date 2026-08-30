@@ -25,10 +25,10 @@ namespace SF2MusicCooker
         /// <summary>
         /// Get Furnace target frequency of a note.
         /// </summary>
-        public static int GetFurnaceFrequency(int a4tuning, byte note)
+        public static int GetFurnaceFrequency(int a4tuning, int note)
         {
             const int OFFSET = 7; // 3 was the original value I attempted when reading Furnace source code but I guess something escaped me #D
-            return (int)Math.Round(a4tuning * Math.Pow(2.0, (note - NoteBible.BASE_VALUE + OFFSET) / 12f));
+            return ShiftFrequency(a4tuning, note - NoteBible.BASE_VALUE + OFFSET);
         }
 
         /// <summary>
@@ -53,25 +53,6 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Find the best available YM note for a given target 'frequency'. Also return the difference between target and actual frequency.
-        /// </summary>
-        public int FindBestYMNote(int frequency, out int difference)
-        {
-            Entry entry = Tools.SelectMin(_notes, e => Math.Abs(e.Frequency - frequency));
-            difference = frequency - entry.Frequency;
-            return entry.Note;
-        }
-
-        /// <summary>
-        /// Find the best available YM note for a given Furnace 'note'. Also return the difference between target and actual frequency.
-        /// </summary>
-        public int MapF2YNote(byte note, int a4tuning, out int difference)
-        {
-            int frequency = GetFurnaceFrequency(a4tuning, note);
-            return FindBestYMNote(frequency, out difference);
-        }
-
-        /// <summary>
         /// Get the name of a YM note.
         /// </summary>
         public string GetYMNoteName(int ymNote)
@@ -80,6 +61,33 @@ namespace SF2MusicCooker
                 return name;
             else
                 return ymNote.ToString();
+        }
+
+        /// <summary>
+        /// Get the frequency of a YM note.
+        /// </summary>
+        public int GetYMNoteFrequency(int ymNote)
+        {
+            return _notes[ymNote].Frequency;
+        }
+
+        /// <summary>
+        /// Create a tuned map for the specified A4 tuning value.
+        /// </summary>
+        public TunedMap CreateTunedMap(int a4tuning)
+        {
+            int[] f2y = new int[NoteBible.LENGTH];
+            if (_notes.Length > 0)
+            {
+                for (int i = 0; i < f2y.Length; i++)
+                {
+                    const int OFFSET = 24;
+                    int frequency = GetFurnaceFrequency(a4tuning, NoteBible.BASE_VALUE + i);
+                    Entry entry = Tools.SelectMin(_notes, e => Math.Abs(e.Frequency - frequency));
+                    f2y[i] = entry.Note + OFFSET;
+                }
+            }
+            return new TunedMap(f2y, GetYMNoteName);
         }
 
         public PitchTable(string ymFrequenciesPath, string notesNamePath = null)

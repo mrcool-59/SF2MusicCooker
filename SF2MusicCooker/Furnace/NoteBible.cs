@@ -9,6 +9,8 @@ namespace SF2MusicCooker.Furnace
         public const int LAST_VALUE = 0xB3;
         public const int C4_VALUE = 0x6C;
 
+        public const int LENGTH = LAST_VALUE - BASE_VALUE + 1;
+
         public readonly struct Entry
         {
             public readonly byte Value;
@@ -94,6 +96,15 @@ namespace SF2MusicCooker.Furnace
                 return LAST_VALUE;
             else
                 return value;
+        }
+
+        /// <summary>
+        /// Verify note is between BASE_VALUE and LAST_VALUE.
+        /// </summary>
+        public static void Verify(int note)
+        {
+            if (note < BASE_VALUE || note > LAST_VALUE)
+                throw new ArgumentOutOfRangeException(nameof(note), "note must be between " + BASE_VALUE + " and " + LAST_VALUE);
         }
 
         static NoteBible()

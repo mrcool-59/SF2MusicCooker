@@ -124,7 +124,7 @@ SF2 Music Cooker currently supports:
 - Channel 6 in FM mode
 - Channel 6 in DAC mode (samples) 
 - Notes between C-0 and B-9 on Furnace side (120 notes), unsupported notes are suppressed
-- Furnace notes are mapped to the SF2 engine notes in a best effort fashion
+- Furnace notes are mapped to the SF2 engine notes in a best effort fashion (84 notes), in practice this means extreme notes are clamped between C-1 and B-7
 - Arbitrary tempo for musics (see below for special caveats about the tick rate)
 - New FM instruments, these will get added to the vanilla SF2 instruments
 - New samples, these will get added to the vanilla SF2 samples (almost impossible to do without using expanded PCM banks)

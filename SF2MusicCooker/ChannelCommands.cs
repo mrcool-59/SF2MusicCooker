@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace SF2MusicCooker
@@ -97,6 +98,9 @@ namespace SF2MusicCooker
             if (file.Channels != _channels.Length)
                 throw new NotSupportedException("Furnace file must have " + _channels.Length + " channels"); // 6 from YM2612 + 4 from PSG
 
+            // Create tuned map
+            TunedMap tuned = pitch.CreateTunedMap(file.A4Tuning);
+
             // Check all instruments are used properly and indicate if DAC mode is enabled
             map.Check(file, _requiresDAC, out byte dac);
             DAC = dac;
@@ -107,14 +111,23 @@ namespace SF2MusicCooker
             // Fill each channel
             for (int channel = 0; channel < file.Channels; channel++)
             {
-                _channels[channel] = GenerateChannel(file, options, map, pitch, channel, loopStart);
+                _channels[channel] = GenerateChannel(file, options, map, tuned, channel, loopStart);
+            }
+
+            // Verify clamped notes
+            int[] clampedNotes = tuned.Clamped;
+            if (clampedNotes.Length > 0)
+            {
+                string list = string.Join(", ", clampedNotes.Select(c => NoteBible.GetByValue((byte)c).Name));
+                Console.WriteLine("! The following Furnace notes are too low / too high for SF2 sound engine and have been clamped instead:{0}    {1}", Environment.NewLine, list);
+                Console.WriteLine("! To sidestep this, you can try transposing notes by changing the A-4 tuning to move them in a more favorable range");
             }
 
             // Update empty flag
             Empty = Array.TrueForAll(_channels, c => c == null || c == "channel_end");
         }
 
-        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int channel, Position loopStart)
+        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, TunedMap tuned, int channel, Position loopStart)
         {
             // Mask verification
             if ((_mask & (1 << channel)) == 0) return null;
@@ -143,14 +156,11 @@ namespace SF2MusicCooker
             bool volumeChanged;
             bool panChanged;
 
-            // Initial state
+            // Initial refresh so that the first note will force updates
             ForceRefresh();
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
-
-            // Cancel shifting immediately (to be safe)
-            // commands.Add("shifting " + BYTE(0));
 
             // Write initial silence (before the first note)
             WriteSilence(firstNoteTicks - 1);
@@ -256,8 +266,8 @@ namespace SF2MusicCooker
 
             void ForceRefresh()
             {
-                currentRelease = 0xFF; // Will force the first note to set release
-                currentLength = 0x00; // Will force the first note or silence to set length
+                currentRelease = 0xFF; // Will force the next note to set release
+                currentLength = 0x00; // Will force the next note or silence to set length
                 instrumentChanged = true;
                 volumeChanged = true;
                 panChanged = true;
@@ -325,7 +335,7 @@ namespace SF2MusicCooker
 
             void WriteNote(byte note, int release, int length)
             {
-                WriteNoteOrSample(NOTE(note), release, length, "note  ", "noteL ");
+                WriteNoteOrSample(tuned.F2YName(note), release, length, "note  ", "noteL ");
             }
 
             void WriteSample(byte sample, int release, int length)
@@ -475,15 +485,6 @@ namespace SF2MusicCooker
                 if (trinaryPan == 0x00) return 1 << 7; // LEFT
                 else if (trinaryPan == 0xFF) return 1 << 6; // RIGHT
                 else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
-            }
-
-            string NOTE(byte value)
-            {
-                const int OFFSET = -24;
-                int note = pitch.MapF2YNote(value, file.A4Tuning, out int difference);
-                note -= OFFSET;
-                // TODO: 'shifting' to reach normally unsupported octaves?
-                return pitch.GetYMNoteName(note);
             }
         }
 
