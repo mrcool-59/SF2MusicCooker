@@ -18,3 +18,5 @@ Version 1.2:
 - Focus on bug fixes
 - Auto-bank assignment feature
 - Main loop state refresh to optimize
+- Tigher loop detection: needs to reach the same position 2 times to be considered a loop (put method in FurnaceFile)
+	=> Implement a spaghetti .fur file to test that
