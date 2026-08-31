@@ -146,6 +146,8 @@ namespace SF2MusicCooker
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
             HashSet<string> warnings = new HashSet<string>();
+            StateSnapshot loopState = new StateSnapshot();
+            bool recordLoopState = false;
             bool legato = false;
             float newTimer = 0f;
             ushort currentInstrument = 0x0000;
@@ -185,15 +187,9 @@ namespace SF2MusicCooker
                 if (tick.Position == loopStart)
                 {
                     commands.Add("mainLoopStart");
-
+                    recordLoopState = true; // Will happen at the next note
                     currentRelease = 0xFF; // Will force the next note to set release
                     currentLength = 0x00; // Will force the next note or silence to set length
-
-                    // FIXME: the following could be optimized
-                    instrumentChanged = true;
-                    volumeChanged = true;
-                    panChanged = true;
-                    shiftingChanged = true;
                 }
 
                 // Is it FM or PSG channel?
@@ -243,6 +239,13 @@ namespace SF2MusicCooker
 
                 if (tick.NextPosition <= tick.Position && tick.NextPosition == loopStart)
                 {
+                    // Before the we cross the loop, we may have to apply some state changes...
+                    if (!recordLoopState)
+                    {
+                        loopState.Apply(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting, ref instrumentChanged, ref volumeChanged, ref panChanged, ref shiftingChanged);
+                        FlushPendingChanges(true);
+                    }
+
                     // Mark ending of loop and exit
                     commands.Add("mainLoopEnd");
                     break;
@@ -310,6 +313,13 @@ namespace SF2MusicCooker
                 {
                     shiftingChanged = false;
                     commands.Add("shifting " + BYTE_HEX(currentShifting));
+                }
+
+                // Store state that should be reapplied just before crossing the main loop
+                if (includeInstrument && recordLoopState)
+                {
+                    recordLoopState = false;
+                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting);
                 }
             }
 
@@ -619,6 +629,49 @@ namespace SF2MusicCooker
         private static string BYTE_HEX(byte value)
         {
             return Tools.Hex1ASM(value);
+        }
+
+        public readonly struct StateSnapshot
+        {
+            public readonly ushort Instrument;
+            public readonly byte Volume;
+            public readonly byte Pan;
+            public readonly byte Shifting;
+            
+            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting)
+            {
+                Instrument = instrument;
+                Volume = volume;
+                Pan = pan;
+                Shifting = shifting;
+            }
+
+            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref bool instrumentChanged, ref bool volumeChanged, ref bool panChanged, ref bool shiftingChanged)
+            {
+                if (instrument != Instrument)
+                {
+                    instrument = Instrument;
+                    instrumentChanged = true;
+                }
+
+                if (volume != Volume)
+                {
+                    volume = Volume;
+                    volumeChanged = true;
+                }
+
+                if (pan != Pan)
+                {
+                    pan = Pan;
+                    panChanged = true;
+                }
+
+                if (shifting != Shifting)
+                {
+                    shifting = Shifting;
+                    shiftingChanged = true;
+                }
+            }
         }
     }
 }
