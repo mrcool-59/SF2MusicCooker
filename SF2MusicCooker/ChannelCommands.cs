@@ -146,20 +146,19 @@ namespace SF2MusicCooker
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
             HashSet<string> warnings = new HashSet<string>();
-            StateSnapshot loopState = new StateSnapshot();
-            bool recordLoopState = false;
+            StateSnapshot loopState = StateSnapshot.Invalid;
             bool legato = false;
             float newTimer = 0f;
-            ushort currentInstrument = 0x0000;
-            byte currentVolume = VOL_F2C(0x7F); // Max volume by default
+            ushort currentInstrument = 0xFFFF; // Will force instrument to be set on the first note
+            ushort nextInstrument = 0x0000;
+            byte currentVolume = 0xFF; // Will force volume to be set on the first note
+            byte nextVolume = VOL_F2C(0x7F); // Max volume by default
             byte currentPan = PAN_F2C(0x00); // Center by default
+            byte nextPan = currentPan;
             byte currentShifting = 0x00; // Zero by default
+            byte nextShifting = currentShifting;
             byte currentRelease = 0xFF; // Will force the first note to set release
             byte currentLength = 0x00; // Will force the first note or silence to set length
-            bool instrumentChanged = true;
-            bool volumeChanged = true;
-            bool panChanged = false; // Already starts at center by sound driver initialization
-            bool shiftingChanged = false; // Already starts at zero by sound driver initialization
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
@@ -187,7 +186,7 @@ namespace SF2MusicCooker
                 if (tick.Position == loopStart)
                 {
                     commands.Add("mainLoopStart");
-                    recordLoopState = true; // Will happen at the next note
+                    loopState = StateSnapshot.Requested; // Will happen at the next note
                     currentRelease = 0xFF; // Will force the next note to set release
                     currentLength = 0x00; // Will force the next note or silence to set length
                 }
@@ -230,9 +229,13 @@ namespace SF2MusicCooker
                 else
                 {
                     // Read cell content with PSG logic
+                    /*
                     ReadInstrument(tick);
                     ReadVolume(tick, false); // We also use volume outside of new PSG note as a hint to select the correct PSG instrument, so don't raise warning here
                     ReadPan(tick, true); // Just to verify we don't try to pan PSG instruments
+                    ReadLegato(tick);
+                    ReadNewTimer(tick, channel == 9);
+                    */
 
                     // TODO: PSG channel grammar
                 }
@@ -240,9 +243,10 @@ namespace SF2MusicCooker
                 if (tick.NextPosition <= tick.Position && tick.NextPosition == loopStart)
                 {
                     // Before the we cross the loop, we may have to apply some state changes...
-                    if (!recordLoopState)
+                    if (loopState.IsValid)
                     {
-                        loopState.Apply(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting, ref instrumentChanged, ref volumeChanged, ref panChanged, ref shiftingChanged);
+                        loopState.Apply(ref nextInstrument, ref nextVolume, ref nextPan, ref nextShifting);
+                        loopState.ApplyIfSet(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting);
                         FlushPendingChanges(true);
                     }
 
@@ -277,6 +281,8 @@ namespace SF2MusicCooker
 
             void FlushPendingChanges(bool includeInstrument)
             {
+                byte flags = 0;
+
                 // Apply timer change
                 if (newTimer != 0f)
                 {
@@ -285,16 +291,18 @@ namespace SF2MusicCooker
                 }
 
                 // Apply pan change
-                if (panChanged)
+                if (currentPan != nextPan)
                 {
-                    panChanged = false;
+                    currentPan = nextPan;
+                    flags |= StateSnapshot.PAN_SET;
                     commands.Add("stereo " + BYTE_HEX(currentPan));
                 }
 
                 // Apply instrument change
-                if (includeInstrument && instrumentChanged)
+                if (currentInstrument != nextInstrument && includeInstrument)
                 {
-                    instrumentChanged = false;
+                    currentInstrument = nextInstrument;
+                    flags |= StateSnapshot.INSTRUMENT_SET;
                     if (map.FM(currentInstrument, out byte inst))
                     {
                         commands.Add("inst " + BYTE(inst));
@@ -302,24 +310,25 @@ namespace SF2MusicCooker
                 }
 
                 // Apply volume change
-                if (volumeChanged)
+                if (currentVolume != nextVolume)
                 {
-                    volumeChanged = false;
+                    currentVolume = nextVolume;
+                    flags |= StateSnapshot.VOLUME_SET;
                     commands.Add("vol " + BYTE(currentVolume));
                 }
 
                 // Apply shifting change
-                if (shiftingChanged)
+                if (currentShifting != nextShifting)
                 {
-                    shiftingChanged = false;
+                    currentShifting = nextShifting;
+                    flags |= StateSnapshot.SHIFTING_SET;
                     commands.Add("shifting " + BYTE_HEX(currentShifting));
                 }
 
                 // Store state that should be reapplied just before crossing the main loop
-                if (includeInstrument && recordLoopState)
+                if (loopState.IsRequested && includeInstrument)
                 {
-                    recordLoopState = false;
-                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting);
+                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting, flags);
                 }
             }
 
@@ -436,10 +445,9 @@ namespace SF2MusicCooker
 
                 // No warning needed here as Furnace doesn't apply instrument change immediately
 
-                if (cell.Instrument != currentInstrument && cell.Instrument != PatternCell.InstrumentAbsent)
+                if (cell.Instrument != PatternCell.InstrumentAbsent)
                 {
-                    currentInstrument = cell.Instrument;
-                    instrumentChanged = true;
+                    nextInstrument = cell.Instrument;
                 }
             }
 
@@ -447,13 +455,12 @@ namespace SF2MusicCooker
             {
                 PatternCell cell = tick.ActiveChannelCell;
 
-                if (cell.Volume != PatternCell.VolumeAbsent && currentVolume != VOL_F2C(cell.Volume))
+                if (cell.Volume != PatternCell.VolumeAbsent)
                 {
                     if (disallowOutsideOfNewNote && !cell.HasNewNote && cell.Note != PatternCell.NoteOff)
                         Warning("Volume change will be delayed because it can only be applied when a new note plays/ends.", tick);
 
-                    currentVolume = VOL_F2C(cell.Volume);
-                    volumeChanged = true;
+                    nextVolume = VOL_F2C(cell.Volume);
                 }
             }
 
@@ -463,25 +470,21 @@ namespace SF2MusicCooker
 
                 if (cell.TryGetEffect(Effect.Pan, out Effect effect))
                 {
-                    Try(PAN_F2C(effect.Value));
+                    Set(PAN_F2C(effect.Value));
                 }
                 else if (cell.TryGetEffect(Effect.PanTrinary, out effect))
                 {
-                    Try(PAN3_F2C(effect.Value));
+                    Set(PAN3_F2C(effect.Value));
                 }
 
-                void Try(byte newPan)
+                void Set(byte pan)
                 {
                     if (disallowPanning)
                         Warning("Panning change is not allowed on this channel.", tick);
                     else if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
                         Warning("Panning change will be delayed because it can only be applied when a new note plays/ends.", tick);
 
-                    if (currentPan != newPan)
-                    {
-                        currentPan = newPan;
-                        panChanged = true;
-                    }
+                    nextPan = pan;
                 }
             }
 
@@ -517,12 +520,12 @@ namespace SF2MusicCooker
                 {
                     if (disallow)
                     {
-                        Warning("Play rate change effects must be put on a PSG channel, otherwise they will be ignored", tick);
+                        Warning("Play rate change effects must be put on a PSG tone channel, otherwise they will be ignored", tick);
                         return;
                     }
 
-                    if (!cell.HasNewNote)
-                        Warning("Play rate change will be delayed because it can only be applied when a new note plays.", tick);
+                    if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                        Warning("Play rate change will be delayed because it can only be applied when a new note plays/ends.", tick);
 
                     newTimer = tickRate * file.RateCoeff;
                 }
@@ -631,47 +634,54 @@ namespace SF2MusicCooker
             return Tools.Hex1ASM(value);
         }
 
-        public readonly struct StateSnapshot
+        private readonly struct StateSnapshot
         {
             public readonly ushort Instrument;
             public readonly byte Volume;
             public readonly byte Pan;
             public readonly byte Shifting;
-            
-            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting)
+            public readonly byte Flags;
+
+            public const int INSTRUMENT_SET = 1;
+            public const int VOLUME_SET = 2;
+            public const int PAN_SET = 4;
+            public const int SHIFTING_SET = 8;
+
+            private const int REQUESTED = 64;
+            private const int INVALID = 128;
+
+            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting, byte flags)
             {
                 Instrument = instrument;
                 Volume = volume;
                 Pan = pan;
                 Shifting = shifting;
+                Flags = flags;
             }
 
-            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref bool instrumentChanged, ref bool volumeChanged, ref bool panChanged, ref bool shiftingChanged)
+            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting)
             {
-                if (instrument != Instrument)
-                {
-                    instrument = Instrument;
-                    instrumentChanged = true;
-                }
-
-                if (volume != Volume)
-                {
-                    volume = Volume;
-                    volumeChanged = true;
-                }
-
-                if (pan != Pan)
-                {
-                    pan = Pan;
-                    panChanged = true;
-                }
-
-                if (shifting != Shifting)
-                {
-                    shifting = Shifting;
-                    shiftingChanged = true;
-                }
+                instrument = Instrument;
+                volume = Volume;
+                pan = Pan;
+                shifting = Shifting;
             }
+
+            public void ApplyIfSet(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting)
+            {
+                if ((Flags & INSTRUMENT_SET) != 0) instrument = Instrument;
+                if ((Flags & VOLUME_SET) != 0) volume = Volume;
+                if ((Flags & PAN_SET) != 0) pan = Pan;
+                if ((Flags & SHIFTING_SET) != 0) shifting = Shifting;
+            }
+
+            public bool IsValid => (Flags & INVALID) == 0;
+
+            public bool IsRequested => (Flags & REQUESTED) != 0;
+
+            public static StateSnapshot Invalid => new StateSnapshot(0, 0, 0, 0, INVALID);
+
+            public static StateSnapshot Requested => new StateSnapshot(0, 0, 0, 0, INVALID | REQUESTED);
         }
     }
 }
