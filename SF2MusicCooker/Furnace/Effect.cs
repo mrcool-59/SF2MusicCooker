@@ -21,6 +21,7 @@
         };
 
         // These effects will definitely never be supported:
+        //      10.. (setup LFO)
         //      20.. (noise config)
         //      F1.. F2.. (shift pitch down/up for one tick)
 

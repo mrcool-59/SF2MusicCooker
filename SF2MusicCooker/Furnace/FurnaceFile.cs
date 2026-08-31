@@ -159,6 +159,8 @@ namespace SF2MusicCooker.Furnace
         {
             if (instrument >= Instruments.Length) throw new ArgumentOutOfRangeException(nameof(instrument));
 
+            if (Instruments[instrument].Unreferenced) return Array.Empty<int>(); // Big speed up for files packed with tons of unused instruments
+
             List<int> channels = new List<int>(Channels);
             for (int channel = 0; channel < Channels; channel++)
             {
@@ -576,6 +578,7 @@ namespace SF2MusicCooker.Furnace
                     /// --- Patterns ---
 
                     Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
+                    HashSet<int> referencedInstruments = new HashSet<int>();
 
                     for (int i = 0; i < patternPtrs.Length; i++)
                     {
@@ -669,7 +672,7 @@ namespace SF2MusicCooker.Furnace
                                     List<Effect> effects = null;
 
                                     if (notePresent) note = reader.ReadByte();
-                                    if (instrumentPresent) instrument = reader.ReadByte();
+                                    if (instrumentPresent) { instrument = reader.ReadByte(); referencedInstruments.Add(instrument); }
                                     if (volumePresent) volume = Math.Min((byte)(PatternCell.VolumeAbsent - 1), reader.ReadByte());
 
                                     for (int e = 0; e < effectTypePresent.Length; e++)
@@ -729,11 +732,13 @@ namespace SF2MusicCooker.Furnace
 
                             if (type == Instrument.PSG)
                             {
-                                // OK fine, but PSG instruments are hollow, they can only hold macros (which we don't support)
+                                // PSG instruments can hold macros to help us figure out the proper volume enveloppe
                             }
                             else if (type == Instrument.DAC)
                             {
-                                // OK fine
+                                // It appears this is the default data assumed by Furnace if you don't modify a newly created sample
+
+                                data = new byte[4] { 0, 0, 0, 0 }; // Basically, use sample 0
                             }
                             else if (type == Instrument.FM)
                             {
@@ -827,7 +832,7 @@ namespace SF2MusicCooker.Furnace
                                 }
                             }
 
-                            instruments[i] = new Instrument(type, name, data);
+                            instruments[i] = new Instrument(type, name, data, !referencedInstruments.Contains(i));
                         }
                     }
 

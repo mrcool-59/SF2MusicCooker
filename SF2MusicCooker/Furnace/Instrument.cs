@@ -21,11 +21,17 @@
         /// </summary>
         public readonly byte[] Data;
 
-        public Instrument(short type, string name, byte[] data)
+        /// <summary>
+        /// True if no pattern ever references this instrument. This can be used to speed up instrument usage calculation.
+        /// </summary>
+        public readonly bool Unreferenced;
+
+        public Instrument(short type, string name, byte[] data, bool unreferenced)
         {
             Type = type;
             Name = name;
             Data = data;
+            Unreferenced = unreferenced;
         }
     }
 }

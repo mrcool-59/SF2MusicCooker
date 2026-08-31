@@ -1,4 +1,5 @@
 ﻿Version 1.0:
+- More vgm2fur / CubeAssets musics (comparer Shop de vgm2fur et Shop de CubeAssets)
 - Support for important effects (marked with '#' in ChannelCommands.cs)
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers

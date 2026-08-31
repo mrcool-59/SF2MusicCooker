@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace SF2MusicCooker
@@ -12,6 +13,7 @@ namespace SF2MusicCooker
         {
             Arguments arguments = new Arguments(args);
             string postBuild = null; // Argument to pass to postbuild script, if it needs to run
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             try
             {
@@ -49,6 +51,9 @@ namespace SF2MusicCooker
 
                 // Build sheets that have been deferred
                 foreach (Sheet sheet in sheets) sheet.Build();
+
+                // Show time amount used to build musics
+                Console.WriteLine("-- TOTAL BUILD TIME: {0} sec --", stopwatch.Elapsed.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture));
 
                 Console.WriteLine("Bank storage summary:");
                 bool overloaded = output.PrintSize();

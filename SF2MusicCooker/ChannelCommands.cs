@@ -686,8 +686,6 @@ o Set tick rate / tempo
 # Set vibrato shape
 # Detune (all operators)
 # Portamento (Set Pitch Slides)
-# Note/Frequency Shifting
-# Setup LFO
 
 NOTE: these affects are only applied when a new note plays; a warning must be issued if the user tries to use the effect elsewhere
      => Verify Furnace behavior before implementing any of them, especially when the effect is declared on cells without a new note
@@ -716,5 +714,7 @@ These effects cannot be implemented because of limitations of Cube sound driver:
 ================================================================================
 - Set pitch (00: -1 note, 80: base, FF: +1 note): we don't have enough leeway to adjust frequencies between 2 notes (can only do +/- 14 hz)
 - Single tick pitch up/down: same as above, we cannot shift further than 14 hz and this would consume a ton of space
+- Setup LFO: sound driver doesn't support LFO register which is gonna stay disabled, this means no AMS/PMS either (amplitude, frequency modulation)
+- Note shifting: not really useful, it doesn't allow us to reach extra octaves; we are still limited to the palette of YM frequencies
 
 */
