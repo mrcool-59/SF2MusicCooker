@@ -150,15 +150,14 @@ namespace SF2MusicCooker
             float newTimer = 0f;
             ushort currentInstrument = 0x0000;
             byte currentVolume = VOL_F2C(0x7F); // Max volume by default
-            byte currentPan = PAN_F2C(0x00);
-            byte currentRelease;
-            byte currentLength;
-            bool instrumentChanged;
-            bool volumeChanged;
-            bool panChanged;
-
-            // Initial refresh so that the first note will force updates
-            ForceRefresh();
+            byte currentPan = PAN_F2C(0x00); // Center by default
+            byte currentShifting = 0x00; // Zero by default
+            byte currentRelease = 0xFF; // Will force the first note to set release
+            byte currentLength = 0x00; // Will force the first note or silence to set length
+            bool instrumentChanged = true;
+            bool volumeChanged = true;
+            bool panChanged = false; // Already starts at center by sound driver initialization
+            bool shiftingChanged = false; // Already starts at zero by sound driver initialization
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
@@ -186,8 +185,15 @@ namespace SF2MusicCooker
                 if (tick.Position == loopStart)
                 {
                     commands.Add("mainLoopStart");
-                    ForceRefresh(); // Otherwise we would have wrong note lengths etc. after crossing the loop!
-                    // FIXME: we can save a bunch of bytes here if we only refresh what is necessary, but that would make the code more convoluted.
+
+                    currentRelease = 0xFF; // Will force the next note to set release
+                    currentLength = 0x00; // Will force the next note or silence to set length
+
+                    // FIXME: the following could be optimized
+                    instrumentChanged = true;
+                    volumeChanged = true;
+                    panChanged = true;
+                    shiftingChanged = true;
                 }
 
                 // Is it FM or PSG channel?
@@ -203,7 +209,7 @@ namespace SF2MusicCooker
                     // Apply note change
                     if (cell.HasNewNote)
                     {
-                        FlushPendingChanges();
+                        FlushPendingChanges(true);
 
                         // Finally, write note/sample command
                         if (map.Sample(currentInstrument, cell.Note, out byte sample))
@@ -217,7 +223,7 @@ namespace SF2MusicCooker
                     }
                     else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                     {
-                        FlushPendingChanges();
+                        FlushPendingChanges(false);
 
                         // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                         WriteSilence(tick.SilenceLength);
@@ -266,16 +272,7 @@ namespace SF2MusicCooker
 
             // ------------------------------ Helpers -------------------------------
 
-            void ForceRefresh()
-            {
-                currentRelease = 0xFF; // Will force the next note to set release
-                currentLength = 0x00; // Will force the next note or silence to set length
-                instrumentChanged = true;
-                volumeChanged = true;
-                panChanged = true;
-            }
-
-            void FlushPendingChanges()
+            void FlushPendingChanges(bool includeInstrument)
             {
                 // Apply timer change
                 if (newTimer != 0f)
@@ -292,7 +289,7 @@ namespace SF2MusicCooker
                 }
 
                 // Apply instrument change
-                if (instrumentChanged)
+                if (includeInstrument && instrumentChanged)
                 {
                     instrumentChanged = false;
                     if (map.FM(currentInstrument, out byte inst))
@@ -306,6 +303,13 @@ namespace SF2MusicCooker
                 {
                     volumeChanged = false;
                     commands.Add("vol " + BYTE(currentVolume));
+                }
+
+                // Apply shifting change
+                if (shiftingChanged)
+                {
+                    shiftingChanged = false;
+                    commands.Add("shifting " + BYTE_HEX(currentShifting));
                 }
             }
 
@@ -435,8 +439,8 @@ namespace SF2MusicCooker
 
                 if (cell.Volume != PatternCell.VolumeAbsent && currentVolume != VOL_F2C(cell.Volume))
                 {
-                    if (disallowOutsideOfNewNote && !cell.HasNewNote)
-                        Warning("Volume change will be delayed because it can only be applied when a new note plays.", tick);
+                    if (disallowOutsideOfNewNote && !cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                        Warning("Volume change will be delayed because it can only be applied when a new note plays/ends.", tick);
 
                     currentVolume = VOL_F2C(cell.Volume);
                     volumeChanged = true;
@@ -460,8 +464,8 @@ namespace SF2MusicCooker
                 {
                     if (disallowPanning)
                         Warning("Panning change is not allowed on this channel.", tick);
-                    else if (!cell.HasNewNote)
-                        Warning("Panning change will be delayed because it can only be applied when a new note plays.", tick);
+                    else if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                        Warning("Panning change will be delayed because it can only be applied when a new note plays/ends.", tick);
 
                     if (currentPan != newPan)
                     {

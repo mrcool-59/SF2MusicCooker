@@ -1,6 +1,9 @@
 ﻿Version 1.0:
-- More vgm2fur / CubeAssets musics (comparer Shop de vgm2fur et Shop de CubeAssets)
 - Support for important effects (marked with '#' in ChannelCommands.cs)
+	=> Detune
+- Main loop state refresh to optimize
+///
+- More vgm2fur / CubeAssets musics (comparer Shop de vgm2fur et Shop de CubeAssets)
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - PSG output in sheet writing
@@ -12,7 +15,6 @@ Version 1.1:
 
 Version 1.2:
 - Auto-bank assignment feature
-- Main loop state refresh to optimize
 - Tigher loop detection: needs to reach the same position 2 times to be considered a loop (put method in FurnaceFile)
 	=> Implement a spaghetti .fur file to test that
 
