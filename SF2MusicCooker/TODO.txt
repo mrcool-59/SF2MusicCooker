@@ -1,14 +1,15 @@
 ﻿Version 0.99:
-- Custom input folder option
 - Vibrato support
-- More vgm2fur / CubeAssets musics (comparer Shop de vgm2fur et Shop de CubeAssets)
+	=> Retester Test-2: le vibrato de 'Town'
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 	=> Test 'set tick rate' effect in PSG tone channel
 
 Version 1.0:
+- Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
+- PCM banks: 6 extra PCM banks might be what's needed
 
 Version 1.1:
 - Add artificial new notes (identical to the original note, in sustain mode) to be able to handle volume / panning changes per tick

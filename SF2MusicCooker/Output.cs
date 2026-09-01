@@ -282,7 +282,7 @@ namespace SF2MusicCooker
             }
 
             // Verify that all puzzle pieces fit for SFXs (because of their channel pointers that can reference data defined in other SFXs...)
-            _sfxNeededByMap = AsmSheetToolkit.VerifyAndGetDependencies(_sfxBanks);
+            VerifyAndUpdateSFXDependencies();
 
             // Load FM instruments
             Instruments.Load(_paths.YmInstBin);
@@ -398,7 +398,13 @@ namespace SF2MusicCooker
 
                 bank.Add(addedSfx);
             }
+        }
 
+        /// <summary>
+        /// Verify SFXs and update their dependencies.
+        /// </summary>
+        public void VerifyAndUpdateSFXDependencies()
+        {
             // Update 'needed by' map
             _sfxNeededByMap = AsmSheetToolkit.VerifyAndGetDependencies(_sfxBanks);
         }

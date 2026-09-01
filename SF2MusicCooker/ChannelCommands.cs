@@ -15,8 +15,8 @@ namespace SF2MusicCooker
         private readonly string _separator;
 
         public const uint Mask_Music = 0b1111111111;
-        public const uint Mask_SFX_1 = 0b0000000011;
-        public const uint Mask_SFX_2 = 0b0001110000;
+        public const uint Mask_SFX_1 = 0b1100000000; // Read from right to left!
+        public const uint Mask_SFX_2 = 0b0000111000;
 
         /// <summary>
         /// Get the DAC value to write in music header.

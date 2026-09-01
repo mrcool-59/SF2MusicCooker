@@ -94,7 +94,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 --nopostbuild				or		-npb	Do not run POSTBUILD.bat, even if it's provided
 --autoyes					or		-ay		Automatically confirm to write files to SF2DISASM folder
 --autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
---test						or		-t		Read files in "Test" folder instead of "Input" folder (only useful for developers)
+--input=X					or		-i=X	Read files in "X" folder instead of "Input" folder (only useful for developers)
 --onlyN						or		-oN		(N = 1..126) Only process the .fur file for the given music/SFX number and ignore the rest (only useful for developers)
 
 The following options can be specified globally or per-music/per-SFX:

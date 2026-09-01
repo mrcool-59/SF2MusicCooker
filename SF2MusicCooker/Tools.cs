@@ -383,11 +383,19 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Parse a string command line option.
+        /// </summary>
+        public static string ParseStringArg(string[] args, Regex longRegex, Regex shortRegex)
+        {
+            return ParseArg(args, longRegex, shortRegex, null, x => x);
+        }
+
+        /// <summary>
         /// Parse an integer command line option.
         /// </summary>
         public static int ParseIntArg(string[] args, Regex longRegex, Regex shortRegex, int defaultValue)
         {
-            return ParseNumericArg(args, longRegex, shortRegex, defaultValue, x => int.Parse(x, CultureInfo.InvariantCulture));
+            return ParseArg(args, longRegex, shortRegex, defaultValue, x => int.Parse(x, CultureInfo.InvariantCulture));
         }
 
         /// <summary>
@@ -395,10 +403,10 @@ namespace SF2MusicCooker
         /// </summary>
         public static float ParseFloatArg(string[] args, Regex longRegex, Regex shortRegex, float defaultValue)
         {
-            return ParseNumericArg(args, longRegex, shortRegex, defaultValue, x => float.Parse(x, CultureInfo.InvariantCulture));
+            return ParseArg(args, longRegex, shortRegex, defaultValue, x => float.Parse(x, CultureInfo.InvariantCulture));
         }
 
-        private static T ParseNumericArg<T>(string[] args, Regex longRegex, Regex shortRegex, T defaultValue, Func<string, T> converter)
+        private static T ParseArg<T>(string[] args, Regex longRegex, Regex shortRegex, T defaultValue, Func<string, T> converter)
         {
             CheckCaptureGroup(longRegex, nameof(longRegex));
             CheckCaptureGroup(shortRegex, nameof(shortRegex));

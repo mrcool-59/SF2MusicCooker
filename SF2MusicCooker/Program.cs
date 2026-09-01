@@ -25,7 +25,7 @@ namespace SF2MusicCooker
                 output.LoadVanilla();
 
                 List<Sheet> sheets = new List<Sheet>();
-                string folder = arguments.Test ? "Test" : "Input";
+                string folder = arguments.InputFolder ?? "Input";
                 FileInfo[] musics = Tools.GetActiveFiles(folder, "*music*.fur");
                 FileInfo[] sfxs = Tools.GetActiveFiles(folder, "*sfx*.fur");
                 Dictionary<int, Options> overrides = Options.ReadOverrideOptions(folder);
@@ -51,6 +51,9 @@ namespace SF2MusicCooker
 
                 // Build sheets that have been deferred
                 foreach (Sheet sheet in sheets) sheet.Build();
+
+                // Verify SFXs are in a valid state (should always be successful)
+                output.VerifyAndUpdateSFXDependencies();
 
                 // Show time amount used to build musics
                 Console.WriteLine("-- TOTAL BUILD TIME: {0} sec --", stopwatch.Elapsed.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture));
