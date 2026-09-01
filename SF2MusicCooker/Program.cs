@@ -284,6 +284,9 @@ namespace SF2MusicCooker
                     int unused = file.Instruments.Length - usedInstruments.Length;
                     if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
 
+                    // Sample rate coeff for samples
+                    file.ScaleSamples(options.SampleRateCoeff);
+
                     // Mute samples switch
                     int numSamples = file.Samples.Length;
                     if (options.MuteSamples && numSamples > 0)

@@ -108,6 +108,7 @@ The following options can be specified globally or per-music/per-SFX:
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
+--sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound engine has a limit when playing very high pitched samples)
 
 To apply options per-music/per-SFX, provide an "options.txt" file in the "Input" folder.
 Example file (dump notes of music 33 and mute samples of music 41):

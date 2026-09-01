@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -197,9 +198,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static T[] GetAllElements<T>(string document, Regex elementRegex, Func<string, T> convertFunc)
         {
-            if (elementRegex.GetGroupNumbers().Length != 2)
-                throw new ArgumentException("regex must contain exactly 1 capture group", nameof(elementRegex));
-
+            CheckCaptureGroup(elementRegex, nameof(elementRegex));
             MatchCollection matches = elementRegex.Matches(document);
             T[] results = new T[matches.Count];
             for (int i = 0; i < results.Length; i++) results[i] = convertFunc(matches[i].Groups[1].Value);
@@ -381,6 +380,41 @@ namespace SF2MusicCooker
                 }
             }
             return best;
+        }
+
+        /// <summary>
+        /// Parse an integer command line option.
+        /// </summary>
+        public static int ParseIntArg(string[] args, Regex longRegex, Regex shortRegex, int defaultValue)
+        {
+            return ParseNumericArg(args, longRegex, shortRegex, defaultValue, x => int.Parse(x, CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Parse a float command line option.
+        /// </summary>
+        public static float ParseFloatArg(string[] args, Regex longRegex, Regex shortRegex, float defaultValue)
+        {
+            return ParseNumericArg(args, longRegex, shortRegex, defaultValue, x => float.Parse(x, CultureInfo.InvariantCulture));
+        }
+
+        private static T ParseNumericArg<T>(string[] args, Regex longRegex, Regex shortRegex, T defaultValue, Func<string, T> converter)
+        {
+            CheckCaptureGroup(longRegex, nameof(longRegex));
+            CheckCaptureGroup(shortRegex, nameof(shortRegex));
+            foreach (string arg in args)
+            {
+                Match match = shortRegex.Match(arg);
+                if (!match.Success) match = longRegex.Match(arg);
+                if (match.Success) return converter(match.Groups[1].Value);
+            }
+            return defaultValue;
+        }
+
+        private static void CheckCaptureGroup(Regex regex, string name)
+        {
+            if (regex.GetGroupNumbers().Length != 2)
+                throw new ArgumentException("regex must contain exactly 1 capture group", name);
         }
     }
 }

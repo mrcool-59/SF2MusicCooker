@@ -1,7 +1,6 @@
 ﻿Version 1.0:
 - Support for important effects (marked with '#' in ChannelCommands.cs)
 	=> Detune
-- Try to make PCM sound pitches higher
 ///
 - More vgm2fur / CubeAssets musics (comparer Shop de vgm2fur et Shop de CubeAssets)
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
@@ -20,3 +19,4 @@ Version 1.2:
 
 Version 1.3:
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
+- Sample resampling

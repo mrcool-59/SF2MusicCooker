@@ -297,6 +297,17 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Adjust the sample rates of all samples in the file.
+        /// </summary>
+        public void ScaleSamples(float coeff)
+        {
+            for (int i = 0; i < Samples.Length; i++)
+            {
+                Samples[i] = Samples[i].MultiplyRate(coeff);
+            }
+        }
+
+        /// <summary>
         /// Generate a new Furnace file that plays identically but with play rate multiplied by N. Return the original Furnace file if multiplier is 1.
         /// </summary>
         public FurnaceFile Multiply(int n)

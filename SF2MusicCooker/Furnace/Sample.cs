@@ -28,6 +28,12 @@ namespace SF2MusicCooker.Furnace
             if (Depth == 16 && data.Length == length) Depth = 8;
         }
 
+        public Sample MultiplyRate(float coeff)
+        {
+            int newRate = (int)Math.Round(Rate * coeff);
+            return new Sample(Name, Length, newRate, Depth, LoopDirection, LoopStart, LoopEnd, Data);
+        }
+
         public void Verify()
         {
             if (LoopStart != -1 || LoopEnd != -1)

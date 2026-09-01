@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace SF2MusicCooker
 {
     public sealed class Options
     {
+        private static readonly Regex sampleRateCoeffLongRegex = new Regex("^--sampleratecoeff=([0-9.]+)$");
+        private static readonly Regex sampleRateCoeffShortRegex = new Regex("^-src=([0-9.]+)$");
+
         public readonly int Mute;
         public readonly int Isolate;
         public readonly bool MuteSamples;
@@ -15,6 +19,7 @@ namespace SF2MusicCooker
         public readonly bool NoOptimize;
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
+        public readonly float SampleRateCoeff;
 
         /// <summary>
         /// Return true if 'channel' should be muted.
@@ -43,7 +48,8 @@ namespace SF2MusicCooker
                                other.RemoveOff || RemoveOff,
                                other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
-                               other.DumpUncompressed || DumpUncompressed);
+                               other.DumpUncompressed || DumpUncompressed,
+                               other.SampleRateCoeff != 1f ? other.SampleRateCoeff : SampleRateCoeff);
         }
 
         /// <summary>
@@ -85,9 +91,10 @@ namespace SF2MusicCooker
             NoOptimize = Exists("--nooptimize") || Exists("-no");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
+            SampleRateCoeff = Tools.ParseFloatArg(args, sampleRateCoeffLongRegex, sampleRateCoeffShortRegex, 1f);
         }
 
-        private Options(int mute, int isolate, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed)
+        private Options(int mute, int isolate, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed, float sampleRateCoeff)
         {
             Mute = mute;
             Isolate = isolate;
@@ -98,11 +105,12 @@ namespace SF2MusicCooker
             NoOptimize = noOptimize;
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
+            SampleRateCoeff = sampleRateCoeff;
         }
 
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, false, false, false, false, false, false, false);
+        public static readonly Options Default = new Options(0, 0, false, false, false, false, false, false, false, 1f);
     }
 }
