@@ -142,7 +142,7 @@
     <None Include="Test-2\%40sfx66-%28Darius II%29 Roar.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-3\%40sfx67-%28Darius II%29 Fire.fur">
+    <None Include="Test-3\!%40sfx67-%28Darius II%29 Fire.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music01-Test Silence.fur">
