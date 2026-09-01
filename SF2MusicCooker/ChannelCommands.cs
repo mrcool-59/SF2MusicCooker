@@ -302,15 +302,15 @@ namespace SF2MusicCooker
                 if (currentInstrument != nextInstrument && includeInstrument)
                 {
                     currentInstrument = nextInstrument;
-                    flags |= StateSnapshot.INSTRUMENT_SET;
                     if (map.FM(currentInstrument, out byte inst))
                     {
+                        flags |= StateSnapshot.INSTRUMENT_SET;
                         commands.Add("inst " + BYTE(inst));
                     }
                 }
 
                 // Apply volume change
-                if (currentVolume != nextVolume)
+                if (currentVolume != nextVolume || (flags & StateSnapshot.INSTRUMENT_SET) != 0)
                 {
                     currentVolume = nextVolume;
                     flags |= StateSnapshot.VOLUME_SET;
