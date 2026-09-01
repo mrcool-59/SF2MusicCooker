@@ -68,7 +68,7 @@ namespace SF2MusicCooker.Furnace
             else if (note == NoteRelease)
                 return "===";
             else
-                return NoteBible.GetByValue(note).Name;
+                return NoteBible.NameOf(note);
         }
 
         /// <summary>

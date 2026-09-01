@@ -115,10 +115,10 @@ namespace SF2MusicCooker
             }
 
             // Verify clamped notes
-            int[] clampedNotes = tuned.Clamped;
+            byte[] clampedNotes = tuned.Clamped;
             if (clampedNotes.Length > 0)
             {
-                string list = string.Join(", ", clampedNotes.Select(c => NoteBible.GetByValue((byte)c).Name));
+                string list = string.Join(", ", clampedNotes.Select(NoteBible.NameOf));
                 Console.WriteLine("! The following Furnace notes are too low / too high for SF2 sound engine and have been clamped instead:{0}    {1}", Environment.NewLine, list);
                 Console.WriteLine("! To sidestep this, you can try transposing notes by changing the A-4 tuning to move them in a more favorable range");
             }
@@ -157,8 +157,11 @@ namespace SF2MusicCooker
             byte nextPan = currentPan;
             byte currentShifting = 0x00; // Zero by default
             byte nextShifting = currentShifting;
+            byte currentSlide = 0x00; // Zero by default
+            byte nextSlide = currentSlide;
             byte currentRelease = 0xFF; // Will force the first note to set release
             byte currentLength = 0x00; // Will force the first note or silence to set length
+            bool dac = channel == 5 && DAC == 0;
 
             // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
             commands.Add("vibrato " + BYTE(0));
@@ -198,18 +201,26 @@ namespace SF2MusicCooker
                     ReadInstrument(tick);
                     ReadVolume(tick, true);
                     ReadPan(tick, false);
-                    ReadLegato(tick);
                     ReadNewTimer(tick, true);
+                    if (!dac)
+                    {
+                        ReadLegato(tick);
+                        ReadDetune(tick);
+                        ReadPortamento(tick);
+                    }
 
                     // Apply note change
                     if (cell.HasNewNote)
                     {
-                        FlushPendingChanges(true);
+                        FlushPendingChanges(true, tick);
 
                         // Finally, write note/sample command
-                        if (map.Sample(currentInstrument, cell.Note, out byte sample))
+                        if (dac)
                         {
-                            WriteSample(sample, tick.NoteRelease, tick.NoteLength);
+                            if (map.Sample(currentInstrument, cell.Note, out byte sample))
+                                WriteSample(sample, tick.NoteRelease, tick.NoteLength);
+                            else
+                                Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play).", tick);
                         }
                         else
                         {
@@ -218,7 +229,7 @@ namespace SF2MusicCooker
                     }
                     else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                     {
-                        FlushPendingChanges(false);
+                        FlushPendingChanges(false, tick);
 
                         // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                         WriteSilence(tick.SilenceLength);
@@ -245,9 +256,9 @@ namespace SF2MusicCooker
                     // Before the we cross the loop, we may have to apply some state changes...
                     if (loopState.IsValid)
                     {
-                        loopState.Apply(ref nextInstrument, ref nextVolume, ref nextPan, ref nextShifting);
-                        loopState.ApplyIfSet(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting);
-                        FlushPendingChanges(true);
+                        loopState.Apply(ref nextInstrument, ref nextVolume, ref nextPan, ref nextShifting, ref nextSlide);
+                        loopState.ApplyIfSet(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting, ref currentSlide);
+                        FlushPendingChanges(true, tick);
                     }
 
                     // Mark ending of loop and exit
@@ -279,7 +290,7 @@ namespace SF2MusicCooker
 
             // ------------------------------ Helpers -------------------------------
 
-            void FlushPendingChanges(bool includeInstrument)
+            void FlushPendingChanges(bool includeInstrument, Tick tick)
             {
                 byte flags = 0;
 
@@ -302,10 +313,19 @@ namespace SF2MusicCooker
                 if (currentInstrument != nextInstrument && includeInstrument)
                 {
                     currentInstrument = nextInstrument;
-                    if (map.FM(currentInstrument, out byte inst))
+
+                    // Load FM instrument
+                    if (!dac)
                     {
-                        flags |= StateSnapshot.INSTRUMENT_SET;
-                        commands.Add("inst " + BYTE(inst));
+                        if (map.FM(currentInstrument, out byte inst))
+                        {
+                            flags |= StateSnapshot.INSTRUMENT_SET;
+                            commands.Add("inst " + BYTE(inst));
+                        }
+                        else
+                        {
+                            Warning("Invalid instrument " + currentInstrument + " for FM channel (is it actually an FM instrument?).", tick);
+                        }
                     }
                 }
 
@@ -325,10 +345,22 @@ namespace SF2MusicCooker
                     commands.Add("shifting " + BYTE_HEX(currentShifting));
                 }
 
+                // Apply slide change
+                if (currentSlide != nextSlide)
+                {
+                    currentSlide = nextSlide;
+                    flags |= StateSnapshot.SLIDE_SET;
+
+                    if (currentSlide == 0x00)
+                        commands.Add("noSlide");
+                    else
+                        commands.Add("setSlide " + BYTE_HEX(currentSlide));
+                }
+
                 // Store state that should be reapplied just before crossing the main loop
                 if (loopState.IsRequested && includeInstrument)
                 {
-                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting, flags);
+                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting, currentSlide, flags);
                 }
             }
 
@@ -498,6 +530,50 @@ namespace SF2MusicCooker
                 }
             }
 
+            void ReadDetune(Tick tick)
+            {
+                // FIXME: I'm following here the WizTools approximation of this effect even if I think it's not the accurate way to do it
+                // The accurate way would be to create a shadow copy of the FM instrument with modified operators and switch to it
+                // The downside is obviously that the number of FM instruments would quickly get out of hand and it's complex to set up for low payoff
+
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Detune, out Effect effect))
+                {
+                    if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                        Warning("Detune effect will be delayed because it can only be applied when a new note plays/ends.", tick);
+
+                    int detune = Math.Max(-3, Math.Min(3, effect.Value - 3));
+                    if (effect.Value >= 0x07) detune = 0;
+
+                    nextShifting = (byte)(Math.Abs(detune) << 5); // Sharper detune compared to WizTools implementation (<< 4)
+                    if (detune < 0) nextShifting |= 0x80;
+                }
+            }
+
+            void ReadPortamento(Tick tick)
+            {
+                // FIXME: for better compatibility, we should also enable a 'virtual' legato on the previous note
+                // This can be done by modifying the patterns
+
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Portamento, out Effect effect) && effect.Value > 0)
+                {
+                    if (!cell.HasNewNote)
+                    {
+                        Warning("Portamento effect must appear when a new note plays, otherwise it will be ignored.", tick);
+                        return;
+                    }
+
+                    nextSlide = (byte)Math.Min(0x7F, effect.Value * 2 - 1);
+                }
+                else if (cell.HasNewNote)
+                {
+                    nextSlide = 0x00;
+                }
+            }
+
             void ReadNewTimer(Tick tick, bool disallow)
             {
                 PatternCell cell = tick.ActiveChannelCell;
@@ -640,48 +716,53 @@ namespace SF2MusicCooker
             public readonly byte Volume;
             public readonly byte Pan;
             public readonly byte Shifting;
+            public readonly byte Slide;
             public readonly byte Flags;
 
             public const int INSTRUMENT_SET = 1;
             public const int VOLUME_SET = 2;
             public const int PAN_SET = 4;
             public const int SHIFTING_SET = 8;
+            public const int SLIDE_SET = 16;
 
             private const int REQUESTED = 64;
             private const int INVALID = 128;
 
-            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting, byte flags)
+            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting, byte slide, byte flags)
             {
                 Instrument = instrument;
                 Volume = volume;
                 Pan = pan;
                 Shifting = shifting;
+                Slide = slide;
                 Flags = flags;
             }
 
-            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting)
+            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref byte slide)
             {
                 instrument = Instrument;
                 volume = Volume;
                 pan = Pan;
                 shifting = Shifting;
+                slide = Slide;
             }
 
-            public void ApplyIfSet(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting)
+            public void ApplyIfSet(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref byte slide)
             {
                 if ((Flags & INSTRUMENT_SET) != 0) instrument = Instrument;
                 if ((Flags & VOLUME_SET) != 0) volume = Volume;
                 if ((Flags & PAN_SET) != 0) pan = Pan;
                 if ((Flags & SHIFTING_SET) != 0) shifting = Shifting;
+                if ((Flags & SLIDE_SET) != 0) slide = Slide;
             }
 
             public bool IsValid => (Flags & INVALID) == 0;
 
             public bool IsRequested => (Flags & REQUESTED) != 0;
 
-            public static StateSnapshot Invalid => new StateSnapshot(0, 0, 0, 0, INVALID);
+            public static StateSnapshot Invalid => new StateSnapshot(0, 0, 0, 0, 0, INVALID);
 
-            public static StateSnapshot Requested => new StateSnapshot(0, 0, 0, 0, INVALID | REQUESTED);
+            public static StateSnapshot Requested => new StateSnapshot(0, 0, 0, 0, 0, INVALID | REQUESTED);
         }
     }
 }
@@ -749,24 +830,21 @@ These can be implemented by using a Cube command:
 o Panning
 o Legato
 o Set tick rate / tempo
-# Vibrato
-# Set vibrato shape
-# Detune (all operators)
-# Portamento (Set Pitch Slides)
-
-NOTE: these affects are only applied when a new note plays; a warning must be issued if the user tries to use the effect elsewhere
-     => Verify Furnace behavior before implementing any of them, especially when the effect is declared on cells without a new note
+o Detune for all operators (approximation based on WizTools implementation)
+o Portamento (Set Pitch Slides)
+# Vibrato (+ Set Vibrato Shape)
+    NOTE: these affects are only applied when a new note plays; a warning must be issued if the user tries to use the effect elsewhere
 
 These could be implemented by directly altering the patterns:
 =============================================================
 + Note cut/delay/release = observe Furnace behavior carefully before implementing this...
-     => Compliant with Furnace: rewrite patterns as needed... (annoying)
+    => Compliant with Furnace: rewrite patterns as needed... (annoying)
 + Arpeggio = this effect produces a rapid cycle between the current note, the note plus x semitones and the note plus y semitones
-     => Compliant with Furnace: produce an artificial cycle of 3 notes: [current, current + x semitones, current + y semitones]
-     => Arpeggio speed: delay between artificial notes can be changed (default 1) [modify PatternCell.Multiply method!]
-     => Verify Furnace behavior and how the effect is stopped
+    => Compliant with Furnace: produce an artificial cycle of 3 notes: [current, current + x semitones, current + y semitones]
+    => Arpeggio speed: delay between artificial notes can be changed (default 1) [modify PatternCell.Multiply method!]
+    => Verify Furnace behavior and how the effect is stopped
 + Retrigger = repeats current note every x ticks [modify PatternCell.Multiply method!], as long as the effect is present on the row
-     => Compliant with Furnace: add new notes as needed
+    => Compliant with Furnace: add new notes as needed
 + Sample offset: can be faked by introducing a new sample declaration in the sample list with desired offset, this one might be reasonable if used carefully
 - Replace FM operator property effects: could be somewhat faked by adding a new instrument everytime a property changes, but this would get out of hand very quickly
 - Set panning of left/right channel: tedious because we need to keep track of previous panning commands, not just Cube current panning value

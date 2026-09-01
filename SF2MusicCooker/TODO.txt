@@ -1,16 +1,18 @@
-﻿Version 1.0:
-- Support for important effects (marked with '#' in ChannelCommands.cs)
-	=> Detune
-///
+﻿Version 0.99:
+- Custom input folder option
+- Vibrato support
 - More vgm2fur / CubeAssets musics (comparer Shop de vgm2fur et Shop de CubeAssets)
-- Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
-	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 	=> Test 'set tick rate' effect in PSG tone channel
 
+Version 1.0:
+- Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
+	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
+
 Version 1.1:
 - Add artificial new notes (identical to the original note, in sustain mode) to be able to handle volume / panning changes per tick
+- Better portamento behavior (better match with Furnace behavior) with artificial legato on previous note (note: actual pitch slide is correct)
 
 Version 1.2:
 - Auto-bank assignment feature

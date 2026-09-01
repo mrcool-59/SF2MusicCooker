@@ -86,25 +86,33 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
-        /// Clamp the note inside valid note range.
+        /// Get the name of a Furnace note value.
         /// </summary>
-        public static byte Clamp(byte value)
+        public static string NameOf(byte value)
+        {
+            return GetByValue(value).Name;
+        }
+
+        /// <summary>
+        /// Clamp the note value inside valid range.
+        /// </summary>
+        public static byte Clamp(int value)
         {
             if (value < BASE_VALUE)
                 return BASE_VALUE;
             else if (value > LAST_VALUE)
                 return LAST_VALUE;
             else
-                return value;
+                return (byte)value;
         }
 
         /// <summary>
-        /// Verify note is between BASE_VALUE and LAST_VALUE.
+        /// Verify note value is between BASE_VALUE and LAST_VALUE.
         /// </summary>
-        public static void Verify(int note)
+        public static void Verify(int value)
         {
-            if (note < BASE_VALUE || note > LAST_VALUE)
-                throw new ArgumentOutOfRangeException(nameof(note), "note must be between " + BASE_VALUE + " and " + LAST_VALUE);
+            if (value < BASE_VALUE || value > LAST_VALUE)
+                throw new ArgumentOutOfRangeException(nameof(value), "note must be between " + BASE_VALUE + " and " + LAST_VALUE);
         }
 
         static NoteBible()

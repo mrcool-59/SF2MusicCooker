@@ -8,14 +8,14 @@ namespace SF2MusicCooker
     {
         private readonly int[] _f2y;
         private readonly Func<int, string> _y2name;
-        private readonly List<int> _clamped;
+        private readonly List<byte> _clamped;
         private readonly int _minNote;
         private readonly int _maxNote;
 
         /// <summary>
         /// The list of notes that have been clamped because they're not supported on YM side.
         /// </summary>
-        public int[] Clamped
+        public byte[] Clamped
         {
             get
             {
@@ -58,7 +58,7 @@ namespace SF2MusicCooker
 
             _f2y = f2y;
             _y2name = y2name ?? (x => x.ToString());
-            _clamped = new List<int>();
+            _clamped = new List<byte>();
 
             int max = f2y.Length - 1;
             while (max - 1 >= 0 && f2y[max - 1] == f2y[max]) max--;
