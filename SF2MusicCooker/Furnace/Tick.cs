@@ -32,7 +32,12 @@
         /// </summary>
         public readonly int SilenceLength;
 
-        public Tick(Position position, Position nextPosition, PatternCell activeChannelCell, int noteRelease, int noteLength, int silenceLength)
+        /// <summary>
+        /// Current vibrato state, this is only useful when a new note is about to start (i.e: NoteLength > 0).
+        /// </summary>
+        public readonly VibratoState Vibrato;
+
+        public Tick(Position position, Position nextPosition, PatternCell activeChannelCell, int noteRelease, int noteLength, int silenceLength, VibratoState vibrato)
         {
             Position = position;
             NextPosition = nextPosition;
@@ -40,6 +45,7 @@
             NoteRelease = noteRelease;
             NoteLength = noteLength;
             SilenceLength = silenceLength;
+            Vibrato = vibrato;
         }
 
         /// <summary>
@@ -64,6 +70,8 @@
                 {
                     suffix = "  note release in = " + NoteRelease + ", note length = " + NoteLength;
                 }
+
+                if (Vibrato.Active) suffix += ", vibrato = " + Vibrato;
             }
 
             if (NextPosition <= Position)

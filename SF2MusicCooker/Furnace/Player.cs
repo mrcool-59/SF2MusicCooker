@@ -17,6 +17,9 @@ namespace SF2MusicCooker.Furnace
             int order = from.Order;
             int row = from.Row;
 
+            byte shape = 0x00;
+            VibratoState vibratoState = new VibratoState();
+
             while (order < orders)
             {
                 Position position = new Position(order, row);
@@ -46,20 +49,39 @@ namespace SF2MusicCooker.Furnace
 
                 if (maxPredictLength > 0 && activeChannelCell != null)
                 {
+                    if (activeChannelCell.TryGetEffect(Effect.VibratoShape, out Effect effect))
+                    {
+                        shape = effect.Value;
+                    }
+
                     if (activeChannelCell.HasNewNote)
                     {
+                        // Figure out if and when a new vibrato should be applied
+                        int vibratoDelay = 0;
+                        Effect vibrato = Effect.Absent;
+
                         foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
+                            var cell = tick.ActiveChannelCell;
+
+                            // Take the first vibrato effect encountered and memorize its delay
+                            if (noteLength == 0 || !cell.HasNewNote)
+                            {
+                                if (vibrato == Effect.Absent && !cell.TryGetEffect(Effect.Vibrato, out vibrato))
+                                {
+                                    vibratoDelay++;
+                                }
+                            }
+
+                            // Note must always last 1 tick at bare minimum!
                             if (noteLength == 0)
                             {
-                                // Note must always last 1 tick at bare minimum!
                                 noteRelease++;
                                 noteLength++;
                                 continue;
                             }
 
                             // See how long before the note is released and ends
-                            var cell = tick.ActiveChannelCell;
                             if (cell.Note == PatternCell.NoteAbsent)
                             {
                                 if (noteRelease == noteLength) noteRelease++; // No longer increment if key was released!
@@ -76,6 +98,16 @@ namespace SF2MusicCooker.Furnace
 
                             // No need to go higher than max length
                             if (noteLength >= maxPredictLength) break;
+                        }
+
+                        // Update vibrato state
+                        if (vibrato != Effect.Absent)
+                        {
+                            byte speed = (byte)(vibrato.Value >> 4);
+                            byte depth = (byte)(vibrato.Value & 0x0F);
+                            byte delay = (byte)Math.Min(0xFF, vibratoDelay);
+
+                            vibratoState = new VibratoState(shape, speed, depth, delay);
                         }
                     }
                     else if (activeChannelCell.Note == PatternCell.NoteOff)
@@ -132,7 +164,7 @@ namespace SF2MusicCooker.Furnace
 
                 // Submit to caller
                 Position nextPosition = new Position(order, row);
-                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength);
+                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength, vibratoState);
             }
         }
     }

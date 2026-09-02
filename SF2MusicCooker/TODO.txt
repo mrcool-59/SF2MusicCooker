@@ -1,12 +1,14 @@
-﻿Version 0.99:
-- Vibrato support
-	=> Retester Test-2: le vibrato de 'Town'
+﻿Version 0.98:
+- Tester vibrato de "Test-2: Town"
+- Test-3: Travel/Horror/Battlefield/Chill City => annoying clicks [could it be from DAC channel?]
+
+Version 0.99:
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 	=> Test 'set tick rate' effect in PSG tone channel
+- Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets
 
 Version 1.0:
-- Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - PCM banks: 6 extra PCM banks might be what's needed

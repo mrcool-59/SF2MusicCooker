@@ -159,12 +159,11 @@ namespace SF2MusicCooker
             byte nextShifting = currentShifting;
             byte currentSlide = 0x00; // Zero by default
             byte nextSlide = currentSlide;
+            byte currentVibrato = 0xFF; // Will force the first note to set vibrato
+            byte nextVibrato = 0x00;
             byte currentRelease = 0xFF; // Will force the first note to set release
             byte currentLength = 0x00; // Will force the first note or silence to set length
             bool dac = channel == 5 && DAC == 0;
-
-            // Cancel vibrato immediately (looks like when the game boots a vibrato is set, at least in test mode)
-            commands.Add("vibrato " + BYTE(0));
 
             // Write initial silence (before the first note)
             WriteSilence(firstNoteTicks - 1);
@@ -207,6 +206,7 @@ namespace SF2MusicCooker
                         ReadLegato(tick);
                         ReadDetune(tick);
                         ReadPortamento(tick);
+                        ReadVibrato(tick);
                     }
 
                     // Apply note change
@@ -234,8 +234,6 @@ namespace SF2MusicCooker
                         // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                         WriteSilence(tick.SilenceLength);
                     }
-
-                    // TODO: remaining FM effects to implement/review (see below)
                 }
                 else
                 {
@@ -256,8 +254,8 @@ namespace SF2MusicCooker
                     // Before the we cross the loop, we may have to apply some state changes...
                     if (loopState.IsValid)
                     {
-                        loopState.Apply(ref nextInstrument, ref nextVolume, ref nextPan, ref nextShifting, ref nextSlide);
-                        loopState.ApplyIfSet(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting, ref currentSlide);
+                        loopState.Apply(ref nextInstrument, ref nextVolume, ref nextPan, ref nextShifting, ref nextSlide, ref nextVibrato);
+                        loopState.ApplyIfSet(ref currentInstrument, ref currentVolume, ref currentPan, ref currentShifting, ref currentSlide, ref currentVibrato);
                         FlushPendingChanges(true, tick);
                     }
 
@@ -357,10 +355,18 @@ namespace SF2MusicCooker
                         commands.Add("setSlide " + BYTE_HEX(currentSlide));
                 }
 
+                // Apply vibrato change
+                if (currentVibrato != nextVibrato)
+                {
+                    currentVibrato = nextVibrato;
+                    flags |= StateSnapshot.VIBRATO_SET;
+                    commands.Add("vibrato " + BYTE_HEX(currentVibrato));
+                }
+
                 // Store state that should be reapplied just before crossing the main loop
                 if (loopState.IsRequested && includeInstrument)
                 {
-                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting, currentSlide, flags);
+                    loopState = new StateSnapshot(currentInstrument, currentVolume, currentPan, currentShifting, currentSlide, currentVibrato, flags);
                 }
             }
 
@@ -574,6 +580,27 @@ namespace SF2MusicCooker
                 }
             }
 
+            void ReadVibrato(Tick tick)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+                
+                if (cell.HasNewNote)
+                {
+                    if (tick.Vibrato.Active)
+                    {
+                        const byte nibble = 0x0F;
+                        byte index = Math.Min(nibble, Vibrato.ResolveIndex(tick.Vibrato));
+                        byte delay = Math.Min(nibble, (byte)(tick.Vibrato.Delay >> 1));
+
+                        nextVibrato = (byte)((index << 4) | delay);
+                    }
+                    else
+                    {
+                        nextVibrato = 0;
+                    }
+                }
+            }
+
             void ReadNewTimer(Tick tick, bool disallow)
             {
                 PatternCell cell = tick.ActiveChannelCell;
@@ -717,6 +744,7 @@ namespace SF2MusicCooker
             public readonly byte Pan;
             public readonly byte Shifting;
             public readonly byte Slide;
+            public readonly byte Vibrato;
             public readonly byte Flags;
 
             public const int INSTRUMENT_SET = 1;
@@ -724,45 +752,49 @@ namespace SF2MusicCooker
             public const int PAN_SET = 4;
             public const int SHIFTING_SET = 8;
             public const int SLIDE_SET = 16;
+            public const int VIBRATO_SET = 32;
 
             private const int REQUESTED = 64;
             private const int INVALID = 128;
 
-            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting, byte slide, byte flags)
+            public StateSnapshot(ushort instrument, byte volume, byte pan, byte shifting, byte slide, byte vibrato, byte flags)
             {
                 Instrument = instrument;
                 Volume = volume;
                 Pan = pan;
                 Shifting = shifting;
                 Slide = slide;
+                Vibrato = vibrato;
                 Flags = flags;
             }
 
-            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref byte slide)
+            public void Apply(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref byte slide, ref byte vibrato)
             {
                 instrument = Instrument;
                 volume = Volume;
                 pan = Pan;
                 shifting = Shifting;
                 slide = Slide;
+                vibrato = Vibrato;
             }
 
-            public void ApplyIfSet(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref byte slide)
+            public void ApplyIfSet(ref ushort instrument, ref byte volume, ref byte pan, ref byte shifting, ref byte slide, ref byte vibrato)
             {
                 if ((Flags & INSTRUMENT_SET) != 0) instrument = Instrument;
                 if ((Flags & VOLUME_SET) != 0) volume = Volume;
                 if ((Flags & PAN_SET) != 0) pan = Pan;
                 if ((Flags & SHIFTING_SET) != 0) shifting = Shifting;
                 if ((Flags & SLIDE_SET) != 0) slide = Slide;
+                if ((Flags & VIBRATO_SET) != 0) vibrato = Vibrato;
             }
 
             public bool IsValid => (Flags & INVALID) == 0;
 
             public bool IsRequested => (Flags & REQUESTED) != 0;
 
-            public static StateSnapshot Invalid => new StateSnapshot(0, 0, 0, 0, 0, INVALID);
+            public static StateSnapshot Invalid => new StateSnapshot(0, 0, 0, 0, 0, 0, INVALID);
 
-            public static StateSnapshot Requested => new StateSnapshot(0, 0, 0, 0, 0, INVALID | REQUESTED);
+            public static StateSnapshot Requested => new StateSnapshot(0, 0, 0, 0, 0, 0, INVALID | REQUESTED);
         }
     }
 }
@@ -817,6 +849,7 @@ Effects marked with o are implemented.
 Effects marked with # should be priorized and ultimately implemented.
 Effects marked with + are "nice to have" but not worth getting a headache over it.
 Effects marked with - are not possible unless we deviate a lot from the Furnace definition or take big risks (i.e: not worth having *BIG* headaches over it at all).
+Effects marked with ! are deemed impossible to implement.
 
 Player:
 =======
@@ -832,7 +865,7 @@ o Legato
 o Set tick rate / tempo
 o Detune for all operators (approximation based on WizTools implementation)
 o Portamento (Set Pitch Slides)
-# Vibrato (+ Set Vibrato Shape)
+o Vibrato (+ Set Vibrato Shape)
     NOTE: these affects are only applied when a new note plays; a warning must be issued if the user tries to use the effect elsewhere
 
 These could be implemented by directly altering the patterns:
@@ -849,17 +882,17 @@ These could be implemented by directly altering the patterns:
 - Replace FM operator property effects: could be somewhat faked by adding a new instrument everytime a property changes, but this would get out of hand very quickly
 - Set panning of left/right channel: tedious because we need to keep track of previous panning commands, not just Cube current panning value
 
-These effects cannot be implemented because we can't alter pitch/volume/pan/... between 2 notes:
-================================================================================================
+These effects cannot be implemented (unless we add artificial notes) because we can't alter pitch/volume/pan/... between 2 notes:
+=================================================================================================================================
 - Volume Portamento = slides the volume/pitch to the target volume/note. x is the slide speed.
 - Tremolo = changes volume to be "wavy" with a sine LFO. x is the speed. y is the depth.
-- Panning slide
+! Panning slide (panning is either ON or OFF so this is completely out of reach, outside of manual binary sliding of course)
 
 These effects cannot be implemented because of limitations of Cube sound driver:
 ================================================================================
 - Set pitch (00: -1 note, 80: base, FF: +1 note): we don't have enough leeway to adjust frequencies between 2 notes (can only do +/- 14 hz)
 - Single tick pitch up/down: same as above, we cannot shift further than 14 hz and this would consume a ton of space
-- Setup LFO: sound driver doesn't support LFO register which is gonna stay disabled, this means no AMS/PMS either (amplitude, frequency modulation)
 - Note shifting: not really useful, it doesn't allow us to reach extra octaves; we are still limited to the palette of YM frequencies
+! Setup LFO: sound driver doesn't support LFO register which is gonna stay disabled, this means no AMS/PMS either (amplitude, frequency modulation)
 
 */

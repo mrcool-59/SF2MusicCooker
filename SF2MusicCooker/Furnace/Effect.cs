@@ -10,6 +10,8 @@
         public const byte Legato = 0xEA;
         public const byte Detune = 0x53;
         public const byte Portamento = 0x03;
+        public const byte Vibrato = 0x04;
+        public const byte VibratoShape = 0xE3;
         public const byte SetTempo = 0xF0;
         public const byte SetTickRateBase = 0xC0;
 
@@ -18,7 +20,7 @@
         /// </summary>
         public static readonly byte[] SupportedEffects = new byte[]
         {
-            GoTo, GoNext, End, Pan, PanTrinary, Legato, Detune, Portamento, SetTempo,
+            GoTo, GoNext, End, Pan, PanTrinary, Legato, Detune, Portamento, Vibrato, VibratoShape, SetTempo,
             0xC0, 0xC1, 0xC2, 0xC3 // Cxxx effects (up to C3FF)
         };
 
