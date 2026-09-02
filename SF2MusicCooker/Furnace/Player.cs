@@ -19,6 +19,16 @@ namespace SF2MusicCooker.Furnace
 
             byte shape = 0x00;
             VibratoState vibratoState = new VibratoState();
+            HashSet<Position> vibratoTaken = new HashSet<Position>();
+
+            void ApplyVibrato(Effect vibrato, int vibratoDelay)
+            {
+                byte speed = (byte)(vibrato.Value >> 4);
+                byte depth = (byte)(vibrato.Value & 0x0F);
+                byte delay = (byte)Math.Min(0xFF, vibratoDelay);
+
+                vibratoState = new VibratoState(shape, speed, depth, delay);
+            }
 
             while (order < orders)
             {
@@ -58,16 +68,21 @@ namespace SF2MusicCooker.Furnace
                     {
                         // Figure out if and when a new vibrato should be applied
                         int vibratoDelay = 0;
-                        Effect vibrato = Effect.Absent;
 
                         foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
                             var cell = tick.ActiveChannelCell;
 
                             // Take the first vibrato effect encountered and memorize its delay
-                            if (noteLength == 0 || !cell.HasNewNote)
+                            if ((noteLength == 0 || !cell.HasNewNote) && vibratoDelay >= 0)
                             {
-                                if (vibrato == Effect.Absent && !cell.TryGetEffect(Effect.Vibrato, out vibrato))
+                                if (cell.TryGetEffect(Effect.Vibrato, out Effect vibrato))
+                                {
+                                    ApplyVibrato(vibrato, vibratoDelay);
+                                    vibratoTaken.Add(tick.Position);
+                                    vibratoDelay = -1;
+                                }
+                                else
                                 {
                                     vibratoDelay++;
                                 }
@@ -99,16 +114,6 @@ namespace SF2MusicCooker.Furnace
                             // No need to go higher than max length
                             if (noteLength >= maxPredictLength) break;
                         }
-
-                        // Update vibrato state
-                        if (vibrato != Effect.Absent)
-                        {
-                            byte speed = (byte)(vibrato.Value >> 4);
-                            byte depth = (byte)(vibrato.Value & 0x0F);
-                            byte delay = (byte)Math.Min(0xFF, vibratoDelay);
-
-                            vibratoState = new VibratoState(shape, speed, depth, delay);
-                        }
                     }
                     else if (activeChannelCell.Note == PatternCell.NoteOff)
                     {
@@ -131,6 +136,11 @@ namespace SF2MusicCooker.Furnace
                             // No need to go higher than max length
                             if (silenceLength >= maxPredictLength) break;
                         }
+                    }
+
+                    if (activeChannelCell.TryGetEffect(Effect.Vibrato, out Effect extVibrato) && !vibratoTaken.Contains(position))
+                    {
+                        ApplyVibrato(extVibrato, 0); // For vibrato outside of playing note
                     }
                 }
 
