@@ -1,4 +1,2 @@
 14 = --muteinstrument=1Fh
 15 = -m6
-17 = -m6
-22 = -m6

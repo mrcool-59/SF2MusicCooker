@@ -1,9 +1,4 @@
-﻿Version 0.98:
-- Test-3: Travel/Battlefield/Chill City => annoying clicks [could it be from DAC channel?]
-	=> (unlikely) Hypothèse alternative: saturation du volume
-	=> Inspecter les samples...
-
-Version 0.99:
+﻿Version 0.99:
 - PSG output in sheet writing
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 	=> Test 'set tick rate' effect in PSG tone channel
@@ -26,3 +21,11 @@ Version 1.2:
 Version 1.3:
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
 - Sample resampling
+- Volume option should affect PCM samples as well
+
+Version 1.3.1:
+- Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
+	=> Test-3 Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
+	=> Test-3 Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
+	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
+		(?) All of this might be related to required but suboptimal bank switching (hopefully not)

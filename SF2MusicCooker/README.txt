@@ -110,6 +110,9 @@ The following options can be specified globally or per-music/per-SFX:
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
 --sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound engine has a limit when playing very high pitched samples)
+--volume=x					or		-v=x	Multiply the master volume by x (can be useful to get rid of saturated output without touching the original .fur file)
+--volume:linear				or		-v:l	Use linear volume (technically incorrect but gives interesting results depending on the music)
+--volume:nearest			or		-v:n	Use nearest instead of truncating when mapping YM volume to SF2 sound driver volume (gives subtly different results)
 
 To apply options per-music/per-SFX, provide an "options.txt" file in the "Input" folder.
 Example file (dump notes of music 33 and mute samples of music 41):

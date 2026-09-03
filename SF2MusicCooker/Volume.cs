@@ -4,61 +4,52 @@ namespace SF2MusicCooker
 {
     public sealed class Volume
     {
-        private readonly bool _useTable;
-        private readonly Remapper _remapper;
+        public enum Strategy
+        {
+            Truncate,
+            Nearest,
+            Linear
+        }
 
-        /// <summary>
-        /// A function that adjusts a given YM volume level and return the new desired YM volume level.
-        /// </summary>
-        public delegate int Remapper(int ymVolume);
+        private readonly byte[] _ym2cube;
+        private readonly float _volume;
 
         /// <summary>
         /// Convert YM volume to the closest equivalent Cube volume.
         /// </summary>
-        public byte Y2C(byte ymVolume, float masterVolume = 1f)
+        public byte Y2C(byte ymVolume)
         {
-            ymVolume = (byte)Math.Max(0, Math.Min(0x7F, (int)Math.Round(_remapper(ymVolume) * masterVolume)));
-            if (_useTable)
-                return ym2cube[ymVolume];
+            ymVolume = (byte)Math.Max(0, Math.Min(0x7F, (int)Math.Round(ymVolume * _volume)));
+            if (_ym2cube != null)
+                return _ym2cube[ymVolume];
             else
                 return (byte)(ymVolume >> 3); // Simpler but subtly different
         }
 
-        public Volume(bool useTable = true, Remapper remapper = null)
+        public Volume(Strategy strategy = Strategy.Nearest, float volume = 1f)
         {
-            _useTable = useTable; // If not using table it means the volume will be linearly translated to Cube levels which may produce a subtly different result
-            _remapper = remapper ?? (v => v);
+            if (strategy == Strategy.Linear)
+                _ym2cube = null;
+            else
+                _ym2cube = MakeTable(strategy != Strategy.Nearest);
+            _volume = (float)Math.Sqrt(volume);
         }
 
-        /// <summary>
-        /// Build a Volume object from a list of predefined strategies (default, linear, quieter).
-        /// </summary>
-        public static Volume FromStrategy(string strategy)
+        public static Strategy ParseStrategy(string x)
         {
-            switch (strategy ?? "default")
-            {
-                case "quieter":
-                    return new Volume(true, v => v * 4 / 5);
-                case "linear":
-                    return new Volume(false, null);
-                case "default":
-                    return new Volume(true, null);
-                default:
-                    throw new NotSupportedException("Unknown volume strategy: " + strategy);
-            }
+            if ("linear".Equals(x, StringComparison.OrdinalIgnoreCase))
+                return Strategy.Linear;
+            else if ("nearest".Equals(x, StringComparison.OrdinalIgnoreCase))
+                return Strategy.Nearest;
+            else
+                return Strategy.Truncate;
         }
 
-        #region Data taken from WizCube
-
-        private static readonly byte[] ym2cube;
-
-        static Volume()
+        private static byte[] GetLevels()
         {
-            // TODO: find closest candidate instead of truncating, calculate (7F - volume)
-
-            byte[] volumes = new byte[16]
+            // Data taken from WizCube
+            return new byte[16]
             {
-                // Value put in YM volume register for each Cube level value (in backwards order I suppose)
                 0x70,
                 0x60,
                 0x50,
@@ -76,32 +67,48 @@ namespace SF2MusicCooker
                 0x08,
                 0x04,
             };
+        }
 
-            ym2cube = new byte[128];
+        private static byte[] MakeTable(bool truncate)
+        {
+            byte[] volumes = GetLevels(); // Value put in YM volume register for each Cube level value (in backwards order)
+            byte[] ym2cube = new byte[0x80];
 
-            byte index = 0;
-            byte current = 0x7F;
-
-            while (index < volumes.Length)
+            if (truncate)
             {
-                while (volumes[index] <= current)
+                byte index = 0;
+                byte current = 0x7F;
+
+                while (index < volumes.Length)
                 {
-                    ym2cube[current] = index;
-                    current--;
+                    while (volumes[index] <= current)
+                    {
+                        ym2cube[current] = index;
+                        current--;
+                    }
+
+                    index++;
                 }
 
-                index++;
+                byte last = (byte)(volumes.Length - 1);
+                while (current != 0xFF)
+                {
+                    ym2cube[current] = last;
+                    current--;
+                }
             }
-
-            while (current != 0xFF)
+            else
             {
-                ym2cube[current] = 0xF;
-                current--;
+                for (int i = 0; i < ym2cube.Length; i++)
+                {
+                    byte cubeVolume = Tools.SelectMin(volumes, v => Math.Abs(v - i));
+                    ym2cube[i] = (byte)Array.IndexOf(volumes, cubeVolume);
+                }
             }
 
             Array.Reverse(ym2cube);
-        }
 
-        #endregion
+            return ym2cube;
+        }
     }
 }

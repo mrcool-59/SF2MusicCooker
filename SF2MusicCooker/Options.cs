@@ -7,11 +7,14 @@ namespace SF2MusicCooker
 {
     public sealed class Options
     {
+        private static readonly Regex muteInstrumentLongRegex = new Regex("^--muteinstrument=([a-fA-F0-9hH]+)$");
+        private static readonly Regex muteInstrumentShortRegex = new Regex("^-mi=([a-fA-F0-9hH]+)$");
+
         private static readonly Regex sampleRateCoeffLongRegex = new Regex("^--sampleratecoeff=([0-9.]+)$");
         private static readonly Regex sampleRateCoeffShortRegex = new Regex("^-src=([0-9.]+)$");
 
-        private static readonly Regex muteInstrumentLongRegex = new Regex("^--muteinstrument=([a-fA-F0-9hH]+)$");
-        private static readonly Regex muteInstrumentShortRegex = new Regex("^-mi=([a-fA-F0-9hH]+)$");
+        private static readonly Regex volumeCoeffLongRegex = new Regex("^--volume=([0-9.]+)$");
+        private static readonly Regex volumeCoeffShortRegex = new Regex("^-v=([0-9.]+)$");
 
         public readonly int Mute;
         public readonly int Isolate;
@@ -24,6 +27,8 @@ namespace SF2MusicCooker
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
         public readonly float SampleRateCoeff;
+        public readonly float VolumeCoeff;
+        public readonly string VolumeMode;
 
         /// <summary>
         /// Return true if 'channel' should be muted.
@@ -62,7 +67,9 @@ namespace SF2MusicCooker
                                other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
                                other.DumpUncompressed || DumpUncompressed,
-                               other.SampleRateCoeff != 1f ? other.SampleRateCoeff : SampleRateCoeff);
+                               other.SampleRateCoeff * SampleRateCoeff,
+                               other.VolumeCoeff * VolumeCoeff,
+                               other.VolumeMode ?? VolumeMode);
         }
 
         /// <summary>
@@ -106,9 +113,12 @@ namespace SF2MusicCooker
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
             SampleRateCoeff = Tools.ParseFloatArg(args, sampleRateCoeffLongRegex, sampleRateCoeffShortRegex, 1f);
+            VolumeCoeff = Tools.ParseFloatArg(args, volumeCoeffLongRegex, volumeCoeffShortRegex, 1f);
+            if (Exists("--volume:linear") || Exists("-v:l")) VolumeMode = "linear";
+            else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed, float sampleRateCoeff)
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed, float sampleRateCoeff, float volumeCoeff, string volumeMode)
         {
             Mute = mute;
             Isolate = isolate;
@@ -121,11 +131,13 @@ namespace SF2MusicCooker
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
             SampleRateCoeff = sampleRateCoeff;
+            VolumeCoeff = volumeCoeff;
+            VolumeMode = volumeMode;
         }
 
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, 1f);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, 1f, 1f, null);
     }
 }

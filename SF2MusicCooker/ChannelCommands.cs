@@ -140,8 +140,8 @@ namespace SF2MusicCooker
             if (firstNoteTicks == 0) return "channel_end";
 
             // Volume to cube helper
-            Volume volume = Volume.FromStrategy(null); // TODO
-            byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume, file.MasterVolume);
+            Volume volume = new Volume(Volume.ParseStrategy(options.VolumeMode), file.MasterVolume * options.VolumeCoeff);
+            byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume);
 
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
@@ -343,8 +343,13 @@ namespace SF2MusicCooker
                 if (currentVolume != nextVolume || (flags & StateSnapshot.INSTRUMENT_SET) != 0)
                 {
                     currentVolume = nextVolume;
-                    flags |= StateSnapshot.VOLUME_SET;
-                    commands.Add("vol " + BYTE(currentVolume));
+
+                    // Volume is forbidden for DAC channel
+                    if (!dac)
+                    {
+                        flags |= StateSnapshot.VOLUME_SET;
+                        commands.Add("vol " + BYTE(currentVolume));
+                    }
                 }
 
                 // Apply shifting change
@@ -507,7 +512,9 @@ namespace SF2MusicCooker
 
                 if (cell.Volume != PatternCell.VolumeAbsent)
                 {
-                    if (disallowOutsideOfNewNote && !cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                    if (dac)
+                        Warning("Volume change is not allowed for channel 6 in DAC mode and will be ignored.", tick);
+                    else if (disallowOutsideOfNewNote && !cell.HasNewNote && cell.Note != PatternCell.NoteOff)
                         Warning("Volume change will be delayed because it can only be applied when a new note plays/ends.", tick);
 
                     nextVolume = VOL_F2C(cell.Volume);
