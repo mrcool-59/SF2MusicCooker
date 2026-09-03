@@ -383,6 +383,23 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Combine multiple arrays into one.
+        /// </summary>
+        public static T[] Combine<T>(params T[][] sources)
+        {
+            int count = 0;
+            foreach (T[] source in sources) count += source.Length;
+            T[] results = new T[count];
+            count = 0;
+            foreach (T[] source in sources)
+            {
+                Array.Copy(source, 0, results, count, source.Length);
+                count += source.Length;
+            }
+            return results;
+        }
+
+        /// <summary>
         /// Parse a string command line option.
         /// </summary>
         public static string ParseStringArg(string[] args, Regex longRegex, Regex shortRegex)
@@ -417,6 +434,23 @@ namespace SF2MusicCooker
                 if (match.Success) return converter(match.Groups[1].Value);
             }
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Parse stackable command line option.
+        /// </summary>
+        public static T[] ParseMultiArg<T>(string[] args, Regex longRegex, Regex shortRegex, Func<string, T> converter)
+        {
+            CheckCaptureGroup(longRegex, nameof(longRegex));
+            CheckCaptureGroup(shortRegex, nameof(shortRegex));
+            List<T> results = new List<T>();
+            foreach (string arg in args)
+            {
+                Match match = shortRegex.Match(arg);
+                if (!match.Success) match = longRegex.Match(arg);
+                if (match.Success) results.Add(converter(match.Groups[1].Value));
+            }
+            return results.ToArray();
         }
 
         private static void CheckCaptureGroup(Regex regex, string name)

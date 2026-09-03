@@ -1,6 +1,7 @@
 ﻿Version 0.98:
-- Tester vibrato de "Test-2: Town"
-- Test-3: Travel/Horror/Battlefield/Chill City => annoying clicks [could it be from DAC channel?]
+- Test-3: Travel/Battlefield/Chill City => annoying clicks [could it be from DAC channel?]
+	=> (unlikely) Hypothèse alternative: saturation du volume
+	=> Inspecter les samples...
 
 Version 0.99:
 - PSG output in sheet writing

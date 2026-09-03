@@ -215,16 +215,28 @@ namespace SF2MusicCooker
                         FlushPendingChanges(true, tick);
 
                         // Finally, write note/sample command
-                        if (dac)
+                        if (options.IsAllowed(currentInstrument))
                         {
-                            if (map.Sample(currentInstrument, cell.Note, out byte sample))
-                                WriteSample(sample, tick.NoteRelease, tick.NoteLength);
+                            if (dac)
+                            {
+                                if (map.Sample(currentInstrument, cell.Note, out byte sample))
+                                {
+                                    WriteSample(sample, tick.NoteRelease, tick.NoteLength);
+                                }
+                                else
+                                {
+                                    WriteSilence(tick.NoteLength);
+                                    Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play).", tick);
+                                }
+                            }
                             else
-                                Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play).", tick);
+                            {
+                                WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
+                            }
                         }
                         else
                         {
-                            WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
+                            WriteSilence(tick.NoteLength);
                         }
                     }
                     else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
@@ -313,7 +325,7 @@ namespace SF2MusicCooker
                     currentInstrument = nextInstrument;
 
                     // Load FM instrument
-                    if (!dac)
+                    if (!dac && options.IsAllowed(currentInstrument))
                     {
                         if (map.FM(currentInstrument, out byte inst))
                         {

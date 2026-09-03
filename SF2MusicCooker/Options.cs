@@ -10,8 +10,12 @@ namespace SF2MusicCooker
         private static readonly Regex sampleRateCoeffLongRegex = new Regex("^--sampleratecoeff=([0-9.]+)$");
         private static readonly Regex sampleRateCoeffShortRegex = new Regex("^-src=([0-9.]+)$");
 
+        private static readonly Regex muteInstrumentLongRegex = new Regex("^--muteinstrument=([a-fA-F0-9hH]+)$");
+        private static readonly Regex muteInstrumentShortRegex = new Regex("^-mi=([a-fA-F0-9hH]+)$");
+
         public readonly int Mute;
         public readonly int Isolate;
+        public readonly int[] MuteInstruments;
         public readonly bool MuteSamples;
         public readonly bool PreserveRate;
         public readonly bool RemoveRelease;
@@ -33,6 +37,14 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Return true if provided FM instrument is not blacklisted.
+        /// </summary>
+        public bool IsAllowed(int instrument)
+        {
+            return Array.IndexOf(MuteInstruments, instrument) == -1;
+        }
+
+        /// <summary>
         /// Override options and return a new options object.
         /// </summary>
         public Options Override(Options other)
@@ -42,6 +54,7 @@ namespace SF2MusicCooker
 
             return new Options(other.Mute | Mute,
                                other.Isolate | Isolate,
+                               Tools.Combine(other.MuteInstruments, MuteInstruments),
                                other.MuteSamples || MuteSamples,
                                other.PreserveRate || PreserveRate,
                                other.RemoveRelease || RemoveRelease,
@@ -85,6 +98,7 @@ namespace SF2MusicCooker
             for (int i = 1; i <= 10; i++) if (Exists("--mute" + i) || Exists("-m" + i)) Mute |= 1 << (i - 1);
             for (int i = 1; i <= 10; i++) if (Exists("--isolate" + i) || Exists("-i" + i)) Isolate |= 1 << (i - 1);
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
+            MuteInstruments = Tools.ParseMultiArg(args, muteInstrumentLongRegex, muteInstrumentShortRegex, Tools.ConvertASMValue);
             PreserveRate = Exists("--preserverate") || Exists("-pr");
             RemoveRelease = Exists("--removerelease") || Exists("-rr");
             RemoveOff = Exists("--removeoff") || Exists("-ro");
@@ -94,11 +108,12 @@ namespace SF2MusicCooker
             SampleRateCoeff = Tools.ParseFloatArg(args, sampleRateCoeffLongRegex, sampleRateCoeffShortRegex, 1f);
         }
 
-        private Options(int mute, int isolate, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed, float sampleRateCoeff)
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noOptimize, bool dumpNotes, bool dumpUncompressed, float sampleRateCoeff)
         {
             Mute = mute;
             Isolate = isolate;
             MuteSamples = muteSamples;
+            MuteInstruments = muteInstruments;
             PreserveRate = preserveRate;
             RemoveRelease = removeRelease;
             RemoveOff = removeOff;
@@ -111,6 +126,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, false, false, false, false, false, false, false, 1f);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, 1f);
     }
 }

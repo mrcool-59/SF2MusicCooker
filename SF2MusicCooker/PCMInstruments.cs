@@ -67,7 +67,8 @@ namespace SF2MusicCooker
             /// </summary>
             public static int ComputeRate(int period)
             {
-                return (int)(3012000 * Math.Pow(period + 32.07, -1.573) + 1005);
+                // Some notable values => 1: 13250, 20: 7000, 40: 4600, 80: 2800
+                return (int)(3012000 * Math.Pow(period + 32.07, -1.573) + 1005) / 50 * 50;
             }
 
             /// <summary>
