@@ -66,17 +66,25 @@ namespace SF2MusicCooker.Furnace
 
                     if (activeChannelCell.HasNewNote)
                     {
-                        // Figure out if and when a new vibrato should be applied
-                        int vibratoDelay = 0;
+                        // Figure out if a new vibrato should be applied with a delay
+                        int vibratoDelay = 1;
 
                         foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
                             var cell = tick.ActiveChannelCell;
 
-                            // Take the first vibrato effect encountered and memorize its delay
-                            if ((noteLength == 0 || !cell.HasNewNote) && vibratoDelay >= 0)
+                            // Note must always last 1 tick at bare minimum!
+                            if (noteLength == 0)
                             {
-                                if (cell.TryGetEffect(Effect.Vibrato, out Effect vibrato))
+                                noteRelease++;
+                                noteLength++;
+                                continue;
+                            }
+
+                            // Take the first vibrato effect encountered after note starts and memorize its delay
+                            if (!cell.HasNewNote && vibratoDelay >= 0)
+                            {
+                                if (cell.TryGetEffect(Effect.Vibrato, out Effect vibrato) && vibrato.Value > 0)
                                 {
                                     ApplyVibrato(vibrato, vibratoDelay);
                                     vibratoTaken.Add(tick.Position);
@@ -86,14 +94,6 @@ namespace SF2MusicCooker.Furnace
                                 {
                                     vibratoDelay++;
                                 }
-                            }
-
-                            // Note must always last 1 tick at bare minimum!
-                            if (noteLength == 0)
-                            {
-                                noteRelease++;
-                                noteLength++;
-                                continue;
                             }
 
                             // See how long before the note is released and ends
