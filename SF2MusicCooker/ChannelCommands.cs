@@ -828,18 +828,18 @@ For all (timing/looping):
 
 For FM/DAC channels:
                 commands.Add("stereo " + BYTE_HEX(0xC0));
-                commands.Add("vol " + BYTE_HEX(0x0C));
 
 For FM channels:
                 commands.Add("inst " + BYTE(0));
+                commands.Add("vol " + BYTE_HEX(0x0C));
                 commands.Add("sustain");
                 commands.Add("setRelease " + BYTE_HEX(0x05));
                 commands.Add("vibrato " + BYTE_HEX(0x2C));
                 commands.Add("setSlide " + BYTE_HEX(0x20));
                 commands.Add("noSlide");
                 commands.Add("shifting " + BYTE_HEX(0x20));
-                commands.Add("noteL " + NOTE(0x51) + "," + BYTE(24));
                 commands.Add("note " + NOTE(0x51));
+                commands.Add("noteL " + NOTE(0x51) + "," + BYTE(24));
 
 For DAC channel:
                 commands.Add("sample " + BYTE(4));
