@@ -28,8 +28,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static int GetFurnaceFrequency(int a4tuning, int note)
         {
-            const int OFFSET = 7; // 3 was the original value I attempted when reading Furnace source code but I guess something escaped me #D
-            return ShiftFrequency(a4tuning, note - NoteBible.BASE_VALUE + OFFSET);
+            return ShiftFrequency(a4tuning, note);
         }
 
         /// <summary>
@@ -74,23 +73,29 @@ namespace SF2MusicCooker
                 return cubeNote.ToString();
         }
 
+        private TunedMap CreateTunedMap(Entry[] notes, int a4tuning, int noteShift, int offset)
+        {
+            int[] f2c = new int[NoteBible.LENGTH];
+            if (notes.Length > 0)
+            {
+                for (int i = 0; i < f2c.Length; i++)
+                {
+                    int frequency = GetFurnaceFrequency(a4tuning, i + noteShift);
+                    Entry entry = Tools.SelectMin(notes, e => Math.Abs(e.Frequency - frequency));
+                    f2c[i] = entry.Note + offset;
+                }
+            }
+            return new TunedMap(f2c, GetCubeNoteName);
+        }
+
         /// <summary>
         /// Create a tuned map for the specified A4 tuning value for YM2612.
         /// </summary>
         public TunedMap CreateTunedMap(int a4tuning)
         {
-            int[] f2y = new int[NoteBible.LENGTH];
-            if (_notes.Length > 0)
-            {
-                for (int i = 0; i < f2y.Length; i++)
-                {
-                    const int OFFSET = 24;
-                    int frequency = GetFurnaceFrequency(a4tuning, NoteBible.BASE_VALUE + i);
-                    Entry entry = Tools.SelectMin(_notes, e => Math.Abs(e.Frequency - frequency));
-                    f2y[i] = entry.Note + OFFSET;
-                }
-            }
-            return new TunedMap(f2y, GetCubeNoteName);
+            // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
+            // 24 is the hardcoded offset in macros.asm
+            return CreateTunedMap(_notes, a4tuning, 7, 24);
         }
 
         /// <summary>
@@ -98,18 +103,8 @@ namespace SF2MusicCooker
         /// </summary>
         public TunedMap CreatePSGTunedMap(int a4tuning)
         {
-            // TODO: factorize
-            int[] f2t = new int[NoteBible.LENGTH];
-            if (_psgNotes.Length > 0)
-            {
-                for (int i = 0; i < f2t.Length; i++)
-                {
-                    int frequency = GetFurnaceFrequency(a4tuning, NoteBible.BASE_VALUE + i);
-                    Entry entry = Tools.SelectMin(_psgNotes, e => Math.Abs(e.Frequency - frequency));
-                    f2t[i] = entry.Note;
-                }
-            }
-            return new TunedMap(f2t, GetCubeNoteName);
+            // I didn't investigate why there is -1 octave (-12)
+            return CreateTunedMap(_psgNotes, a4tuning, -12, 0);
         }
 
         private static Entry[] ReadFrequencies(string path, Func<int, int> freqFn)

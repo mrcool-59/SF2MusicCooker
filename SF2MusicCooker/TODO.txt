@@ -1,6 +1,5 @@
 ﻿Version 0.99:
 - PSG output in sheet writing
-	=> Bad note tuning, fix incoming soon
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 - Add PSG test .fur
 	=> Test 'set tick rate' effect in any PSG tone channel
@@ -14,10 +13,11 @@ Version 1.1:
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Add artificial new notes (identical to the original note, in sustain mode) to be able to handle volume / panning changes per tick
 - Better portamento behavior (better match with Furnace behavior) with artificial legato on previous note (note: actual pitch slide is correct)
+- YM/PSG note frequencies replacement/expansion
 
 Version 1.2:
 - Option to force sustain on all DAC samples (?)
-- Sample resampling [I set up some code in another project]
+- Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - Volume option should affect PCM samples as well
 
 Version 1.2.1:
