@@ -13,6 +13,7 @@ namespace SF2MusicCooker
         public readonly string PcmSamples;
         public readonly string YmInstBin;
         public readonly string YmFrequencies;
+        public readonly string PsgFrequencies;
         public readonly string NoteNames;
         public readonly string MusicNamesTxt;
         public readonly string SoundTestFolder;
@@ -22,7 +23,7 @@ namespace SF2MusicCooker
         /// </summary>
         public FilePaths(string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames,
             string[] musicBankFolders, string[] sfxBankFolders, string[] pcmBankFiles,
-            string pcmSamples, string ymInstBin, string ymFrequencies,
+            string pcmSamples, string ymInstBin, string ymFrequencies, string psgFrequencies,
             string noteNames = null, string musicNamesTxt = null, string soundTestFolder = null)
         {
             MusicNumbersAndAsmNames = musicNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(musicNumbersAndAsmNames));
@@ -33,6 +34,7 @@ namespace SF2MusicCooker
             PcmSamples = pcmSamples ?? throw new ArgumentNullException(nameof(pcmSamples));
             YmInstBin = ymInstBin ?? throw new ArgumentNullException(nameof(ymInstBin));
             YmFrequencies = ymFrequencies ?? throw new ArgumentNullException(nameof(ymFrequencies));
+            PsgFrequencies = psgFrequencies ?? throw new ArgumentNullException(nameof(psgFrequencies));
             NoteNames = noteNames;
             MusicNamesTxt = musicNamesTxt;
             SoundTestFolder = soundTestFolder;
@@ -46,6 +48,7 @@ namespace SF2MusicCooker
             if (rootFolder == null) throw new ArgumentNullException(nameof(rootFolder));
 
             string soundFolder = Path.Combine(rootFolder, "disasm\\data\\sound");
+            string driverFolder = Path.Combine(rootFolder, "disasm\\code\\common\\tech\\sound\\cubewiz\\data");
 
             MusicNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\musics.asm");
             SfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
@@ -63,9 +66,10 @@ namespace SF2MusicCooker
                 Path.Combine(soundFolder, "pcmbank0.bin"),
                 Path.Combine(soundFolder, "pcmbank1.bin"),
             };
-            PcmSamples = Path.Combine(rootFolder, "disasm\\code\\common\\tech\\sound\\cubewiz\\data\\pcm_samples.asm");
+            PcmSamples = Path.Combine(driverFolder, "pcm_samples.asm");
             YmInstBin = Path.Combine(soundFolder, "yminst.bin");
-            YmFrequencies = Path.Combine(rootFolder, "disasm\\code\\common\\tech\\sound\\cubewiz\\data\\ym_frequencies.asm");
+            YmFrequencies = Path.Combine(driverFolder, "ym_frequencies.asm");
+            PsgFrequencies = Path.Combine(driverFolder, "psg_frequencies.asm");
             NoteNames = Path.Combine(soundFolder, "enums.asm");
             MusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
             SoundTestFolder = Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch");

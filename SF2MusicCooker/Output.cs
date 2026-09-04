@@ -67,7 +67,7 @@ namespace SF2MusicCooker
 
             Samples = new PCMInstruments(pcmSlots, pcmBanks, pcmNames, pcmBaseOffset);
 
-            Pitch = new PitchTable(paths.YmFrequencies, paths.NoteNames);
+            Pitch = new PitchTable(paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames);
         }
 
         /// <summary>

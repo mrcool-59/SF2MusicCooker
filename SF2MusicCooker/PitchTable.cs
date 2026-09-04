@@ -20,6 +20,7 @@ namespace SF2MusicCooker
         }
 
         private readonly Entry[] _notes;
+        private readonly Entry[] _psgNotes;
         private readonly Dictionary<int, string> _names;
 
         /// <summary>
@@ -53,26 +54,28 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Get the name of a YM note.
+        /// Get PSG tone frequency from its raw register value.
         /// </summary>
-        public string GetYMNoteName(int ymNote)
+        public static int GetPSGFrequency(int value)
         {
-            if (_names != null && _names.TryGetValue(ymNote, out string name))
+            // https://www.vgmpf.com/Wiki/images/7/78/SN76489AN_-_Manual.pdf
+
+            return 3579545 / (32 * value); // Using Z80 NTSC clock rate
+        }
+
+        /// <summary>
+        /// Get the name of a Cube note.
+        /// </summary>
+        public string GetCubeNoteName(int cubeNote)
+        {
+            if (_names != null && _names.TryGetValue(cubeNote, out string name))
                 return name;
             else
-                return ymNote.ToString();
+                return cubeNote.ToString();
         }
 
         /// <summary>
-        /// Get the frequency of a YM note.
-        /// </summary>
-        public int GetYMNoteFrequency(int ymNote)
-        {
-            return _notes[ymNote].Frequency;
-        }
-
-        /// <summary>
-        /// Create a tuned map for the specified A4 tuning value.
+        /// Create a tuned map for the specified A4 tuning value for YM2612.
         /// </summary>
         public TunedMap CreateTunedMap(int a4tuning)
         {
@@ -87,23 +90,48 @@ namespace SF2MusicCooker
                     f2y[i] = entry.Note + OFFSET;
                 }
             }
-            return new TunedMap(f2y, GetYMNoteName);
+            return new TunedMap(f2y, GetCubeNoteName);
         }
 
-        public PitchTable(string ymFrequenciesPath, string notesNamePath = null)
+        /// <summary>
+        /// Create a tuned map for the specified A4 tuning value for PSG tone.
+        /// </summary>
+        public TunedMap CreatePSGTunedMap(int a4tuning)
         {
-            string asm = File.ReadAllText(ymFrequenciesPath);
+            // TODO: factorize
+            int[] f2t = new int[NoteBible.LENGTH];
+            if (_psgNotes.Length > 0)
+            {
+                for (int i = 0; i < f2t.Length; i++)
+                {
+                    int frequency = GetFurnaceFrequency(a4tuning, NoteBible.BASE_VALUE + i);
+                    Entry entry = Tools.SelectMin(_psgNotes, e => Math.Abs(e.Frequency - frequency));
+                    f2t[i] = entry.Note;
+                }
+            }
+            return new TunedMap(f2t, GetCubeNoteName);
+        }
+
+        private static Entry[] ReadFrequencies(string path, Func<int, int> freqFn)
+        {
+            string asm = File.ReadAllText(path);
             int[] values = Tools.GetAllNumericElements(asm, "dw");
 
-            _notes = new Entry[values.Length];
-            for (int i = 0; i < _notes.Length; i++) _notes[i] = new Entry(i, GetYMFrequency(values[i]));
+            Entry[] entries = new Entry[values.Length];
+            for (int i = 0; i < entries.Length; i++) entries[i] = new Entry(i, freqFn(values[i]));
+            return entries;
+        }
 
+        public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath = null)
+        {
+            _notes = ReadFrequencies(ymFrequenciesPath, GetYMFrequency);
+            _psgNotes = ReadFrequencies(psgFrequenciesPath, GetPSGFrequency);
             if (notesNamePath != null) _names = Tools.ReadASMEnumReverseMap(notesNamePath);
         }
 
         private PitchTable()
         {
-            _notes = new Entry[0];
+            _notes = _psgNotes = new Entry[0];
         }
 
         /// <summary>

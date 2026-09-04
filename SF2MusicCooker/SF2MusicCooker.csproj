@@ -63,6 +63,8 @@
     <Compile Include="Furnace\Position.cs" />
     <Compile Include="Furnace\Sample.cs" />
     <Compile Include="Furnace\Tick.cs" />
+    <Compile Include="Noise.cs" />
+    <Compile Include="PSGInstruments.cs" />
     <Compile Include="TunedMap.cs" />
     <Compile Include="InstrumentMap.cs" />
     <Compile Include="LoopOptimizer.cs" />

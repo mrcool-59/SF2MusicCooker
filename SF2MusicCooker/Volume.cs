@@ -26,6 +26,14 @@ namespace SF2MusicCooker
                 return (byte)(ymVolume >> 3); // Simpler but subtly different
         }
 
+        /// <summary>
+        /// Convert Furnace PSG volume to Cube volume (this is a no-op unless a master volume is provided).
+        /// </summary>
+        public byte PSG(byte psgVolume)
+        {
+            return (byte)Math.Min(0x0F, Math.Round(psgVolume * _volume));
+        }
+
         public Volume(Strategy strategy = Strategy.Nearest, float volume = 1f)
         {
             if (strategy == Strategy.Linear)

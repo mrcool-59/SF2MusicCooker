@@ -145,7 +145,10 @@ namespace SF2MusicCooker.Furnace
             return new SampleMap(initialSample, note2sample);
         }
 
-        public static string ParseFurnacePSGMacro(byte[] data)
+        /// <summary>
+        /// Parse a "MA" Furnace feature (macro) attached to a PSG instrument and return the instrument levels.
+        /// </summary>
+        public static byte[] ParseFurnacePSGMacroLevels(byte[] data)
         {
             /*
                 # macro data (MA)
@@ -241,7 +244,7 @@ namespace SF2MusicCooker.Furnace
                   - `val[15]`: global (not sure how will I implement this)
             */
 
-            return "TODO"; // TODO
+            return null; // TODO
         }
     }
 }

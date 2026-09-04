@@ -7,6 +7,7 @@
         public const byte End = 0xFF;
         public const byte Pan = 0x08;
         public const byte PanTrinary = 0x80;
+        public const byte NoiseMode = 0x20;
         public const byte Legato = 0xEA;
         public const byte Detune = 0x53;
         public const byte Portamento = 0x03;
@@ -20,13 +21,12 @@
         /// </summary>
         public static readonly byte[] SupportedEffects = new byte[]
         {
-            GoTo, GoNext, End, Pan, PanTrinary, Legato, Detune, Portamento, Vibrato, VibratoShape, SetTempo,
+            GoTo, GoNext, End, Pan, PanTrinary, NoiseMode, Legato, Detune, Portamento, Vibrato, VibratoShape, SetTempo,
             0xC0, 0xC1, 0xC2, 0xC3 // Cxxx effects (up to C3FF)
         };
 
         // These effects will definitely never be supported:
         //      10.. (setup LFO)
-        //      20.. (noise config)
         //      F1.. F2.. (shift pitch down/up for one tick: could be done with 'shifting' commands but too many of them would inflate the song size)
 
         public readonly byte Type;

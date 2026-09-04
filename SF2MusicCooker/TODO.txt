@@ -1,8 +1,9 @@
 ﻿Version 0.99:
 - PSG output in sheet writing
+	=> Bad note tuning, fix incoming soon
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
-	=> Test 'set tick rate' effect in PSG tone channel
-- Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets
+- Add PSG test .fur
+	=> Test 'set tick rate' effect in any PSG tone channel
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
@@ -10,22 +11,24 @@ Version 1.0:
 - PCM banks: 6 extra PCM banks might be what's needed
 
 Version 1.1:
+- Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Add artificial new notes (identical to the original note, in sustain mode) to be able to handle volume / panning changes per tick
 - Better portamento behavior (better match with Furnace behavior) with artificial legato on previous note (note: actual pitch slide is correct)
 
 Version 1.2:
-- Auto-bank assignment feature
-- Tigher loop detection: needs to reach the same position 2 times to be considered a loop (put method in FurnaceFile)
-	=> Implement a spaghetti .fur file to test that
-
-Version 1.3:
-- Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
-- Sample resampling
+- Option to force sustain on all DAC samples (?)
+- Sample resampling [I set up some code in another project]
 - Volume option should affect PCM samples as well
 
-Version 1.3.1:
+Version 1.2.1:
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
 	=> Test-3 Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
 	=> Test-3 Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
 	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
 		(?) All of this might be related to required but suboptimal bank switching (hopefully not)
+- Tigher loop detection: needs to reach the same position 2 times to be considered a loop (put method in FurnaceFile)
+	=> Implement a spaghetti .fur file to test that
+
+Version 1.3:
+- Auto-bank assignment feature
+- Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)

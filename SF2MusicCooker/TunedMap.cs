@@ -6,14 +6,14 @@ namespace SF2MusicCooker
 {
     public sealed class TunedMap
     {
-        private readonly int[] _f2y;
-        private readonly Func<int, string> _y2name;
+        private readonly int[] _f2c;
+        private readonly Func<int, string> _c2n;
         private readonly List<byte> _clamped;
         private readonly int _minNote;
         private readonly int _maxNote;
 
         /// <summary>
-        /// The list of notes that have been clamped because they're not supported on YM side.
+        /// The list of notes that have been clamped because they're not supported on Cube side.
         /// </summary>
         public byte[] Clamped
         {
@@ -25,21 +25,21 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Find the YM note for a given Furnace 'note'.
+        /// Find the Cube note for a given Furnace 'note'.
         /// </summary>
-        public int F2Y(byte note)
+        public int F2C(byte note)
         {
             NoteBible.Verify(note);
             CheckClamped(note);
-            return _f2y[note - NoteBible.BASE_VALUE];
+            return _f2c[note - NoteBible.BASE_VALUE];
         }
 
         /// <summary>
-        /// Find the YM note name for a given Furnace 'note'.
+        /// Find the Cube note name for a given Furnace 'note'.
         /// </summary>
-        public string F2YName(byte note)
+        public string F2CName(byte note)
         {
-            return _y2name(F2Y(note));
+            return _c2n(F2C(note));
         }
 
         private void CheckClamped(byte note)
@@ -51,21 +51,21 @@ namespace SF2MusicCooker
             }
         }
 
-        public TunedMap(int[] f2y, Func<int, string> y2name = null)
+        public TunedMap(int[] f2c, Func<int, string> c2n = null)
         {
-            if (f2y == null || f2y.Length != NoteBible.LENGTH)
-                throw new ArgumentException(nameof(f2y), "must have length " + NoteBible.LENGTH);
+            if (f2c == null || f2c.Length != NoteBible.LENGTH)
+                throw new ArgumentException(nameof(f2c), "must have length " + NoteBible.LENGTH);
 
-            _f2y = f2y;
-            _y2name = y2name ?? (x => x.ToString());
+            _f2c = f2c;
+            _c2n = c2n ?? (x => x.ToString());
             _clamped = new List<byte>();
 
-            int max = f2y.Length - 1;
-            while (max - 1 >= 0 && f2y[max - 1] == f2y[max]) max--;
+            int max = f2c.Length - 1;
+            while (max - 1 >= 0 && f2c[max - 1] == f2c[max]) max--;
             _maxNote = max + NoteBible.BASE_VALUE;
 
             int min = 0;
-            while (min + 1 < f2y.Length && f2y[min + 1] == f2y[min]) min++;
+            while (min + 1 < f2c.Length && f2c[min + 1] == f2c[min]) min++;
             _minNote = min + NoteBible.BASE_VALUE;
         }
     }

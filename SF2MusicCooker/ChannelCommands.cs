@@ -54,6 +54,17 @@ namespace SF2MusicCooker
             return -1;
         }
 
+        private static void PrintClamped(TunedMap tuned, string what)
+        {
+            byte[] clampedNotes = tuned.Clamped;
+            if (clampedNotes.Length > 0)
+            {
+                string list = string.Join(", ", clampedNotes.Select(NoteBible.NameOf));
+                Console.WriteLine("! The following {0} Furnace notes are too low / too high for SF2 sound engine and have been clamped instead:{1}    {2}", what, Environment.NewLine, list);
+                Console.WriteLine("! To sidestep this, you can try transposing notes by changing the A-4 tuning to move them in a more favorable range");
+            }
+        }
+
         /// <summary>
         /// Write generated channel pointers and data in the specified string builder.
         /// </summary>
@@ -98,8 +109,9 @@ namespace SF2MusicCooker
             if (file.Channels != _channels.Length)
                 throw new NotSupportedException("Furnace file must have " + _channels.Length + " channels"); // 6 from YM2612 + 4 from PSG
 
-            // Create tuned map
+            // Create tuned maps
             TunedMap tuned = pitch.CreateTunedMap(file.A4Tuning);
+            TunedMap tunedPsg = pitch.CreatePSGTunedMap(file.A4Tuning);
 
             // Check all instruments are used properly and indicate if DAC mode is enabled
             map.Check(file, _requiresDAC, out byte dac);
@@ -111,23 +123,18 @@ namespace SF2MusicCooker
             // Fill each channel
             for (int channel = 0; channel < file.Channels; channel++)
             {
-                _channels[channel] = GenerateChannel(file, options, map, tuned, channel, loopStart);
+                _channels[channel] = GenerateChannel(file, options, map, tuned, tunedPsg, channel, loopStart);
             }
 
             // Verify clamped notes
-            byte[] clampedNotes = tuned.Clamped;
-            if (clampedNotes.Length > 0)
-            {
-                string list = string.Join(", ", clampedNotes.Select(NoteBible.NameOf));
-                Console.WriteLine("! The following Furnace notes are too low / too high for SF2 sound engine and have been clamped instead:{0}    {1}", Environment.NewLine, list);
-                Console.WriteLine("! To sidestep this, you can try transposing notes by changing the A-4 tuning to move them in a more favorable range");
-            }
+            PrintClamped(tuned, "YM2612");
+            PrintClamped(tunedPsg, "PSG tone");
 
             // Update empty flag
             Empty = Array.TrueForAll(_channels, c => c == null || c == "channel_end");
         }
 
-        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, TunedMap tuned, int channel, Position loopStart)
+        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, TunedMap tuned, TunedMap tunedPsg, int channel, Position loopStart)
         {
             // Mask verification
             if ((_mask & (1 << channel)) == 0) return null;
@@ -139,9 +146,14 @@ namespace SF2MusicCooker
             int firstNoteTicks = FindFirstNote(file, channel, options.DumpNotes);
             if (firstNoteTicks == 0) return "channel_end";
 
+            // Identify the channel we're dealing with
+            bool dac = channel == 5 && DAC == 0;
+            bool psg = channel >= 6;
+            bool noise = channel == 9;
+
             // Volume to cube helper
             Volume volume = new Volume(Volume.ParseStrategy(options.VolumeMode), file.MasterVolume * options.VolumeCoeff);
-            byte VOL_F2C(byte ymVolume) => volume.Y2C(ymVolume);
+            byte VOL_F2C(byte value) => psg ? volume.PSG(value) : volume.Y2C(value);
 
             // Prepare state
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
@@ -149,10 +161,11 @@ namespace SF2MusicCooker
             StateSnapshot loopState = StateSnapshot.Invalid;
             bool legato = false;
             float newTimer = 0f;
+            ushort psgFurnaceInstrument = 0x0000;
             ushort currentInstrument = 0xFFFF; // Will force instrument to be set on the first note
             ushort nextInstrument = 0x0000;
             byte currentVolume = 0xFF; // Will force volume to be set on the first note
-            byte nextVolume = VOL_F2C(0x7F); // Max volume by default
+            byte nextVolume = VOL_F2C((byte)(psg ? 0x0F : 0x7F)); // Max volume by default
             byte currentPan = PAN_F2C(0x00); // Center by default
             byte nextPan = currentPan;
             byte currentShifting = 0x00; // Zero by default
@@ -163,7 +176,7 @@ namespace SF2MusicCooker
             byte nextVibrato = 0x00;
             byte currentRelease = 0xFF; // Will force the first note to set release
             byte currentLength = 0x00; // Will force the first note or silence to set length
-            bool dac = channel == 5 && DAC == 0;
+            byte noiseMode = 0x00;
 
             // Write initial silence (before the first note)
             WriteSilence(firstNoteTicks - 1);
@@ -193,72 +206,55 @@ namespace SF2MusicCooker
                     currentLength = 0x00; // Will force the next note or silence to set length
                 }
 
-                // Is it FM or PSG channel?
-                if (channel < 6)
+                // Read cell content
+                ReadInstrument(tick);
+                ReadVolume(tick);
+                ReadPan(tick, psg);
+                ReadNewTimer(tick, noise || !psg);
+                ReadDetune(tick, dac || noise);
+                ReadPortamento(tick, dac || psg);
+                ReadVibrato(tick, dac || noise);
+                ReadNoiseMode(tick, !noise);
+                ReadLegato(tick);
+
+                // Apply note change
+                if (cell.HasNewNote)
                 {
-                    // Read cell content
-                    ReadInstrument(tick);
-                    ReadVolume(tick, true);
-                    ReadPan(tick, false);
-                    ReadNewTimer(tick, true);
-                    if (!dac)
-                    {
-                        ReadLegato(tick);
-                        ReadDetune(tick);
-                        ReadPortamento(tick);
-                        ReadVibrato(tick);
-                    }
+                    GuessPSGInstrument(tick);
 
-                    // Apply note change
-                    if (cell.HasNewNote)
-                    {
-                        FlushPendingChanges(true, tick);
+                    FlushPendingChanges(true, tick);
 
-                        // Finally, write note/sample command
-                        if (options.IsAllowed(currentInstrument))
+                    // Finally, write note/sample command
+                    if (options.IsAllowed(currentInstrument))
+                    {
+                        if (dac)
                         {
-                            if (dac)
+                            if (map.Sample(currentInstrument, cell.Note, out byte sample))
                             {
-                                if (map.Sample(currentInstrument, cell.Note, out byte sample))
-                                {
-                                    WriteSample(sample, tick.NoteRelease, tick.NoteLength);
-                                }
-                                else
-                                {
-                                    WriteSilence(tick.NoteLength);
-                                    Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play).", tick);
-                                }
+                                WriteSample(sample, tick.NoteRelease, tick.NoteLength);
                             }
                             else
                             {
-                                WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
+                                WriteSilence(tick.NoteLength);
+                                Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play)", tick);
                             }
                         }
                         else
                         {
-                            WriteSilence(tick.NoteLength);
+                            WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
                         }
                     }
-                    else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
+                    else
                     {
-                        FlushPendingChanges(false, tick);
-
-                        // Please notice that note OFF commands are ignored if the first note hasn't been played yet
-                        WriteSilence(tick.SilenceLength);
+                        WriteSilence(tick.NoteLength);
                     }
                 }
-                else
+                else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                 {
-                    // Read cell content with PSG logic
-                    /*
-                    ReadInstrument(tick);
-                    ReadVolume(tick, false); // We also use volume outside of new PSG note as a hint to select the correct PSG instrument, so don't raise warning here
-                    ReadPan(tick, true); // Just to verify we don't try to pan PSG instruments
-                    ReadLegato(tick);
-                    ReadNewTimer(tick, channel == 9);
-                    */
+                    FlushPendingChanges(false, tick);
 
-                    // TODO: PSG channel grammar
+                    // Please notice that note OFF commands are ignored if the first note hasn't been played yet
+                    WriteSilence(tick.SilenceLength);
                 }
 
                 if (tick.NextPosition <= tick.Position && tick.NextPosition == loopStart)
@@ -324,17 +320,26 @@ namespace SF2MusicCooker
                 {
                     currentInstrument = nextInstrument;
 
-                    // Load FM instrument
-                    if (!dac && options.IsAllowed(currentInstrument))
+                    if (options.IsAllowed(currentInstrument))
                     {
-                        if (map.FM(currentInstrument, out byte inst))
+                        if (psg)
                         {
+                            // Load PSG instrument
                             flags |= StateSnapshot.INSTRUMENT_SET;
-                            commands.Add("inst " + BYTE(inst));
+                            commands.Add("psgInst " + BYTE((byte)currentInstrument));
                         }
-                        else
+                        else if (!dac)
                         {
-                            Warning("Invalid instrument " + currentInstrument + " for FM channel (is it actually an FM instrument?).", tick);
+                            // Load FM instrument
+                            if (map.FM(currentInstrument, out byte inst))
+                            {
+                                flags |= StateSnapshot.INSTRUMENT_SET;
+                                commands.Add("inst " + BYTE(inst));
+                            }
+                            else
+                            {
+                                Warning("Invalid instrument " + currentInstrument + " for FM channel (is it actually an FM instrument?)", tick);
+                            }
                         }
                     }
                 }
@@ -344,8 +349,8 @@ namespace SF2MusicCooker
                 {
                     currentVolume = nextVolume;
 
-                    // Volume is forbidden for DAC channel
-                    if (!dac)
+                    // Volume is forbidden for DAC and PSG channels
+                    if (!dac && !psg)
                     {
                         flags |= StateSnapshot.VOLUME_SET;
                         commands.Add("vol " + BYTE(currentVolume));
@@ -376,8 +381,13 @@ namespace SF2MusicCooker
                 if (currentVibrato != nextVibrato)
                 {
                     currentVibrato = nextVibrato;
-                    flags |= StateSnapshot.VIBRATO_SET;
-                    commands.Add("vibrato " + BYTE_HEX(currentVibrato));
+
+                    // Vibrato is forbidden for DAC and noise channels
+                    if (!dac && !noise)
+                    {
+                        flags |= StateSnapshot.VIBRATO_SET;
+                        commands.Add("vibrato " + BYTE_HEX(currentVibrato));
+                    }
                 }
 
                 // Store state that should be reapplied just before crossing the main loop
@@ -414,15 +424,16 @@ namespace SF2MusicCooker
                 {
                     string message = string.Format("{0} has hit the maximum allowed length ({1} ticks)", what, length);
                     what = what.ToLower();
-                    message += Environment.NewLine + string.Format("  This is usually caused by a {0} followed by a loop that does nothing (extending it infinitely).", what);
-                    message += Environment.NewLine + string.Format("  The actual {0} length will be capped in the output sheet.", what);
+                    message += Environment.NewLine + string.Format("  This is usually caused by a {0} followed by a loop that does nothing (extending it infinitely)", what);
+                    message += Environment.NewLine + string.Format("  The actual {0} length will be capped in the output sheet", what);
                     Warning(message, tick);
                 }
             }
 
             void WriteNote(byte note, int release, int length)
             {
-                WriteNoteOrSample(tuned.F2YName(note), release, length, "note  ", "noteL ");
+                string value = noise ? NOISE(note) : (psg ? tunedPsg : tuned).F2CName(note);
+                WriteNoteOrSample(value, release, length, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
             }
 
             void WriteSample(byte sample, int release, int length)
@@ -502,26 +513,38 @@ namespace SF2MusicCooker
 
                 if (cell.Instrument != PatternCell.InstrumentAbsent)
                 {
-                    nextInstrument = cell.Instrument;
+                    if (psg)
+                    {
+                        psgFurnaceInstrument = cell.Instrument;
+                    }
+                    else
+                    {
+                        nextInstrument = cell.Instrument;
+                    }
                 }
             }
 
-            void ReadVolume(Tick tick, bool disallowOutsideOfNewNote)
+            void ReadVolume(Tick tick)
             {
                 PatternCell cell = tick.ActiveChannelCell;
 
                 if (cell.Volume != PatternCell.VolumeAbsent)
                 {
                     if (dac)
-                        Warning("Volume change is not allowed for channel 6 in DAC mode and will be ignored.", tick);
-                    else if (disallowOutsideOfNewNote && !cell.HasNewNote && cell.Note != PatternCell.NoteOff)
-                        Warning("Volume change will be delayed because it can only be applied when a new note plays/ends.", tick);
+                    {
+                        Warning("Volume change is not allowed for channel 6 in DAC mode and will be ignored", tick);
+                        return;
+                    }
+                    else if (!psg && !cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                    {
+                        Warning("Volume change will be delayed because it can only be applied when a new note plays/ends", tick);
+                    }
 
                     nextVolume = VOL_F2C(cell.Volume);
                 }
             }
 
-            void ReadPan(Tick tick, bool disallowPanning)
+            void ReadPan(Tick tick, bool disallow)
             {
                 PatternCell cell = tick.ActiveChannelCell;
 
@@ -536,87 +559,17 @@ namespace SF2MusicCooker
 
                 void Set(byte pan)
                 {
-                    if (disallowPanning)
-                        Warning("Panning change is not allowed on this channel.", tick);
-                    else if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
-                        Warning("Panning change will be delayed because it can only be applied when a new note plays/ends.", tick);
-
-                    nextPan = pan;
-                }
-            }
-
-            void ReadLegato(Tick tick)
-            {
-                PatternCell cell = tick.ActiveChannelCell;
-
-                if (cell.TryGetEffect(Effect.Legato, out Effect effect))
-                {
-                    legato = effect.Value != 0x00;
-                }
-            }
-
-            void ReadDetune(Tick tick)
-            {
-                // FIXME: I'm following here the WizTools approximation of this effect even if I think it's not the accurate way to do it
-                // The accurate way would be to create a shadow copy of the FM instrument with modified operators and switch to it
-                // The downside is obviously that the number of FM instruments would quickly get out of hand and it's complex to set up for low payoff
-
-                PatternCell cell = tick.ActiveChannelCell;
-
-                if (cell.TryGetEffect(Effect.Detune, out Effect effect))
-                {
-                    if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
-                        Warning("Detune effect will be delayed because it can only be applied when a new note plays/ends.", tick);
-
-                    int detune = Math.Max(-3, Math.Min(3, effect.Value - 3));
-                    if (effect.Value >= 0x07) detune = 0;
-
-                    nextShifting = (byte)(Math.Abs(detune) << 5); // Sharper detune compared to WizTools implementation (<< 4)
-                    if (detune < 0) nextShifting |= 0x80;
-                }
-            }
-
-            void ReadPortamento(Tick tick)
-            {
-                // FIXME: for better compatibility, we should also enable a 'virtual' legato on the previous note
-                // This can be done by modifying the patterns
-
-                PatternCell cell = tick.ActiveChannelCell;
-
-                if (cell.TryGetEffect(Effect.Portamento, out Effect effect) && effect.Value > 0)
-                {
-                    if (!cell.HasNewNote)
+                    if (disallow)
                     {
-                        Warning("Portamento effect must appear when a new note plays, otherwise it will be ignored.", tick);
+                        Warning("Panning change is not allowed on this channel (must be on FM or DAC channels)", tick);
                         return;
                     }
-
-                    nextSlide = (byte)Math.Min(0x7F, effect.Value * 2 - 1);
-                }
-                else if (cell.HasNewNote)
-                {
-                    nextSlide = 0x00;
-                }
-            }
-
-            void ReadVibrato(Tick tick)
-            {
-                PatternCell cell = tick.ActiveChannelCell;
-                
-                if (cell.HasNewNote)
-                {
-                    if (tick.Vibrato.Active)
+                    else if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
                     {
-                        const byte nibble = 0x0F;
-                        byte index = Math.Min(nibble, Vibrato.ResolveIndex(tick.Vibrato));
-                        byte delay = Math.Min(nibble, (byte)(tick.Vibrato.Delay >> 1));
+                        Warning("Panning change will be delayed because it can only be applied when a new note plays/ends", tick);
+                    }
 
-                        nextVibrato = (byte)((index << 4) | delay);
-                    }
-                    else
-                    {
-                        nextVibrato = 0;
-                    }
+                    nextPan = pan;
                 }
             }
 
@@ -647,9 +600,125 @@ namespace SF2MusicCooker
                     }
 
                     if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
-                        Warning("Play rate change will be delayed because it can only be applied when a new note plays/ends.", tick);
+                        Warning("Play rate change will be delayed because it can only be applied when a new note plays/ends", tick);
 
                     newTimer = tickRate * file.RateCoeff;
+                }
+            }
+
+            void ReadDetune(Tick tick, bool disallow)
+            {
+                // FIXME: I'm following here the CubeTools approximation of this effect even if I think it's not the accurate way to do it
+                // The accurate way would be to create a shadow copy of the FM instrument with modified operators and switch to it
+                // The downside is obviously that the number of FM instruments would quickly get out of hand and it's complex to set up for low payoff
+
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Detune, out Effect effect))
+                {
+                    if (disallow)
+                    {
+                        Warning("Detune effect is not allowed on this channel (must be on FM or PSG tone channels)", tick);
+                        return;
+                    }
+
+                    if (!cell.HasNewNote && cell.Note != PatternCell.NoteOff)
+                        Warning("Detune effect will be delayed because it can only be applied when a new note plays/ends", tick);
+
+                    int detune = Math.Max(-3, Math.Min(3, effect.Value - 3));
+                    if (effect.Value >= 0x07) detune = 0;
+
+                    nextShifting = (byte)(Math.Abs(detune) << 5); // Sharper detune compared to CubeTools implementation (<< 4)
+                    if (detune < 0) nextShifting |= 0x80;
+                }
+            }
+
+            void ReadPortamento(Tick tick, bool disallow)
+            {
+                // FIXME: for better compatibility, we should also enable a 'virtual' legato on the previous note
+                // This can be done by modifying the patterns
+
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Portamento, out Effect effect) && effect.Value > 0)
+                {
+                    if (disallow)
+                    {
+                        Warning("Portamento effect is not allowed on this channel (must be on FM channels)", tick);
+                        return;
+                    }
+                    else if (!cell.HasNewNote)
+                    {
+                        Warning("Portamento effect must appear when a new note plays, otherwise it will be ignored", tick);
+                        return;
+                    }
+
+                    nextSlide = (byte)Math.Min(0x7F, effect.Value * 2 - 1);
+                }
+                else if (cell.HasNewNote)
+                {
+                    nextSlide = 0x00;
+                }
+            }
+
+            void ReadVibrato(Tick tick, bool disallow)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.HasNewNote)
+                {
+                    if (tick.Vibrato.Active)
+                    {
+                        if (disallow)
+                        {
+                            Warning("Vibrato effect is not allowed on this channel (must be on FM or PSG tone channels)", tick);
+                            return;
+                        }
+
+                        const byte nibble = 0x0F;
+                        byte index = Math.Min(nibble, Vibrato.ResolveIndex(tick.Vibrato));
+                        byte delay = Math.Min(nibble, (byte)(tick.Vibrato.Delay >> 1));
+
+                        nextVibrato = (byte)((index << 4) | delay);
+                    }
+                    else
+                    {
+                        nextVibrato = 0;
+                    }
+                }
+            }
+
+            void ReadNoiseMode(Tick tick, bool disallow)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.NoiseMode, out Effect effect))
+                {
+                    if (disallow)
+                    {
+                        Warning("Noise mode effect is not allowed on this channel (must be on noise channel)", tick);
+                        return;
+                    }
+
+                    noiseMode = effect.Value;
+                }
+            }
+
+            void ReadLegato(Tick tick)
+            {
+                PatternCell cell = tick.ActiveChannelCell;
+
+                if (cell.TryGetEffect(Effect.Legato, out Effect effect))
+                {
+                    legato = effect.Value != 0x00;
+                }
+            }
+
+            void GuessPSGInstrument(Tick tick)
+            {
+                if (psg)
+                {
+                    nextInstrument = PSGInstruments.Guess(file, tick, channel, psgFurnaceInstrument, nextVolume);
                 }
             }
 
@@ -666,6 +735,11 @@ namespace SF2MusicCooker
                 if (trinaryPan == 0x00) return 1 << 7; // LEFT
                 else if (trinaryPan == 0xFF) return 1 << 6; // RIGHT
                 else return (1 << 6) | (1 << 7); // CENTER (including invalid values)
+            }
+
+            string NOISE(byte note)
+            {
+                return Noise.Value(note, noiseMode).ToString();
             }
         }
 
@@ -828,12 +902,12 @@ For all (timing/looping):
 
 For FM/DAC channels:
                 commands.Add("stereo " + BYTE_HEX(0xC0));
+                commands.Add("sustain");
+                commands.Add("setRelease " + BYTE_HEX(0x05));
 
 For FM channels:
                 commands.Add("inst " + BYTE(0));
                 commands.Add("vol " + BYTE_HEX(0x0C));
-                commands.Add("sustain");
-                commands.Add("setRelease " + BYTE_HEX(0x05));
                 commands.Add("vibrato " + BYTE_HEX(0x2C));
                 commands.Add("setSlide " + BYTE_HEX(0x20));
                 commands.Add("noSlide");
