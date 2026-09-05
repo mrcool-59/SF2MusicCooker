@@ -7,6 +7,63 @@ namespace SF2MusicCooker
 {
     public sealed class PitchTable
     {
+        // Natural
+        /*
+        private static readonly float[] octave4freqs = new float[]
+        {
+            264.00f, // C
+            275.00f,
+            297.00f,
+            316.80f,
+            330.00f,
+            352.00f,
+            371.25f,
+            396.00f,
+            412.50f,
+            440.00f, // A
+            475.20f,
+            495.00f, // B
+        };
+        */
+
+        // C = 264
+        /*
+        private static readonly float[] octave4freqs = new float[]
+        {
+            264.00f, // C
+            279.70f,
+            296.33f,
+            313.95f,
+            332.62f,
+            352.40f,
+            373.35f,
+            395.55f,
+            419.07f,
+            443.99f, // A
+            470.39f,
+            498.37f, // B
+        };
+        */
+
+        // A = 440 [Current implementation, +1 octave = double frequency, -1 octave = halve frequency]
+        /*
+        private static readonly float[] octave4freqs = new float[]
+        {
+            261.63f, // C
+            277.18f,
+            293.66f,
+            311.13f,
+            329.63f,
+            349.23f,
+            369.99f,
+            392.00f,
+            415.30f,
+            440f,    // A
+            466.16f,
+            493.88f, // B
+        };
+        */
+
         private readonly struct Entry
         {
             public readonly int Note;
@@ -59,7 +116,7 @@ namespace SF2MusicCooker
         {
             // https://www.vgmpf.com/Wiki/images/7/78/SN76489AN_-_Manual.pdf
 
-            return 3579545 / (32 * value); // Using Z80 NTSC clock rate
+            return 3570000 / (32 * value); // Using Z80 NTSC clock rate
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿Version 0.99:
 - PSG output in sheet writing
+	=> Unwanted PSG note playing at start of music playback
 	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
 - Add PSG test .fur
 	=> Test 'set tick rate' effect in any PSG tone channel
