@@ -13,9 +13,12 @@ namespace SF2MusicCooker
         {
             byte[] levels = null;
 
-            Instrument instrument = file.Instruments[furnaceInstrument];
-            if (instrument.Type == Instrument.PSG && instrument.Data != null)
-                levels = FeatureInterpreter.ParseFurnacePSGMacroLevels(instrument.Data);
+            if (furnaceInstrument < file.Instruments.Length)
+            {
+                Instrument instrument = file.Instruments[furnaceInstrument];
+                if (instrument.Type == Instrument.PSG && instrument.Data != null)
+                    levels = FeatureInterpreter.ParseFurnacePSGMacroLevels(instrument.Data);
+            }
 
             if (levels == null)
                 levels = ReadLevels(file, channel, tick.Position, tick.NoteLength, totalLevel);

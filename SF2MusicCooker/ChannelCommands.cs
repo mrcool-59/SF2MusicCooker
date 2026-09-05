@@ -161,7 +161,7 @@ namespace SF2MusicCooker
             StateSnapshot loopState = StateSnapshot.Invalid;
             bool legato = false;
             float newTimer = 0f;
-            ushort psgFurnaceInstrument = 0x0000;
+            ushort psgFurnaceInstrument = 0xFFFF;
             ushort currentInstrument = 0xFFFF; // Will force instrument to be set on the first note
             ushort nextInstrument = 0x0000;
             byte currentVolume = 0xFF; // Will force volume to be set on the first note
@@ -177,6 +177,9 @@ namespace SF2MusicCooker
             byte currentRelease = 0xFF; // Will force the first note to set release
             byte currentLength = 0x00; // Will force the first note or silence to set length
             byte noiseMode = 0x00;
+
+            // PSG channel: ensure the channel starts OFF
+            if (psg && firstNoteTicks > 1) commands.Add("psgInst 0");
 
             // Write initial silence (before the first note)
             WriteSilence(firstNoteTicks - 1);
@@ -225,7 +228,7 @@ namespace SF2MusicCooker
                     FlushPendingChanges(true, tick);
 
                     // Finally, write note/sample command
-                    if (options.IsAllowed(currentInstrument))
+                    if (options.IsAllowed(psg ? psgFurnaceInstrument : currentInstrument))
                     {
                         if (dac)
                         {
@@ -320,26 +323,23 @@ namespace SF2MusicCooker
                 {
                     currentInstrument = nextInstrument;
 
-                    if (options.IsAllowed(currentInstrument))
+                    if (psg && options.IsAllowed(psgFurnaceInstrument))
                     {
-                        if (psg)
+                        // Load PSG instrument
+                        flags |= StateSnapshot.INSTRUMENT_SET;
+                        commands.Add("psgInst " + BYTE((byte)currentInstrument));
+                    }
+                    else if (!dac && options.IsAllowed(currentInstrument))
+                    {
+                        // Load FM instrument
+                        if (map.FM(currentInstrument, out byte inst))
                         {
-                            // Load PSG instrument
                             flags |= StateSnapshot.INSTRUMENT_SET;
-                            commands.Add("psgInst " + BYTE((byte)currentInstrument));
+                            commands.Add("inst " + BYTE(inst));
                         }
-                        else if (!dac)
+                        else
                         {
-                            // Load FM instrument
-                            if (map.FM(currentInstrument, out byte inst))
-                            {
-                                flags |= StateSnapshot.INSTRUMENT_SET;
-                                commands.Add("inst " + BYTE(inst));
-                            }
-                            else
-                            {
-                                Warning("Invalid instrument " + currentInstrument + " for FM channel (is it actually an FM instrument?)", tick);
-                            }
+                            Warning("Invalid instrument " + currentInstrument + " for FM channel (is it actually an FM instrument?)", tick);
                         }
                     }
                 }
