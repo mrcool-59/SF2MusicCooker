@@ -104,7 +104,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Generate channel commands from a Furnace file and the provided instrument map.
         /// </summary>
-        public void Generate(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch)
+        public void Generate(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, PitchTable pitch)
         {
             if (file.Channels != _channels.Length)
                 throw new NotSupportedException("Furnace file must have " + _channels.Length + " channels"); // 6 from YM2612 + 4 from PSG
@@ -123,7 +123,7 @@ namespace SF2MusicCooker
             // Fill each channel
             for (int channel = 0; channel < file.Channels; channel++)
             {
-                _channels[channel] = GenerateChannel(file, options, map, tuned, tunedPsg, channel, loopStart);
+                _channels[channel] = GenerateChannel(file, options, map, envelopes, tuned, tunedPsg, channel, loopStart);
             }
 
             // Verify clamped notes
@@ -134,7 +134,7 @@ namespace SF2MusicCooker
             Empty = Array.TrueForAll(_channels, c => c == null || c == "channel_end");
         }
 
-        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, TunedMap tuned, TunedMap tunedPsg, int channel, Position loopStart)
+        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, TunedMap tuned, TunedMap tunedPsg, int channel, Position loopStart)
         {
             // Mask verification
             if ((_mask & (1 << channel)) == 0) return null;
@@ -223,7 +223,10 @@ namespace SF2MusicCooker
                 // Apply note change
                 if (cell.HasNewNote)
                 {
-                    GuessPSGInstrument(tick);
+                    int noteLength = tick.NoteLength;
+                    int noteRelease = tick.NoteRelease;
+
+                    GuessPSGInstrument(tick, ref noteRelease);
 
                     FlushPendingChanges(true, tick);
 
@@ -234,22 +237,22 @@ namespace SF2MusicCooker
                         {
                             if (map.Sample(currentInstrument, cell.Note, out byte sample))
                             {
-                                WriteSample(sample, tick.NoteRelease, tick.NoteLength);
+                                WriteSample(sample, noteRelease, noteLength);
                             }
                             else
                             {
-                                WriteSilence(tick.NoteLength);
+                                WriteSilence(noteLength);
                                 Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play)", tick);
                             }
                         }
                         else
                         {
-                            WriteNote(cell.Note, tick.NoteRelease, tick.NoteLength);
+                            WriteNote(cell.Note, noteRelease, noteLength);
                         }
                     }
                     else
                     {
-                        WriteSilence(tick.NoteLength);
+                        WriteSilence(noteLength);
                     }
                 }
                 else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
@@ -714,11 +717,23 @@ namespace SF2MusicCooker
                 }
             }
 
-            void GuessPSGInstrument(Tick tick)
+            void GuessPSGInstrument(Tick tick, ref int noteRelease)
             {
                 if (psg)
                 {
-                    nextInstrument = PSGInstruments.Guess(file, tick, channel, psgFurnaceInstrument, nextVolume);
+                    if (!envelopes.FindEnvelope(file, psgFurnaceInstrument, out byte index, out bool approximative))
+                    {
+                        if (approximative)
+                        {
+                            Warning("Furnace instrument " + Tools.Hex2(psgFurnaceInstrument, false) + " volume envelope has no exact match in SF2 sound driver, the closest one has been picked instead", tick);
+                        }
+                        else if (!options.NoEnvelopeGuessing)
+                        {
+                            index = envelopes.GuessEnvelope(file, tick, channel, nextVolume, out noteRelease);
+                        }
+                    }
+
+                    nextInstrument = PSGInstruments.ComputeInstrument(index, nextVolume);
                 }
             }
 

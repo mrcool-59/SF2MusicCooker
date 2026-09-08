@@ -140,7 +140,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Outputs an ASM music sheet.
         /// </summary>
-        public static string Write(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, int number, int pairNumber = 0, string title = null)
+        public static string Write(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, PitchTable pitch, int number, int pairNumber = 0, string title = null)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -149,7 +149,7 @@ namespace SF2MusicCooker
             ChannelCommands channels = new ChannelCommands(10, ChannelCommands.Mask_Music, false, Environment.NewLine + padding);
 
             // Generate the channels
-            channels.Generate(file, options, map, pitch);
+            channels.Generate(file, options, map, envelopes, pitch);
 
             // YM timer B (song tempo)
             byte timer = GetOptimalTimerB(file.PlayRate);
@@ -193,13 +193,13 @@ namespace SF2MusicCooker
         /// </summary>
         public static string WriteEmpty(int number)
         {
-            return Write(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, number);
+            return Write(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PSGInstruments.Empty, PitchTable.Empty, number);
         }
 
         /// <summary>
         /// Outputs an ASM SFX sheet.
         /// </summary>
-        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PitchTable pitch, string pointerName, SFXType type = SFXType.Automatic, string title = null)
+        public static string WriteSFX(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, PitchTable pitch, string pointerName, SFXType type = SFXType.Automatic, string title = null)
         {
             StringBuilder sb = new StringBuilder(1024);
             Stopwatch sw = Stopwatch.StartNew();
@@ -212,7 +212,7 @@ namespace SF2MusicCooker
             ChannelCommands channels = new ChannelCommands(10, mask, type == SFXType.Type2_YM_Ch4_Ch5_Ch6DAC, Environment.NewLine + padding);
 
             // Generate the channels
-            channels.Generate(file, options, map, pitch);
+            channels.Generate(file, options, map, envelopes, pitch);
 
             // Write header (disclaimer is skipped for SFX)
             sb.Append(pointerName);
@@ -239,7 +239,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static string WriteSFXEmpty(string pointerName)
         {
-            return WriteSFX(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PitchTable.Empty, pointerName);
+            return WriteSFX(FurnaceFile.Empty, Options.Default, InstrumentMap.Empty, PSGInstruments.Empty, PitchTable.Empty, pointerName);
         }
     }
 }

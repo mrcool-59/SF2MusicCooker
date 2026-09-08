@@ -50,6 +50,7 @@
     <Compile Include="Bank.cs" />
     <Compile Include="BankSFX.cs" />
     <Compile Include="ChannelCommands.cs" />
+    <Compile Include="Envelope.cs" />
     <Compile Include="FilePaths.cs" />
     <Compile Include="Furnace\Effect.cs" />
     <Compile Include="Furnace\FeatureInterpreter.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="Furnace\Tick.cs" />
     <Compile Include="Noise.cs" />
     <Compile Include="PSGInstruments.cs" />
+    <Compile Include="EnvelopeGuesser.cs" />
     <Compile Include="TunedMap.cs" />
     <Compile Include="InstrumentMap.cs" />
     <Compile Include="LoopOptimizer.cs" />
@@ -206,7 +208,7 @@
     <None Include="Test\%40music34-Silence.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music41-Choose your Path.fur">
+    <None Include="Test\%40music21-Choose your Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="__Run.bat">

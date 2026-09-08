@@ -33,6 +33,11 @@ namespace SF2MusicCooker
         public PCMInstruments Samples { get; }
 
         /// <summary>
+        /// The global list of PSG envelopes.
+        /// </summary>
+        public PSGInstruments Envelopes { get; }
+
+        /// <summary>
         /// The pitch table to map Furnace notes to Cube notes.
         /// </summary>
         public PitchTable Pitch { get; }
@@ -66,6 +71,8 @@ namespace SF2MusicCooker
             Instruments = new FMInstruments(instrumentSlots);
 
             Samples = new PCMInstruments(pcmSlots, pcmBanks, pcmNames, pcmBaseOffset);
+
+            Envelopes = new PSGInstruments(paths.PsgInstruments);
 
             Pitch = new PitchTable(paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames);
         }

@@ -1,37 +1,122 @@
 ﻿using SF2MusicCooker.Furnace;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SF2MusicCooker
 {
-    public static class PSGInstruments
+    public sealed class PSGInstruments
     {
-        /// <summary>
-        /// Given the supplied hints, figure out the PSG instrument to use (volume envelope + total level).
-        /// </summary>
-        public static byte Guess(FurnaceFile file, Tick tick, int channel, ushort furnaceInstrument, byte totalLevel)
+        private readonly Envelope[] instruments;
+
+        public PSGInstruments(string path)
         {
-            byte[] levels = null;
+            Regex regex = new Regex("PSG_INSTRUMENT_[0-9A-F]+:");
+            string compositeAsm = File.ReadAllText(path);
+            string[] instrumentsAsm = AsmSheetToolkit.SplitByLabel(compositeAsm, regex);
+            List<byte> attack = new List<byte>();
+            List<byte> release = new List<byte>();
+
+            instruments = new Envelope[instrumentsAsm.Length];
+
+            for (int i = 0; i < instrumentsAsm.Length; i++)
+            {
+                attack.Clear();
+                release.Clear();
+
+                string asm = instrumentsAsm[i].Replace(",", "\ndb ");
+                int[] values = Tools.GetAllNumericElements(asm, "db");
+
+                List<byte> current = attack;
+
+                foreach (int value in values)
+                {
+                    current.Add((byte)(value & 0xF));
+
+                    if ((value & 0x80) != 0)
+                    {
+                        if (current == attack)
+                            current = release;
+                        else if (current == release)
+                            break;
+                    }
+                }
+
+                instruments[i] = new Envelope(attack.ToArray(), release.ToArray());
+            }
+        }
+
+        private PSGInstruments()
+        {
+            instruments = new Envelope[1] { Envelope.Default };
+        }
+
+        /// <summary>
+        /// Given the supplied furnace PSG instrument, find the proper PSG envelope to use.
+        /// </summary>
+        public bool FindEnvelope(FurnaceFile file, ushort furnaceInstrument, out byte index, out bool approximative)
+        {
+            index = (byte)(instruments.Length - 1); // Default value if PSG instrument doesn't have a volume envelope
+            approximative = false;
 
             if (furnaceInstrument < file.Instruments.Length)
             {
                 Instrument instrument = file.Instruments[furnaceInstrument];
                 if (instrument.Type == Instrument.PSG && instrument.Data != null)
-                    levels = FeatureInterpreter.ParseFurnacePSGMacroLevels(instrument.Data);
+                {
+                    Envelope envelope = FeatureInterpreter.ParseFurnacePSGMacroLevels(instrument.Data);
+                    if (envelope != null)
+                    {
+                        int position = Array.IndexOf(instruments, envelope);
+                        if (position >= 0)
+                        {
+                            index = (byte)position;
+                            return true;
+                        }
+                        else
+                        {
+                            index = (byte)EnvelopeGuesser.Guess(envelope, instruments); // Find closest one instead
+                            approximative = true;
+                        }
+                    }
+                }
             }
+            return false;
+        }
 
-            if (levels == null)
-                levels = ReadLevels(file, channel, tick.Position, tick.NoteLength, totalLevel);
+        /// <summary>
+        /// Given the supplied hints, figure out the PSG envelope to use.
+        /// </summary>
+        public byte GuessEnvelope(FurnaceFile file, Tick tick, int channel, byte totalLevel, out int noteRelease)
+        {
+            noteRelease = tick.NoteRelease;
 
-            byte envelope = GuessEnvelope(levels);
+            byte[] levels = ReadLevels(file, channel, tick.Position, tick.NoteLength, totalLevel);
 
-            return (byte)((envelope << 4) | totalLevel);
+            if (tick.NoteLength == noteRelease)
+            {
+                return (byte)EnvelopeGuesser.Guess(levels, instruments, out noteRelease); // Note release unspecified: determine the best one
+            }
+            else
+            {
+                return (byte)EnvelopeGuesser.Guess(levels, instruments, noteRelease);
+            }
+        }
+
+        /// <summary>
+        /// Compute the PSG instrument value from envelope index and total level.
+        /// </summary>
+        public static byte ComputeInstrument(byte index, byte totalLevel)
+        {
+            return (byte)((index << 4) | totalLevel);
         }
 
         private static byte[] ReadLevels(FurnaceFile file, int channel, Position position, int length, byte initialLevel)
         {
             byte currentLevel = initialLevel;
-            byte[] levels = new byte[length];
+            byte[] levels = new byte[length + 1]; // Add a zero at the end to convey the note stopping
             int i = 0;
             foreach (Tick tick in Player.Run(file, channel, 0, position))
             {
@@ -60,13 +145,10 @@ namespace SF2MusicCooker
             }
             else
             {
-                Tools.Fill(levels, 0, levels.Length, 0x0F);
+                Tools.Fill(levels, 0, levels.Length, 0x0F); // To happen, we would have to play a note at zero volume level
             }
         }
 
-        private static byte GuessEnvelope(byte[] levels)
-        {
-            return 0x00; // TODO
-        }
+        public static readonly PSGInstruments Empty = new PSGInstruments();
     }
 }

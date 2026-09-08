@@ -168,7 +168,7 @@ namespace SF2MusicCooker
                 Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
 
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Pitch, options, name);
+                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Envelopes, output.Pitch, options, name);
 
                 // Build ASM name
                 string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
@@ -230,7 +230,7 @@ namespace SF2MusicCooker
                 string pointerName = "CSFX_" + sfxs.Count;
 
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Pitch, options, name);
+                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Envelopes, output.Pitch, options, name);
 
                 // Build ASM name
                 string asmName = "SFX_CUSTOM_" + Tools.GetASMValidName(name);
@@ -247,7 +247,7 @@ namespace SF2MusicCooker
             output.AddOrReplaceSFX(sfxs.ToArray(), arguments.IncludeOriginalNames);
         }
 
-        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PitchTable pitch, Options options, string name)
+        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PSGInstruments envelopes, PitchTable pitch, Options options, string name)
         {
             return () =>
             {
@@ -318,9 +318,9 @@ namespace SF2MusicCooker
 
                     // Write the ASM sheet of the music/SFX
                     if (pointerName != null)
-                        return AsmSheetWriter.WriteSFX(file, options, map, pitch, pointerName, SFXType.Automatic, title);
+                        return AsmSheetWriter.WriteSFX(file, options, map, envelopes, pitch, pointerName, SFXType.Automatic, title);
                     else
-                        return AsmSheetWriter.Write(file, options, map, pitch, number, pairNumber, title);
+                        return AsmSheetWriter.Write(file, options, map, envelopes, pitch, number, pairNumber, title);
                 }
             };
         }

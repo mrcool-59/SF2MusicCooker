@@ -141,6 +141,24 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get all sections of a composite sheet, identified by a label, up until the end of the composite sheet.
+        /// </summary>
+        public static string[] SplitByLabel(string compositeAsm, Regex labelRegex)
+        {
+            MatchCollection matches = labelRegex.Matches(compositeAsm);
+            List<string> splits = new List<string>();
+            for (int i = 0; i < matches.Count; i++)
+            {
+                int next = i + 1;
+                int start = matches[i].Index;
+                int end = next < matches.Count ? matches[next].Index : compositeAsm.Length;
+
+                splits.Add(compositeAsm.Substring(start, end - start));
+            }
+            return splits.ToArray();
+        }
+
+        /// <summary>
         /// Verify that all SFX channel pointers reference channel labels defined within the SFX bank and return the 'needed by' dependency map.
         /// This map should be checked whenever the user attempts to replace a vanilla SFX to make sure we end up in a valid state for assembly.
         /// </summary>

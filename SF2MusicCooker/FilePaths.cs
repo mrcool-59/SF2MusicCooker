@@ -14,6 +14,7 @@ namespace SF2MusicCooker
         public readonly string YmInstBin;
         public readonly string YmFrequencies;
         public readonly string PsgFrequencies;
+        public readonly string PsgInstruments;
         public readonly string NoteNames;
         public readonly string MusicNamesTxt;
         public readonly string SoundTestFolder;
@@ -23,7 +24,7 @@ namespace SF2MusicCooker
         /// </summary>
         public FilePaths(string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames,
             string[] musicBankFolders, string[] sfxBankFolders, string[] pcmBankFiles,
-            string pcmSamples, string ymInstBin, string ymFrequencies, string psgFrequencies,
+            string pcmSamples, string ymInstBin, string ymFrequencies, string psgFrequencies, string psgInstruments,
             string noteNames = null, string musicNamesTxt = null, string soundTestFolder = null)
         {
             MusicNumbersAndAsmNames = musicNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(musicNumbersAndAsmNames));
@@ -35,6 +36,7 @@ namespace SF2MusicCooker
             YmInstBin = ymInstBin ?? throw new ArgumentNullException(nameof(ymInstBin));
             YmFrequencies = ymFrequencies ?? throw new ArgumentNullException(nameof(ymFrequencies));
             PsgFrequencies = psgFrequencies ?? throw new ArgumentNullException(nameof(psgFrequencies));
+            PsgInstruments = psgInstruments ?? throw new ArgumentNullException(nameof(psgInstruments));
             NoteNames = noteNames;
             MusicNamesTxt = musicNamesTxt;
             SoundTestFolder = soundTestFolder;
@@ -70,6 +72,7 @@ namespace SF2MusicCooker
             YmInstBin = Path.Combine(soundFolder, "yminst.bin");
             YmFrequencies = Path.Combine(driverFolder, "ym_frequencies.asm");
             PsgFrequencies = Path.Combine(driverFolder, "psg_frequencies.asm");
+            PsgInstruments = Path.Combine(driverFolder, "psg_instruments.asm");
             NoteNames = Path.Combine(soundFolder, "enums.asm");
             MusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
             SoundTestFolder = Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch");
