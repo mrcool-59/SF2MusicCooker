@@ -97,7 +97,9 @@ namespace SF2MusicCooker
 
             if (tick.NoteLength == noteRelease)
             {
-                return (byte)EnvelopeGuesser.Guess(levels, instruments, out noteRelease); // Note release unspecified: determine the best one
+                byte index = (byte)EnvelopeGuesser.Guess(levels, instruments, out noteRelease); // Note release unspecified: determine the best one
+                noteRelease = Math.Min(noteRelease, tick.NoteLength); // Note release cannot be made higher than note length
+                return index;
             }
             else
             {
@@ -113,10 +115,38 @@ namespace SF2MusicCooker
             return (byte)((index << 4) | totalLevel);
         }
 
+        /// <summary>
+        /// True if the provided PSG instrument will have a residual level at the end of its release envelope.
+        /// </summary>
+        public bool HasResidualLevel(ushort instrument)
+        {
+            byte index = (byte)(instrument >> 4);
+            if (index < instruments.Length)
+            {
+                byte[] release = instruments[index].Release;
+                byte totalLevel = (byte)(instrument & 0x0F);
+
+                int finalLevel = totalLevel - 0xF + release[release.Length - 1];
+                return finalLevel > 0;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Give a friendly description of the PSG instrument (envelope + level).
+        /// </summary>
+        public static string Dump(ushort instrument, bool enabled)
+        {
+            if (enabled)
+                return string.Format(" ; envelope = {0}, level = {1}", Tools.Hex1((byte)(instrument >> 4)), Tools.Hex1((byte)(instrument & 0x0F)));
+            else
+                return string.Empty;
+        }
+
         private static byte[] ReadLevels(FurnaceFile file, int channel, Position position, int length, byte initialLevel)
         {
             byte currentLevel = initialLevel;
-            byte[] levels = new byte[length + 1]; // Add a zero at the end to convey the note stopping
+            byte[] levels = new byte[length];
             int i = 0;
             foreach (Tick tick in Player.Run(file, channel, 0, position))
             {

@@ -1,6 +1,5 @@
 ﻿Version 0.99:
-- PSG output in sheet writing
-	=> Implement pattern recognition for the best fit between the 16 available volume enveloppes
+- Shop: PSG output suspicious
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
@@ -20,6 +19,7 @@ Version 1.2:
 
 Version 1.2.1:
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
+	=> Maker's Ruin: long notes
 	=> Test-3 Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
 	=> Test-3 Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
 	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)

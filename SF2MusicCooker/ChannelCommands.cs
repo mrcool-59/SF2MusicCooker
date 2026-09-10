@@ -257,7 +257,13 @@ namespace SF2MusicCooker
                 }
                 else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
                 {
-                    FlushPendingChanges(false, tick);
+                    if (psg && envelopes.HasResidualLevel(currentInstrument) && tick.SilenceLength > 4)
+                    {
+                        // Neutralize the residual level to comply with silence (but don't bother for short silences)
+                        nextInstrument = 0;
+                    }
+
+                    FlushPendingChanges(psg, tick);
 
                     // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                     WriteSilence(tick.SilenceLength);
@@ -330,7 +336,7 @@ namespace SF2MusicCooker
                     {
                         // Load PSG instrument
                         flags |= StateSnapshot.INSTRUMENT_SET;
-                        commands.Add("psgInst " + BYTE((byte)currentInstrument));
+                        commands.Add("psgInst " + BYTE((byte)currentInstrument) + PSGInstruments.Dump(currentInstrument, options.DumpNotes));
                     }
                     else if (!dac && options.IsAllowed(currentInstrument))
                     {
