@@ -13,6 +13,12 @@ namespace SF2MusicCooker
         private static readonly Regex sampleRateCoeffLongRegex = new Regex("^--sampleratecoeff=([0-9.]+)$");
         private static readonly Regex sampleRateCoeffShortRegex = new Regex("^-src=([0-9.]+)$");
 
+        private static readonly Regex transposeFMLongRegex = new Regex("^--transposefm=([+-]?[0-9]+)$");
+        private static readonly Regex transposeFMShortRegex = new Regex("^-tfm=([+-]?[0-9]+)$");
+
+        private static readonly Regex transposePSGLongRegex = new Regex("^--transposepsg=([+-]?[0-9]+)$");
+        private static readonly Regex transposePSGShortRegex = new Regex("^-tpsg=([+-]?[0-9]+)$");
+
         private static readonly Regex volumeCoeffLongRegex = new Regex("^--volume=([0-9.]+)$");
         private static readonly Regex volumeCoeffShortRegex = new Regex("^-v=([0-9.]+)$");
 
@@ -27,6 +33,8 @@ namespace SF2MusicCooker
         public readonly bool NoOptimize;
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
+        public readonly int TransposeFM;
+        public readonly int TransposePSG;
         public readonly float SampleRateCoeff;
         public readonly float VolumeCoeff;
         public readonly string VolumeMode;
@@ -69,6 +77,8 @@ namespace SF2MusicCooker
                                other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
                                other.DumpUncompressed || DumpUncompressed,
+                               other.TransposeFM + TransposeFM,
+                               other.TransposePSG + TransposePSG,
                                other.SampleRateCoeff * SampleRateCoeff,
                                other.VolumeCoeff * VolumeCoeff,
                                other.VolumeMode ?? VolumeMode);
@@ -115,13 +125,15 @@ namespace SF2MusicCooker
             NoOptimize = Exists("--nooptimize") || Exists("-no");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
+            TransposeFM = Tools.ParseIntArg(args, transposeFMLongRegex, transposeFMShortRegex, 0);
+            TransposePSG = Tools.ParseIntArg(args, transposePSGLongRegex, transposePSGShortRegex, 0);
             SampleRateCoeff = Tools.ParseFloatArg(args, sampleRateCoeffLongRegex, sampleRateCoeffShortRegex, 1f);
             VolumeCoeff = Tools.ParseFloatArg(args, volumeCoeffLongRegex, volumeCoeffShortRegex, 1f);
             if (Exists("--volume:linear") || Exists("-v:l")) VolumeMode = "linear";
             else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noEnvelopeGuessing, bool noOptimize, bool dumpNotes, bool dumpUncompressed, float sampleRateCoeff, float volumeCoeff, string volumeMode)
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noEnvelopeGuessing, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG, float sampleRateCoeff, float volumeCoeff, string volumeMode)
         {
             Mute = mute;
             Isolate = isolate;
@@ -134,6 +146,8 @@ namespace SF2MusicCooker
             NoOptimize = noOptimize;
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
+            TransposeFM = transposeFM;
+            TransposePSG = transposePSG;
             SampleRateCoeff = sampleRateCoeff;
             VolumeCoeff = volumeCoeff;
             VolumeMode = volumeMode;
@@ -142,6 +156,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, 1f, 1f, null);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, null);
     }
 }

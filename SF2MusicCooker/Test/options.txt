@@ -2,4 +2,3 @@
 ;33 = --dumpuncompressed
 25 = -m10
 21 = -ms
-40 = -dn

@@ -54,14 +54,14 @@ namespace SF2MusicCooker
             return -1;
         }
 
-        private static void PrintClamped(TunedMap tuned, string what)
+        private static void PrintClamped(TunedMap tuned, string what, string option)
         {
             byte[] clampedNotes = tuned.Clamped;
             if (clampedNotes.Length > 0)
             {
                 string list = string.Join(", ", clampedNotes.Select(NoteBible.NameOf));
                 Console.WriteLine("! The following {0} Furnace notes are too low / too high for SF2 sound engine and have been clamped instead:{1}    {2}", what, Environment.NewLine, list);
-                Console.WriteLine("! To sidestep this, you can try transposing notes by changing the A-4 tuning to move them in a more favorable range");
+                Console.WriteLine("! To sidestep this, you can try transposing {0} notes with {1} to move them in a more favorable range", what, option);
             }
         }
 
@@ -127,8 +127,8 @@ namespace SF2MusicCooker
             }
 
             // Verify clamped notes
-            PrintClamped(tuned, "YM2612");
-            PrintClamped(tunedPsg, "PSG tone");
+            PrintClamped(tuned, "YM2612", "--transposefm");
+            PrintClamped(tunedPsg, "PSG tone", "--transposepsg");
 
             // Update empty flag
             Empty = Array.TrueForAll(_channels, c => c == null || c == "channel_end");
@@ -441,6 +441,7 @@ namespace SF2MusicCooker
 
             void WriteNote(byte note, int release, int length)
             {
+                if (!noise && !dac) note = NoteBible.Clamp(note + (psg ? options.TransposePSG : options.TransposeFM));
                 string value = noise ? NOISE(note) : (psg ? tunedPsg : tuned).F2CName(note);
                 WriteNoteOrSample(value, release, length, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
             }
