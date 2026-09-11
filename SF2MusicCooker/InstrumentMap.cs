@@ -32,19 +32,11 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Return true if the provided instrument is a PSG instrument.
-        /// </summary>
-        public bool PSG(byte instrument)
-        {
-            return false; // TODO
-        }
-
-        /// <summary>
         /// Verify that instruments in the Furnace file are used properly (i.e: in supported channels). Return the DAC byte to write for music headers.
         /// </summary>
         public void Check(FurnaceFile file, bool requiresDAC, out byte dac)
         {
-            bool channel6_dac = requiresDAC || instrument_note2sample.Count > 0 || !file.HasPlayNoteCommand(5); // Also DAC mode if channel 6 is empty
+            bool channel6_dac = requiresDAC || instrument_note2sample.Count > 0 || !file.HasNote(5); // Also DAC mode if channel 6 is empty
 
             foreach (int instrument in instrument2fm.Keys)
             {
@@ -57,8 +49,6 @@ namespace SF2MusicCooker
                     throw new NotSupportedException("FM instrument " + instrument + " cannot be used in channel 6 because this channel is in DAC mode");
             }
 
-            // TODO: complete this when PSG is implemented
-
             dac = (byte)(channel6_dac ? 0 : 1);
         }
 
@@ -68,8 +58,6 @@ namespace SF2MusicCooker
 
             instrument2fm = instruments.Map(file.Instruments, usedSet);
             instrument_note2sample = samples.Map(file, usedSet);
-
-            // TODO: PSG
         }
 
         private InstrumentMap()

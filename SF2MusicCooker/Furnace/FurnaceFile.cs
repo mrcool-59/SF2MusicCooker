@@ -105,55 +105,65 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
-        /// Verify if the specified channel has at least a play note command.
+        /// Read notes of a channel.
         /// </summary>
-        public bool HasPlayNoteCommand(int channel)
+        public byte[] ReadNotes(int channel, Predicate<byte> stop = null)
         {
-            foreach (Pattern pattern in GetAllPatternsForChannel(channel))
+            List<byte> notes = new List<byte>();
+            foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
             {
-                for (int i = 0; i < pattern.Rows; i++)
+                var cell = tick.ActiveChannelCell;
+                if (cell.HasNewNote)
                 {
-                    PatternCell cell = pattern.Get(i);
-                    if (cell.HasNewNote) return true;
+                    notes.Add(cell.Note);
+                    if (stop != null && stop(cell.Note)) break;
+                }
+                if (tick.NextPosition <= tick.Position) break;
+            }
+            return notes.ToArray();
+        }
+
+        /// <summary>
+        /// Return if the channel plays at least one note.
+        /// </summary>
+        public bool HasNote(int channel)
+        {
+            return ReadNotes(channel, x => true).Length > 0;
+        }
+
+        /// <summary>
+        /// Return if the channel plays the specified note.
+        /// </summary>
+        public bool HasNote(int channel, int note)
+        {
+            bool found = false;
+            bool Stop(byte newNote)
+            {
+                if (newNote == note) found = true;
+                return found;
+            }
+            _ = ReadNotes(channel, Stop);
+            return found;
+        }
+
+        /// <summary>
+        /// Return if samples are used on channel 5.
+        /// </summary>
+        public bool HasDAC()
+        {
+            for (int i = 0; i < Instruments.Length; i++)
+            {
+                if (Instruments[i].Type == Instrument.DAC)
+                {
+                    int[] channels = GetInstrumentUsage(i);
+                    if (Array.IndexOf(channels, 5) >= 0) return true;
                 }
             }
             return false;
         }
 
         /// <summary>
-        /// Verify if the specified channel has at least a play note command with the specified note.
-        /// </summary>
-        public bool HasPlayNoteCommand(int channel, int note)
-        {
-            foreach (Pattern pattern in GetAllPatternsForChannel(channel))
-            {
-                for (int i = 0; i < pattern.Rows; i++)
-                {
-                    PatternCell cell = pattern.Get(i);
-                    if (cell.Note == note) return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Verify if the specified channel has at least a volume command.
-        /// </summary>
-        public bool HasVolumeCommand(int channel)
-        {
-            foreach (Pattern pattern in GetAllPatternsForChannel(channel))
-            {
-                for (int i = 0; i < pattern.Rows; i++)
-                {
-                    PatternCell cell = pattern.Get(i);
-                    if (cell.Volume != PatternCell.VolumeAbsent) return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Return the channels that really use the specified instrument number. Return an empty array if no channel uses this instrument number.
+        /// Return the channels that use the specified instrument number. Return an empty array if no channel uses this instrument number.
         /// </summary>
         public int[] GetInstrumentUsage(int instrument)
         {
@@ -238,7 +248,7 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// Remove a specific note from all patterns and return the number of cells changed.
         /// </summary>
-        public int RemoveNotes(byte note)
+        public int RemoveNotes(int note)
         {
             if (note == PatternCell.NoteAbsent)
                 throw new ArgumentException(nameof(note));

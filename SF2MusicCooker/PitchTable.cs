@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace SF2MusicCooker
 {
@@ -64,6 +65,8 @@ namespace SF2MusicCooker
         };
         */
 
+        private const int FM_OFFSET = 24; // See macros.asm
+
         private readonly struct Entry
         {
             public readonly int Note;
@@ -79,6 +82,51 @@ namespace SF2MusicCooker
         private readonly Entry[] _notes;
         private readonly Entry[] _psgNotes;
         private readonly Dictionary<int, string> _names;
+
+        // TODO
+        // private ExtendedNotes _extendedNotes = ExtendedNotes.None;
+        // private ExtendedNotes _extendedPsgNotes = ExtendedNotes.None;
+
+        // TODO
+        /*
+        /// <summary>
+        /// Mark certain Cube notes as unused.
+        /// </summary>
+        public void MarkUnused(byte[] notes, byte[] psgNotes)
+        {
+            if (notes.Length == 0 && psgNotes.Length == 0) return;
+            if (_extendedNotes != ExtendedNotes.None) throw new InvalidOperationException("Unused notes have already been marked");
+
+            RegisterLookup lookup = new RegisterLookup();
+
+            ushort YMResolver(int a4tuning, byte note)
+            {
+                int frequency = GetFurnaceFrequency(a4tuning, note);
+                return lookup.GetYMRegister(frequency);
+            }
+
+            ushort PSGResolver(int a4tuning, byte note)
+            {
+                int frequency = GetFurnaceFrequency(a4tuning, note);
+                return lookup.GetPSGRegister(frequency);
+            }
+
+            _extendedNotes = new ExtendedNotes(notes, YMResolver);
+            _extendedPsgNotes = new ExtendedNotes(psgNotes, PSGResolver);
+        }
+        */
+
+        /// <summary>
+        /// Get the indexes of all Cube notes (for either YM2612 or PSG), optionally matching a filter predicate.
+        /// </summary>
+        public byte[] GetNotes(bool psg, Predicate<byte> filter = null)
+        {
+            filter = filter ?? (x => true);
+            Entry[] source = psg ? _psgNotes : _notes;
+            List<byte> notes = new List<byte>(source.Length);
+            foreach (Entry entry in source) { if (filter((byte)entry.Note)) notes.Add((byte)entry.Note); }
+            return notes.ToArray();
+        }
 
         /// <summary>
         /// Get Furnace target frequency of a note.
@@ -124,7 +172,7 @@ namespace SF2MusicCooker
         /// </summary>
         public string GetCubeNoteName(int cubeNote)
         {
-            if (_names != null && _names.TryGetValue(cubeNote, out string name))
+            if (_names.TryGetValue(cubeNote, out string name))
                 return name;
             else
                 return cubeNote.ToString();
@@ -152,7 +200,7 @@ namespace SF2MusicCooker
         {
             // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
             // 24 is the hardcoded offset in macros.asm
-            return CreateTunedMap(_notes, a4tuning, 7, 24);
+            return CreateTunedMap(_notes, a4tuning, 7, FM_OFFSET);
         }
 
         /// <summary>
@@ -162,6 +210,61 @@ namespace SF2MusicCooker
         {
             // I didn't investigate why there is -1 octave (-12)
             return CreateTunedMap(_psgNotes, a4tuning, -12, 0);
+        }
+
+        /*
+        /// <summary>
+        /// Write frequencies ASM file.
+        /// </summary>
+        public void WriteFrequencies(string path)
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Write frequencies ASM file.
+        /// </summary>
+        public void WritePSGFrequencies(string path)
+        {
+            // TODO
+        }
+        */
+
+        /// <summary>
+        /// Count the notes used by a sheet.
+        /// </summary>
+        public void CountNotes(string asm, NoteCounter counter)
+        {
+            Dictionary<string, int> reverseMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var pair in _names)
+            {
+                reverseMap.Add(pair.Value, pair.Key);
+            }
+
+            int ToNote(string x)
+            {
+                if (reverseMap.TryGetValue(x, out int note))
+                    return note;
+                else
+                    return Tools.ConvertASMValue(x);
+            }
+
+            byte OffsetAndCast(int note, int offset)
+            {
+                note -= offset;
+                if (note < 0 || note > 0xFF) throw new OverflowException("Found note with invalid value '" + note + "' (must fit within a byte)");
+                return (byte)note;
+            }
+
+            Regex regex = new Regex("noteL?[ \t]+([a-zA-Z0-9]+)");
+            Regex regexPsg = new Regex("psgNoteL?[ \t]+([a-zA-Z0-9]+)");
+            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), FM_OFFSET));
+            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), 0));
+
+            // TODO: ignore psgNote, psgNoteL from noise channel
+
+            counter.Add(usedNotes, usedPsgNotes);
         }
 
         private static Entry[] ReadFrequencies(string path, Func<int, int> freqFn)
@@ -174,16 +277,17 @@ namespace SF2MusicCooker
             return entries;
         }
 
-        public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath = null)
+        public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath)
         {
             _notes = ReadFrequencies(ymFrequenciesPath, GetYMFrequency);
             _psgNotes = ReadFrequencies(psgFrequenciesPath, GetPSGFrequency);
-            if (notesNamePath != null) _names = Tools.ReadASMEnumReverseMap(notesNamePath);
+            _names = Tools.ReadASMEnumReverseMap(notesNamePath);
         }
 
         private PitchTable()
         {
             _notes = _psgNotes = new Entry[0];
+            _names = new Dictionary<int, string>();
         }
 
         /// <summary>

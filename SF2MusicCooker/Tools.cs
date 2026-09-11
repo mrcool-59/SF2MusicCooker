@@ -293,16 +293,24 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Fill a buffer with a value.
+        /// Fill a span of array with a value.
         /// </summary>
-        public static void Fill(byte[] buffer, int offset, int count, byte value)
+        public static void Fill<T>(T[] array, int offset, int count, T value)
         {
-            if (offset < 0 || offset >= buffer.Length) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (offset < 0 || offset >= array.Length) throw new ArgumentOutOfRangeException(nameof(offset));
 
             int end = offset + count;
-            if (count < 0 || end > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+            if (count < 0 || end > array.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
-            for (int i = offset; i < end; i++) buffer[i] = value;
+            for (int i = offset; i < end; i++) array[i] = value;
+        }
+
+        /// <summary>
+        /// Fill an array with a value.
+        /// </summary>
+        public static void Fill<T>(T[] array, T value)
+        {
+            for (int i = 0; i < array.Length; i++) array[i] = value;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SF2MusicCooker.Furnace;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -108,20 +109,24 @@ namespace SF2MusicCooker
                     new Bank("musicbankext1", 0x8000, 57, 8) // Extra bank 2
                 };
 
-                pcmBanks = new int[4]
+                pcmBanks = new int[6]
                 {
                     0x8000, // PCM bank 1
                     0x3000, // PCM bank 2
                     0x8000, // Extra bank 1
                     0x8000, // Extra bank 2
+                    0x8000, // Extra bank 3
+                    0x8000, // Extra bank 4
                 };
 
-                pcmNames = new string[4]
+                pcmNames = new string[6]
                 {
                     "pcmbank0",
                     "pcmbank1",
                     "pcmbankext0",
                     "pcmbankext1",
+                    "pcmbankext2",
+                    "pcmbankext3",
                 };
 
                 pcmSlots = PCMInstruments.MAX_SLOTS;
@@ -344,6 +349,85 @@ namespace SF2MusicCooker
 
             if (removedSamples > 0 && print)
                 Console.WriteLine("> Removed {0} unused sample{1}!", removedSamples, removedSamples > 1 ? "s" : "");
+        }
+
+        /// <summary>
+        /// Recycle unused Cube notes to be able to hit Furnace notes from originally unsupported octaves in the custom musics.
+        /// </summary>
+        public void PlanExtendedNotes(Input[] inputs, bool enabled, bool print)
+        {
+            if (!enabled || inputs == null || inputs.Length == 0) return;
+
+            // We start of by counting the notes of vanilla musics / SFXs
+            NoteCounter cubeCounter = CountVanillaNotes();
+
+            // Then we show to the user notes that are unused by the sound driver
+            if (print) PrintUnusedNotes(cubeCounter);
+
+            // We need to figure out the notes we will need to support from the custom musics
+            NoteCounter furnaceCounter = CountCustomNotes(inputs);
+
+            // Then, allocate notes as needed
+            // TODO
+        }
+
+        private NoteCounter CountVanillaNotes()
+        {
+            NoteCounter counter = new NoteCounter();
+
+            void Process(Sheet sheet) { if (sheet.Built) Pitch.CountNotes(sheet, counter); }
+
+            foreach (Song song in GetAllSongs(false)) Process(song.Sheet);
+            foreach (SFX sfx in GetAllSFXs(false)) Process(sfx.Sheet);
+
+            return counter;
+        }
+
+        private NoteCounter CountCustomNotes(Input[] inputs)
+        {
+            NoteCounter counter = new NoteCounter();
+
+            foreach (Input input in inputs)
+            {
+                FileInfo fur = input.Fur;
+                Options options = input.Options;
+
+                using (FileStream stream = fur.OpenRead())
+                {
+                    FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
+                    file = file.DropExtended();
+                    file.RemoveUnsupportedNotes();
+                    bool dac = file.HasDAC();
+
+                    for (int channel = 0; channel < file.Channels; channel++)
+                    {
+                        if (channel == 5 && dac) continue; // Skip channel 6 in DAC mode
+                        else if (channel >= 9) continue; // Skip noise generator
+
+                        byte[] notes = file.ReadNotes(channel);
+                        bool psg = channel > 5;
+                        NoteBible.Transpose(notes, psg ? options.TransposePSG : options.TransposeFM);
+                        counter.Add(notes, psg);
+                    }
+                }
+            }
+
+            return counter;
+        }
+
+        private void PrintUnusedNotes(NoteCounter counter)
+        {
+            byte[] unusedNotes = Pitch.GetNotes(false, note => counter.Get(note, false) == 0);
+            byte[] unusedPsgNotes = Pitch.GetNotes(true, note => counter.Get(note, true) == 0);
+
+            void Print(string what, int count)
+            {
+                if (count > 0)
+                    Console.WriteLine("> There {0} {1} unused {2} note{3} that can be recycled.", count > 1 ? "are" : "is", count, what, count > 1 ? "s" : "");
+            }
+
+            Print("YM", unusedNotes.Length);
+            Print("PSG", unusedPsgNotes.Length);
         }
 
         /// <summary>

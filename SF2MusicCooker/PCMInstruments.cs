@@ -15,7 +15,7 @@ namespace SF2MusicCooker
 
         public const int MAX_SLOTS = 0x7F; // Sample commands have 7 bits, so this is the absolute limit
 
-        private const byte unusedByte = 0xFF;
+        private const byte UNUSED = 0xFF;
 
         public readonly struct PCMSample
         {
@@ -169,7 +169,7 @@ namespace SF2MusicCooker
             for (int i = 0; i < count; i++) data[offset + i] = data[offset + i + length];
 
             // Fill end with unused bytes
-            Tools.Fill(data, _cursors[bank], length, unusedByte);
+            Tools.Fill(data, _cursors[bank], length, UNUSED);
 
             // Update slots
             for (int i = 0; i < _slots.Length; i++)
@@ -294,7 +294,7 @@ namespace SF2MusicCooker
                     {
                         SampleMap.Entry entry = map.Read(note);
 
-                        if (!entry.Invalid && file.HasPlayNoteCommand(5, note))
+                        if (!entry.Invalid && file.HasNote(5, note))
                         {
                             // Sample is only added if it is used in channel 6
 
@@ -373,7 +373,7 @@ namespace SF2MusicCooker
 
             for (int i = 0; i < _banks.Length; i++)
             {
-                Tools.Fill(_banks[i], 0, _banks[i].Length, unusedByte);
+                Tools.Fill(_banks[i], UNUSED);
                 _cursors[i] = 0;
             }
         }
@@ -502,7 +502,7 @@ namespace SF2MusicCooker
                     {
                         SampleMap.Entry entry = map.Read(note);
 
-                        if (!entry.Invalid && file.HasPlayNoteCommand(5, note))
+                        if (!entry.Invalid && file.HasNote(5, note))
                         {
                             Sample sample = file.Samples[entry.Sample];
 

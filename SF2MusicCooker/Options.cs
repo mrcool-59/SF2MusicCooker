@@ -51,7 +51,7 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Return true if provided FM instrument is not blacklisted.
+        /// Return true if provided FM or PSG Furnace instrument is not blacklisted.
         /// </summary>
         public bool IsAllowed(int instrument)
         {

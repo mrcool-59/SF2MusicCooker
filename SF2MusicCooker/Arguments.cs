@@ -11,6 +11,7 @@ namespace SF2MusicCooker
         public readonly string Path;
         public readonly string InputFolder;
         public readonly bool IncludeOriginalNames;
+        public readonly bool DisableExtendedNotes;
         public readonly bool NukeMusic;
         public readonly bool NukeSFX;
         public readonly bool NoPause;
@@ -41,6 +42,7 @@ namespace SF2MusicCooker
             Path = args.Length >= 1 ? args[0] : null;
             InputFolder = Tools.ParseStringArg(args, inputLongRegex, inputShortRegex);
             IncludeOriginalNames = Exists("--includeoriginalnames") || Exists("-ion");
+            DisableExtendedNotes = Exists("--disableextendednotes") || Exists("-den");
             NukeMusic = Exists("--nukemusic") || Exists("-nm") || Exists("--nukeall") || Exists("-na");
             NukeSFX = Exists("--nukesfx") || Exists("-ns") || Exists("--nukeall") || Exists("-na");
             NoPause = Exists("--nopause") || Exists("-np");

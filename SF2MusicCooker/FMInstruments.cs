@@ -13,6 +13,8 @@ namespace SF2MusicCooker
 
         public const byte MAX_SLOTS = LENGTH / Definition.LENGTH;
 
+        private const byte UNUSED = 0xFF;
+
         public sealed class Definition : IEquatable<Definition>
         {
             public const int LENGTH = 29; // See documentation in 'yminst.txt'
@@ -26,8 +28,6 @@ namespace SF2MusicCooker
 
                 _buffer = buffer;
             }
-
-            public static readonly Definition Null = new Definition(new byte[LENGTH] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF });
 
             public bool Equals(Definition other)
             {
@@ -55,6 +55,18 @@ namespace SF2MusicCooker
                 Buffer.BlockCopy(buffer, instrument * LENGTH, chunk, 0, LENGTH);
                 return new Definition(chunk);
             }
+
+            static Definition()
+            {
+                byte[] buffer = new byte[LENGTH];
+                Tools.Fill(buffer, UNUSED);
+                Unused = new Definition(buffer);
+            }
+
+            /// <summary>
+            /// Represents the unused FM instrument.
+            /// </summary>
+            public static readonly Definition Unused;
         }
 
         private readonly byte[] _buffer;
@@ -135,7 +147,7 @@ namespace SF2MusicCooker
             if (instrument >= _used.Length) throw new ArgumentOutOfRangeException(nameof(instrument));
 
             _used[instrument] = 0;
-            Definition.Null.Write(_buffer, instrument);
+            Definition.Unused.Write(_buffer, instrument);
         }
 
         /// <summary>
@@ -226,7 +238,7 @@ namespace SF2MusicCooker
             if (yminst == null || yminst.Length != LENGTH) throw new FormatException("Bad 'yminst' data: " + LENGTH + " bytes expected");
 
             Buffer.BlockCopy(yminst, 0, _buffer, 0, _buffer.Length);
-            for (int i = 0; i < _used.Length; i++) _used[i] = (byte)(Definition.Read(_buffer, (byte)i).Equals(Definition.Null) ? 0 : 1);
+            for (int i = 0; i < _used.Length; i++) _used[i] = (byte)(Definition.Read(_buffer, (byte)i).Equals(Definition.Unused) ? 0 : 1);
         }
 
         public FMInstruments(int slots)
@@ -240,7 +252,7 @@ namespace SF2MusicCooker
             _buffer = new byte[LENGTH];
             _used = new byte[slots];
 
-            Tools.Fill(_buffer, 0, _buffer.Length, 0xFF);
+            Tools.Fill(_buffer, UNUSED);
         }
     }
 }

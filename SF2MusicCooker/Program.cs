@@ -24,21 +24,19 @@ namespace SF2MusicCooker
                 Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments, PCM samples)...");
                 output.LoadVanilla();
 
+                List<Input> inputs = new List<Input>();
                 List<Sheet> sheets = new List<Sheet>();
                 string folder = arguments.InputFolder ?? "Input";
                 FileInfo[] musics = Tools.GetActiveFiles(folder, "*music*.fur");
                 FileInfo[] sfxs = Tools.GetActiveFiles(folder, "*sfx*.fur");
                 Dictionary<int, Options> overrides = Options.ReadOverrideOptions(folder);
 
-                if (musics.Length == 0 && sfxs.Length == 0)
-                {
-                    Console.WriteLine("WARNING: No recognized input .fur file found! The tool can still proceed anyway...");
-                }
-                else
-                {
-                    DoMusics(sheets, musics, output, arguments, overrides);
-                    DoSFXs(sheets, sfxs, output, arguments, overrides);
-                }
+                // Process each supplied file
+                DoMusics(inputs, sheets, musics, output, arguments, overrides);
+                DoSFXs(inputs, sheets, sfxs, output, arguments, overrides);
+
+                // Warning if not input was provided
+                if (inputs.Count == 0) Console.WriteLine("WARNING: No recognized input .fur file found! The tool can still proceed anyway...");
 
                 // Nuke vanilla
                 output.NukeVanilla(arguments.NukeMusic, arguments.NukeSFX);
@@ -49,6 +47,9 @@ namespace SF2MusicCooker
                 // Remove unused assets
                 output.RemoveUnusedAssets(true);
 
+                // Plan extended notes
+                output.PlanExtendedNotes(inputs.ToArray(), !arguments.DisableExtendedNotes, true);
+
                 // Build sheets that have been deferred
                 foreach (Sheet sheet in sheets) sheet.Build();
 
@@ -58,42 +59,8 @@ namespace SF2MusicCooker
                 // Show time amount used to build musics
                 Console.WriteLine("-- TOTAL BUILD TIME: {0} sec --", stopwatch.Elapsed.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture));
 
-                Console.WriteLine("Bank storage summary:");
-                bool overloaded = output.PrintSize();
-                bool autoYes = arguments.AutoYes;
-                bool autoNo = arguments.AutoNo;
-                if (overloaded)
-                {
-                    if (autoYes || autoNo)
-                    {
-                        autoYes = false;
-                        autoNo = false;
-                        Console.WriteLine("! Auto Y/N has been turned off because one of the Banks is overloaded and requires manual review.");
-                    }
-                    Console.WriteLine("WARNING: At least 1 Bank is overloaded, assembling the ROM will either fail or produce broken results!");
-                    Console.WriteLine("         For musics: you should move some musics from that Music Bank to Music Banks that still have remaining space.");
-                    if (output.Name == "SF2DISASM" && !output.HasExtBanks)
-                    {
-                        Console.WriteLine("         /!\\ We highly recommand you enable 'EXPANDED_MUSIC_BANKS' feature in 'sf2patches.asm' to solve this issue. /!\\");
-                    }
-                    Console.WriteLine("         For SFXs: sorry, you have no other option but to sacrifice some of your SFXs to make room.");
-                }
-
-                bool writeToDISASM = autoYes && !autoNo;
-                if (!autoYes && !autoNo)
-                {
-                    Console.WriteLine("The tool is about to write output files (Y/N).");
-                    Console.WriteLine("* Press 'Y' to write output files directly to the appropriate locations in {0} folder.", output.Name);
-                    Console.WriteLine("* Press 'N' to write to 'Output' folder instead (any existing 'Output' folder will be deleted beforehand).");
-                    WaitForYesNo(ref writeToDISASM);
-
-                    if (overloaded && writeToDISASM)
-                    {
-                        Console.WriteLine("Are you really sure? The ROM *will* be broken! (Y/N)");
-                        WaitForYesNo(ref writeToDISASM);
-                    }
-                }
-
+                // Show bank summary and ask if we should write to DISASM folder
+                bool writeToDISASM = VerifyBanksAndPrompt(arguments, output);
                 if (writeToDISASM)
                 {
                     Console.WriteLine("Writing to {0}...", output.Name);
@@ -133,6 +100,46 @@ namespace SF2MusicCooker
             }
         }
 
+        static bool VerifyBanksAndPrompt(Arguments arguments, Output output)
+        {
+            Console.WriteLine("Bank storage summary:");
+            bool overloaded = output.PrintSize();
+            bool autoYes = arguments.AutoYes;
+            bool autoNo = arguments.AutoNo;
+            if (overloaded)
+            {
+                if (autoYes || autoNo)
+                {
+                    autoYes = false;
+                    autoNo = false;
+                    Console.WriteLine("! Auto Y/N has been turned off because one of the Banks is overloaded and requires manual review.");
+                }
+                Console.WriteLine("WARNING: At least 1 Bank is overloaded, assembling the ROM will either fail or produce broken results!");
+                Console.WriteLine("         For musics: you should move some musics from that Music Bank to Music Banks that still have remaining space.");
+                if (output.Name == "SF2DISASM" && !output.HasExtBanks)
+                {
+                    Console.WriteLine("         /!\\ We highly recommand you enable 'EXPANDED_MUSIC_BANKS' feature in 'sf2patches.asm' to solve this issue. /!\\");
+                }
+                Console.WriteLine("         For SFXs: sorry, you have no other option but to sacrifice some of your SFXs to make room.");
+            }
+
+            bool writeToDISASM = autoYes && !autoNo;
+            if (!autoYes && !autoNo)
+            {
+                Console.WriteLine("The tool is about to write output files (Y/N).");
+                Console.WriteLine("* Press 'Y' to write output files directly to the appropriate locations in {0} folder.", output.Name);
+                Console.WriteLine("* Press 'N' to write to 'Output' folder instead (any existing 'Output' folder will be deleted beforehand).");
+                WaitForYesNo(ref writeToDISASM);
+
+                if (overloaded && writeToDISASM)
+                {
+                    Console.WriteLine("Are you really sure? The ROM *will* be broken! (Y/N)");
+                    WaitForYesNo(ref writeToDISASM);
+                }
+            }
+            return writeToDISASM;
+        }
+
         static void WaitForYesNo(ref bool answer)
         {
             while (true)
@@ -143,8 +150,10 @@ namespace SF2MusicCooker
             }
         }
 
-        static void DoMusics(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments, Dictionary<int, Options> overrides)
+        static void DoMusics(List<Input> inputs, List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments, Dictionary<int, Options> overrides)
         {
+            if (furs.Length == 0) return;
+
             HashSet<int> provided = new HashSet<int>();
 
             foreach (FileInfo fur in furs)
@@ -167,8 +176,12 @@ namespace SF2MusicCooker
                 // Prepare the options
                 Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
 
+                // Build the input
+                Input input = new Input(fur, number, pairNumber, options, name);
+                inputs.Add(input);
+
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, pairNumber, null, output.Instruments, output.Samples, output.Envelopes, output.Pitch, options, name);
+                Func<string> builder = Builder(input, output);
 
                 // Build ASM name
                 string asmName = "MUSIC_CUSTOM_" + Tools.GetASMValidName(name);
@@ -213,8 +226,10 @@ namespace SF2MusicCooker
             }
         }
 
-        static void DoSFXs(List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments, Dictionary<int, Options> overrides)
+        static void DoSFXs(List<Input> inputs, List<Sheet> sheets, FileInfo[] furs, Output output, Arguments arguments, Dictionary<int, Options> overrides)
         {
+            if (furs.Length == 0) return;
+
             List<SFX> sfxs = new List<SFX>(furs.Length);
 
             foreach (FileInfo fur in furs)
@@ -223,14 +238,18 @@ namespace SF2MusicCooker
 
                 if (arguments.Only >= 0 && number != arguments.Only) continue;
 
-                // Prepare the options
-                Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
-
                 // Pick a pointer name
                 string pointerName = "CSFX_" + sfxs.Count;
 
+                // Prepare the options
+                Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
+
+                // Build the input
+                Input input = new Input(fur, number, pointerName, options, name);
+                inputs.Add(input);
+
                 // Generate the builder
-                Func<string> builder = Builder(fur, number, 0, pointerName, output.Instruments, output.Samples, output.Envelopes, output.Pitch, options, name);
+                Func<string> builder = Builder(input, output);
 
                 // Build ASM name
                 string asmName = "SFX_CUSTOM_" + Tools.GetASMValidName(name);
@@ -247,10 +266,17 @@ namespace SF2MusicCooker
             output.AddOrReplaceSFX(sfxs.ToArray(), arguments.IncludeOriginalNames);
         }
 
-        static Func<string> Builder(FileInfo fur, int number, int pairNumber, string pointerName, FMInstruments instruments, PCMInstruments samples, PSGInstruments envelopes, PitchTable pitch, Options options, string name)
+        static Func<string> Builder(Input input, Output output)
         {
             return () =>
             {
+                FileInfo fur = input.Fur;
+                Options options = input.Options;
+                FMInstruments instruments = output.Instruments;
+                PCMInstruments samples = output.Samples;
+                PSGInstruments envelopes = output.Envelopes;
+                PitchTable pitch = output.Pitch;
+
                 using (FileStream stream = fur.OpenRead())
                 {
                     Console.WriteLine("Reading '{0}' input file...", fur.Name);
@@ -299,7 +325,7 @@ namespace SF2MusicCooker
                     }
 
                     // Adjust the playback rate to play nice with YM2612 timer and SFXs play speed
-                    AsmSheetWriter.AdjustPlayRate(ref file, pointerName != null, !options.PreserveRate);
+                    AsmSheetWriter.AdjustPlayRate(ref file, input.PointerName != null, !options.PreserveRate);
 
                     // Warn the user of unsupported effects the .fur file may have
                     AsmSheetWriter.PrintUnsupportedEffects(file);
@@ -314,13 +340,13 @@ namespace SF2MusicCooker
                     InstrumentMap map = new InstrumentMap(instruments, samples, file, usedInstruments);
 
                     // Prepare the title
-                    string title = "[CUSTOM] " + name;
+                    string title = "[CUSTOM] " + input.Name;
 
                     // Write the ASM sheet of the music/SFX
-                    if (pointerName != null)
-                        return AsmSheetWriter.WriteSFX(file, options, map, envelopes, pitch, pointerName, SFXType.Automatic, title);
+                    if (input.SFX)
+                        return AsmSheetWriter.WriteSFX(file, options, map, envelopes, pitch, input.PointerName, SFXType.Automatic, title);
                     else
-                        return AsmSheetWriter.Write(file, options, map, envelopes, pitch, number, pairNumber, title);
+                        return AsmSheetWriter.Write(file, options, map, envelopes, pitch, input.Number, input.PairNumber, title);
                 }
             };
         }

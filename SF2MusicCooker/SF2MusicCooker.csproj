@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -51,6 +51,7 @@
     <Compile Include="BankSFX.cs" />
     <Compile Include="ChannelCommands.cs" />
     <Compile Include="Envelope.cs" />
+    <Compile Include="ExtendedNotes.cs" />
     <Compile Include="FilePaths.cs" />
     <Compile Include="Furnace\Effect.cs" />
     <Compile Include="Furnace\FeatureInterpreter.cs" />
@@ -64,9 +65,12 @@
     <Compile Include="Furnace\Position.cs" />
     <Compile Include="Furnace\Sample.cs" />
     <Compile Include="Furnace\Tick.cs" />
+    <Compile Include="Input.cs" />
     <Compile Include="Noise.cs" />
+    <Compile Include="NoteCounter.cs" />
     <Compile Include="PSGInstruments.cs" />
     <Compile Include="EnvelopeGuesser.cs" />
+    <Compile Include="RegisterLookup.cs" />
     <Compile Include="TunedMap.cs" />
     <Compile Include="InstrumentMap.cs" />
     <Compile Include="LoopOptimizer.cs" />
@@ -226,6 +230,9 @@
     <Content Include="Test-3\options.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Test-Vanilla\Empty.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Test\options.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -234,5 +241,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

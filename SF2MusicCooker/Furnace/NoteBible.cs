@@ -107,6 +107,25 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Transpose a note by the provided amount of semitones.
+        /// </summary>
+        public static void Transpose(ref byte note, int semitones)
+        {
+            note = Clamp(note + semitones);
+        }
+
+        /// <summary>
+        /// Transpose an array of notes by the provided amount of semitones.
+        /// </summary>
+        public static void Transpose(byte[] notes, int semitones)
+        {
+            for (int i = 0; i < notes.Length; i++)
+            {
+                Transpose(ref notes[i], semitones);
+            }
+        }
+
+        /// <summary>
         /// Verify note value is between BASE_VALUE and LAST_VALUE.
         /// </summary>
         public static void Verify(int value)

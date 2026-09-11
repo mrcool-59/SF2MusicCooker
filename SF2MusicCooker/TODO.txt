@@ -1,5 +1,8 @@
 ﻿Version 0.99:
-- Shop: PSG output suspicious
+- Shop: PSG output suspicious (retester)
+- YM/PSG note frequencies replacement/expansion
+- Calcul de la main loop au niveau du Furnace file directement (requiert que le tick de destination ait été déjà touché pour que ça soit la position de main loop)
+	=> Implement a spaghetti .fur file to test that
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
@@ -10,7 +13,6 @@ Version 1.1:
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Add artificial new notes (identical to the original note, in sustain mode) to be able to handle volume / panning changes per tick
 - Better portamento behavior (better match with Furnace behavior) with artificial legato on previous note (note: actual pitch slide is correct)
-- YM/PSG note frequencies replacement/expansion
 
 Version 1.2:
 - Option to force sustain on all DAC samples (?)
@@ -24,8 +26,6 @@ Version 1.2.1:
 	=> Test-3 Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
 	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
 		(?) All of this might be related to required but suboptimal bank switching (hopefully not)
-- Tigher loop detection: needs to reach the same position 2 times to be considered a loop (put method in FurnaceFile)
-	=> Implement a spaghetti .fur file to test that
 
 Version 1.3:
 - Auto-bank assignment feature

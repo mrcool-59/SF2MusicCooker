@@ -140,7 +140,7 @@ namespace SF2MusicCooker
             if ((_mask & (1 << channel)) == 0) return null;
 
             // Do not generate channels that are empty or muted
-            if (!file.HasPlayNoteCommand(channel) || options.IsMuted(channel)) return "channel_end";
+            if (!file.HasNote(channel) || options.IsMuted(channel)) return "channel_end";
 
             // We must be able to reach the first note
             int firstNoteTicks = FindFirstNote(file, channel, options.DumpNotes);
@@ -231,7 +231,7 @@ namespace SF2MusicCooker
                     FlushPendingChanges(true, tick);
 
                     // Finally, write note/sample command
-                    if (options.IsAllowed(psg ? psgFurnaceInstrument : currentInstrument))
+                    if (psg || options.IsAllowed(currentInstrument))
                     {
                         if (dac)
                         {
@@ -332,7 +332,7 @@ namespace SF2MusicCooker
                 {
                     currentInstrument = nextInstrument;
 
-                    if (psg && options.IsAllowed(psgFurnaceInstrument))
+                    if (psg)
                     {
                         // Load PSG instrument
                         flags |= StateSnapshot.INSTRUMENT_SET;
@@ -441,7 +441,7 @@ namespace SF2MusicCooker
 
             void WriteNote(byte note, int release, int length)
             {
-                if (!noise && !dac) note = NoteBible.Clamp(note + (psg ? options.TransposePSG : options.TransposeFM));
+                if (!noise) NoteBible.Transpose(ref note, psg ? options.TransposePSG : options.TransposeFM);
                 string value = noise ? NOISE(note) : (psg ? tunedPsg : tuned).F2CName(note);
                 WriteNoteOrSample(value, release, length, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
             }
@@ -728,19 +728,26 @@ namespace SF2MusicCooker
             {
                 if (psg)
                 {
-                    if (!envelopes.FindEnvelope(file, psgFurnaceInstrument, out byte index, out bool approximative))
+                    if (options.IsAllowed(psgFurnaceInstrument))
                     {
-                        if (approximative)
+                        if (!envelopes.FindEnvelope(file, psgFurnaceInstrument, out byte index, out bool approximative))
                         {
-                            Warning("Furnace instrument " + Tools.Hex2(psgFurnaceInstrument, false) + " volume envelope has no exact match in SF2 sound driver, the closest one has been picked instead", tick);
+                            if (approximative)
+                            {
+                                Warning("Furnace instrument " + Tools.Hex2(psgFurnaceInstrument, false) + " volume envelope has no exact match in SF2 sound driver, the closest one has been picked instead", tick);
+                            }
+                            else if (!options.NoEnvelopeGuessing)
+                            {
+                                index = envelopes.GuessEnvelope(file, tick, channel, nextVolume, out noteRelease);
+                            }
                         }
-                        else if (!options.NoEnvelopeGuessing)
-                        {
-                            index = envelopes.GuessEnvelope(file, tick, channel, nextVolume, out noteRelease);
-                        }
-                    }
 
-                    nextInstrument = PSGInstruments.ComputeInstrument(index, nextVolume);
+                        nextInstrument = PSGInstruments.ComputeInstrument(index, nextVolume);
+                    }
+                    else
+                    {
+                        nextInstrument = 0; // Mute because instrument is not allowed
+                    }
                 }
             }
 
@@ -921,11 +928,11 @@ For all (timing/looping):
                 commands.Add("mainLoopEnd");
                 commands.Add("wait");
                 commands.Add("waitL " + BYTE(192));
+                commands.Add("setRelease " + BYTE_HEX(0x05));
+                commands.Add("sustain");
 
 For FM/DAC channels:
                 commands.Add("stereo " + BYTE_HEX(0xC0));
-                commands.Add("sustain");
-                commands.Add("setRelease " + BYTE_HEX(0x05));
 
 For FM channels:
                 commands.Add("inst " + BYTE(0));
@@ -941,14 +948,15 @@ For DAC channel:
                 commands.Add("sample " + BYTE(4));
                 commands.Add("sampleL " + BYTE(4) + "," + BYTE(3));
 
-For PSG channels:
-                commands.Add("psgInst " + BYTE(4));
-                commands.Add("psgNoteL " + NOTE(0x51) + "," + BYTE(4));
-                commands.Add("psgNote " + NOTE(0x51));
-                commands.Add("setRelease " + BYTE_HEX(0x05));
+For PSG tone channels:
                 commands.Add("vibrato " + BYTE_HEX(0x4C));
                 commands.Add("shifting " + BYTE_HEX(0x10));
                 commands.Add("ymTimer " + BYTE_HEX(0xC8));
+
+For PSG tone/noise channels:
+                commands.Add("psgInst " + BYTE(4));
+                commands.Add("psgNote " + NOTE(0x51));
+                commands.Add("psgNoteL " + NOTE(0x51) + "," + BYTE(4));
 
 -------------------- EFFECTS IMPLEMENTATION ANALYSIS --------------------
 

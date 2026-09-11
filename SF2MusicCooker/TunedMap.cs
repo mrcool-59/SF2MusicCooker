@@ -6,6 +6,8 @@ namespace SF2MusicCooker
 {
     public sealed class TunedMap
     {
+        // TODO: change this to no longer rely on min/max => determine the main note value (using negative value for non-primary notes?)
+
         private readonly int[] _f2c;
         private readonly Func<int, string> _c2n;
         private readonly List<byte> _clamped;

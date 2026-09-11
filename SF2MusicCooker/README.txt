@@ -2,9 +2,9 @@ PREAMBLE
 --------
 
 We assume the following:
-- You have basic knowledge of how SF2DISASM folders are structured.
+- You have basic knowledge about how SF2DISASM folders are structured.
 - You are working in a branch in which 'feature/expand_musics' feature branch has been merged.
-- You have basic knowledge of the Furnace tracker software.
+- You have basic knowledge about the Furnace tracker software.
 - You have composed music tracks in Furnace and saved them as .fur files (or you have received such files from someone else who composed them).
 - You are interested in importing these music tracks to replace existing music tracks or add new music tracks into your Shining Force 2 ROM hack. ;-)
 
@@ -24,12 +24,12 @@ HOW TO USE
 - Adding new musics is only useful if you modify map data or game code to use them (i.e: this use case is for the more ambitious projects).
 - Replacing existing musics is the more common use case and is intended for hacks with smaller scopes. There is a small caveat with 2 problematic music pairs (explained below).
 - The Furnace files MUST use EXACTLY and ONLY the Genesis chips (YM2612 + SMS PSG), Furnace files that are not compliant will be rejected by the tool.
-- Run SF2MusicCooker.exe with first argument = path to your SF2DISASM folder and pray to the gods your Furnace files are simple enough to be handled properly :-)
+- Run SF2MusicCooker.exe with first argument = path to your SF2DISASM folder and pray to the gods your Furnace files will be handled properly :-)
 	TIP: You can use the __Run.bat script to make this more convenient (please edit it the first time to put the correct path to SF2DISASM folder)
 - If the tool fails to handle a .fur file, an error message will be displayed that hopefully should explain what went wrong so you can tweak your .fur file.
 - If everything goes well, the tool will write files to the appropriate locations in your SF2DISASM folder.
 - You can also ask the tool to write files to 'Output' folder instead if you want to manually review the generated files.
-- After generating the ROM, it is a good idea to go to the sound test and verify everything works properly.
+- After generating the ROM, it is a VERY good idea to go to the sound test and verify everything works properly.
 
 
 
@@ -50,7 +50,7 @@ GOLDEN RULES (this section is especially relevant to music composers)
 ------------
 
 1. Please create custom Sega Genesis songs in Furnace in the most basic way: no macros, no extreme octave notes, no exotic effects (see "LIMITATIONS" below for more details).
-2. Your song should rely mostly on the standard 5 FM channels + the 6th channel.
+2. Your song should rely mostly on the standard 5 FM channels + the 6th channel. You can also use PSG tone channels 7 and 8.
 3. You can use samples in channel 6 (but you won't be able to it as FM channel for the *full* song). Samples should be small and you can't have too many of them.
 4. Important instruments should use FM channels 0, 1, 2 because other channels can be borrowed by sound effects during SF2 gameplay.
 5. Space in the ROM is limited and you should avoid extremely long songs with a ludicrous number of FM instruments / samples ( but you can still try ;-) ).
@@ -77,16 +77,17 @@ For SFXs, it appears the SFX Bank from the vanilla game still has some space ava
 There is no Extra Bank feature for SFX Bank, you have to fit everything into a single bank.
 
 For musics and SFXs that use samples, the vanilla game comes with 2 PCM banks (PCM Bank 0 and PCM Bank 1) that are pretty much full.
-[NOT YET AVAILABLE] Two Extra PCM banks (PCM Bank Ext 0 and PCM Bank Ext 1) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some breathing room.
+[NOT YET AVAILABLE] Four Extra PCM banks (PCM Bank Ext 0, 1, 2, 3) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
 
 
 
-OPTIONS
+OPTIONS (those can save your day or at least work around problems!)
 -------
 
 SF2 Music Cooker can be run with the following option switches to alter its behavior: (must appear after the 1st argument)
 
 --includeoriginalnames		or		-ion	Include original names of replaced musics (in the sound test)
+--disableextendednotes		or		-det	Prevents the tool from recycling unused SF2 sound driver notes (unsupported notes will use the closest vanilla SF2 note instead)
 --nukemusic					or		-nm		Replace musics from vanilla game by empty musics (can be useful as a temporary bank size issue workaround)
 --nukesfx					or		-ns		Replace SFXs from vanilla game by empty SFXs (can be useful as a temporary bank size issue workaround)
 --nukeall					or		-na		Replace everything from vanilla game by emptiness (equivalent to --nukemusic --nukesfx)
@@ -111,10 +112,10 @@ The following options can be specified globally or per-music/per-SFX:
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
 --transposefm=x				or		-tfm=x	Transpose Furnace FM notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
---transposepsg=x			or		-tpsg=x	Transpose Furnace PSG notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
+--transposepsg=x			or		-tpsg=x	Transpose Furnace PSG tone notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
 --sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound engine has a limit when playing very high pitched samples)
 --volume=x					or		-v=x	Multiply the master volume by x (can be useful to get rid of saturated output without touching the original .fur file)
---volume:linear				or		-v:l	Use linear YM volume (technically incorrect but gives interesting results depending on the music)
+--volume:linear				or		-v:l	Use linear YM volume (technically incorrect but may give interesting results depending on the music)
 --volume:nearest			or		-v:n	Use nearest instead of truncating when mapping YM volume to SF2 sound driver volume (gives subtly different results)
 
 To apply options per-music/per-SFX, provide an "options.txt" file in the "Input" folder.
@@ -124,15 +125,20 @@ Example file (dump notes of music 33 and mute samples of music 41):
 
 
 
-LIMITATIONS
+LIMITATIONS (for those that want to go in-depth)
 -----------
 
 SF2 Music Cooker currently supports:
 - FM channels 1 to 5
 - Channel 6 in FM mode
 - Channel 6 in DAC mode (samples) 
-- Notes between C-0 and B-9 on Furnace side (120 notes), unsupported notes are suppressed
-- Furnace notes are mapped to the SF2 engine notes in a best effort fashion (84 notes), in practice this means extreme notes are clamped between C-1 and B-7
+- PSG channels (3 square tones + 1 noise generator)
+- Notes between C-0 and B-9 on Furnace side (120 notes), unsupported notes are filtered out
+- Furnace notes are mapped to SF2 sound driver notes in a best effort fashion (84 YM notes and 64 PSG tone notes are available), notes in unsupported octaves are clamped
+- By default, SF2 sound driver supports YM notes from C-1 to B-7 and PSG tone notes from C-(-1) to D#4 (but as noted above, we don't allow Furnace notes from octave -1)
+- This tool has the ability to recycle unused YM and PSG tone notes to reach unsupported octaves in custom musics you provide (please do not rely on this too much)
+- You can use volume macros for your Furnace PSG instruments; if you do, this tool will use the most similar volume envelope in the SF2 sound driver
+- If you don't use volume macros for your Furnace PSG instruments, this tool will instead try to guess the volume envelope from volume commands on the channel
 - Arbitrary tempo for musics (see below for special caveats about the tick rate)
 - New FM instruments, these will get added to the vanilla SF2 instruments
 - New samples, these will get added to the vanilla SF2 samples (almost impossible to do without using expanded PCM banks)
@@ -142,11 +148,9 @@ SF2 Music Cooker currently supports:
 - Reasonably long songs that use many FM instruments and notes (as long as it can fit in the assembled ROM)
 - New songs will appear in the Sound Test; the Sound Test is also improved with better SFX names and circular navigation
 
-SF2 Music Cooker doesn't currently support but will in the future (because I want to do it):
-- PSG channels (3 square + 1 noise) with enveloppe macros
-- Additional Furnace effects and better mapping from Furnace to SF2 sound engine
-
 SF2 Music Cooker doesn't plan to support (unless there is an *overwhelming* demand for the feature):
+- Custom vibrato shapes / depth
+- Custom PSG envelopes
 - Additional song size reduction by detecting voltas (repeats with different endings)
 - Furnace features such as "macros" (for FM instruments or samples), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
 - Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool (the 'vgm2fur' Python tool is promising here)

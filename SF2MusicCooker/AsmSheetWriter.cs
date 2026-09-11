@@ -131,7 +131,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static SFXType GuessSFXType(FurnaceFile file)
         {
-            if (file.Orders == 0 || file.HasPlayNoteCommand(3) || file.HasPlayNoteCommand(4) || file.HasPlayNoteCommand(5))
+            if (file.Orders == 0 || file.HasNote(3) || file.HasNote(4) || file.HasNote(5))
                 return SFXType.Type2_YM_Ch4_Ch5_Ch6DAC;
             else
                 return SFXType.Type1_PSG_Square3_Noise;

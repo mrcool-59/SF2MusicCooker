@@ -7,6 +7,7 @@ namespace SF2MusicCooker
     {
         public readonly string MusicNumbersAndAsmNames;
         public readonly string SfxNumbersAndAsmNames;
+        public readonly string NoteNames;
         public readonly string[] MusicBankFolders;
         public readonly string[] SfxBankFolders;
         public readonly string[] PcmBankFiles;
@@ -15,20 +16,20 @@ namespace SF2MusicCooker
         public readonly string YmFrequencies;
         public readonly string PsgFrequencies;
         public readonly string PsgInstruments;
-        public readonly string NoteNames;
         public readonly string MusicNamesTxt;
         public readonly string SoundTestFolder;
 
         /// <summary>
         /// Build file paths appropriate in a generic way.
         /// </summary>
-        public FilePaths(string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames,
+        public FilePaths(string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames, string noteNames,
             string[] musicBankFolders, string[] sfxBankFolders, string[] pcmBankFiles,
             string pcmSamples, string ymInstBin, string ymFrequencies, string psgFrequencies, string psgInstruments,
-            string noteNames = null, string musicNamesTxt = null, string soundTestFolder = null)
+            string musicNamesTxt = null, string soundTestFolder = null)
         {
             MusicNumbersAndAsmNames = musicNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(musicNumbersAndAsmNames));
             SfxNumbersAndAsmNames = sfxNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(sfxNumbersAndAsmNames));
+            NoteNames = noteNames ?? throw new ArgumentNullException(nameof(noteNames));
             MusicBankFolders = musicBankFolders ?? throw new ArgumentNullException(nameof(musicBankFolders));
             SfxBankFolders = sfxBankFolders ?? throw new ArgumentNullException(nameof(sfxBankFolders));
             PcmBankFiles = pcmBankFiles ?? throw new ArgumentNullException(nameof(pcmBankFiles));
@@ -37,7 +38,6 @@ namespace SF2MusicCooker
             YmFrequencies = ymFrequencies ?? throw new ArgumentNullException(nameof(ymFrequencies));
             PsgFrequencies = psgFrequencies ?? throw new ArgumentNullException(nameof(psgFrequencies));
             PsgInstruments = psgInstruments ?? throw new ArgumentNullException(nameof(psgInstruments));
-            NoteNames = noteNames;
             MusicNamesTxt = musicNamesTxt;
             SoundTestFolder = soundTestFolder;
         }
@@ -54,6 +54,7 @@ namespace SF2MusicCooker
 
             MusicNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\musics.asm");
             SfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
+            NoteNames = Path.Combine(soundFolder, "enums.asm");
             MusicBankFolders = new string[2]
             {
                 Path.Combine(soundFolder, "musicbank0"),
@@ -73,7 +74,6 @@ namespace SF2MusicCooker
             YmFrequencies = Path.Combine(driverFolder, "ym_frequencies.asm");
             PsgFrequencies = Path.Combine(driverFolder, "psg_frequencies.asm");
             PsgInstruments = Path.Combine(driverFolder, "psg_instruments.asm");
-            NoteNames = Path.Combine(soundFolder, "enums.asm");
             MusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
             SoundTestFolder = Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch");
         }

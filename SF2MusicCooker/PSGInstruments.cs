@@ -175,7 +175,8 @@ namespace SF2MusicCooker
             }
             else
             {
-                Tools.Fill(levels, 0, levels.Length, 0x0F); // To happen, we would have to play a note at zero volume level
+                const byte FULL = 0x0F;
+                Tools.Fill(levels, FULL); // To happen, we would have to play a note at zero volume level
             }
         }
 
