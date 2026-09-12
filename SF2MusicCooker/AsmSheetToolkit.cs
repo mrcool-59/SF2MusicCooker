@@ -159,6 +159,30 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get the previous label, starting search from 'position'.
+        /// </summary>
+        public static string GetPreviousLabel(string asm, int position)
+        {
+            while (position > 0)
+            {
+                if (asm[position] == ':')
+                {
+                    int end = position;
+                    while (position >= 1 && asm[position - 1] != '\r' && asm[position - 1] != '\n')
+                    {
+                        position--;
+                    }
+                    return asm.Substring(position, end - position);
+                }
+                else
+                {
+                    position--;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Verify that all SFX channel pointers reference channel labels defined within the SFX bank and return the 'needed by' dependency map.
         /// This map should be checked whenever the user attempts to replace a vanilla SFX to make sure we end up in a valid state for assembly.
         /// </summary>

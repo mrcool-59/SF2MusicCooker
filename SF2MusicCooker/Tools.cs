@@ -206,6 +206,22 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get all elements that verify the provided regex with a filter. The regex must contain exactly 1 capture group.
+        /// </summary>
+        public static T[] GetAllElements<T>(string document, Regex elementRegex, Func<string, T> convertFunc, Predicate<Match> filterFunc)
+        {
+            CheckCaptureGroup(elementRegex, nameof(elementRegex));
+            MatchCollection matches = elementRegex.Matches(document);
+            List<T> results = new List<T>(matches.Count);
+            foreach (Match match in matches)
+            {
+                if (filterFunc(match))
+                    results.Add(convertFunc(match.Groups[1].Value));
+            }
+            return results.ToArray();
+        }
+
+        /// <summary>
         /// Get all ASM numeric values for the specified ASM token.
         /// </summary>
         public static int[] GetAllNumericElements(string document, string token)

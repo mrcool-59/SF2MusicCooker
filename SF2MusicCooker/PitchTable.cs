@@ -257,12 +257,17 @@ namespace SF2MusicCooker
                 return (byte)note;
             }
 
+            bool IsNotNoiseChannel(Match match)
+            {
+                // This is accurate enough for our needs
+                string previousLabel = AsmSheetToolkit.GetPreviousLabel(asm, match.Index);
+                return previousLabel == null || !previousLabel.EndsWith("Channel_9", StringComparison.OrdinalIgnoreCase);
+            }
+
             Regex regex = new Regex("noteL?[ \t]+([a-zA-Z0-9]+)");
             Regex regexPsg = new Regex("psgNoteL?[ \t]+([a-zA-Z0-9]+)");
-            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), FM_OFFSET));
-            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), 0));
-
-            // TODO: ignore psgNote, psgNoteL from noise channel
+            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), FM_OFFSET), IsNotNoiseChannel);
+            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), 0), IsNotNoiseChannel);
 
             counter.Add(usedNotes, usedPsgNotes);
         }
