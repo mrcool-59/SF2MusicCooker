@@ -397,11 +397,11 @@ namespace SF2MusicCooker
                     FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
                     file = file.DropExtended();
                     file.RemoveUnsupportedNotes();
-                    bool dac = file.HasDAC();
+                    file.Calculate();
 
                     for (int channel = 0; channel < file.Channels; channel++)
                     {
-                        if (channel == 5 && dac) continue; // Skip channel 6 in DAC mode
+                        if (channel == 5 && file.DAC) continue; // Skip channel 6 in DAC mode
                         else if (channel >= 9) continue; // Skip noise generator
 
                         byte[] notes = file.ReadNotes(channel);

@@ -84,6 +84,21 @@ namespace SF2MusicCooker.Furnace
         public Position End { get { return new Position(Orders, 0); } }
 
         /// <summary>
+        /// Position of the infinite loop.
+        /// </summary>
+        public Loop Loop { get; private set; }
+
+        /// <summary>
+        /// Return the tick of the first note for each channel (0 if the channel doesn't contain any note).
+        /// </summary>
+        public int[] FirstNote { get; }
+
+        /// <summary>
+        /// True if the channel 6 plays samples (DAC mode).
+        /// </summary>
+        public bool DAC { get; private set; }
+
+        /// <summary>
         /// Drop extended channel 3 and revert it to plain channel 3.
         /// </summary>
         public FurnaceFile DropExtended()
@@ -110,15 +125,18 @@ namespace SF2MusicCooker.Furnace
         public byte[] ReadNotes(int channel, Predicate<byte> stop = null)
         {
             List<byte> notes = new List<byte>();
-            foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
+            if (FirstNote[channel] > 0)
             {
-                var cell = tick.ActiveChannelCell;
-                if (cell.HasNewNote)
+                foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
                 {
-                    notes.Add(cell.Note);
-                    if (stop != null && stop(cell.Note)) break;
+                    var cell = tick.ActiveChannelCell;
+                    if (cell.HasNewNote)
+                    {
+                        notes.Add(cell.Note);
+                        if (stop != null && stop(cell.Note)) break;
+                    }
+                    if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
                 }
-                if (tick.NextPosition <= tick.Position) break;
             }
             return notes.ToArray();
         }
@@ -128,7 +146,7 @@ namespace SF2MusicCooker.Furnace
         /// </summary>
         public bool HasNote(int channel)
         {
-            return ReadNotes(channel, x => true).Length > 0;
+            return FirstNote[channel] > 0;
         }
 
         /// <summary>
@@ -137,29 +155,16 @@ namespace SF2MusicCooker.Furnace
         public bool HasNote(int channel, int note)
         {
             bool found = false;
-            bool Stop(byte newNote)
+            if (FirstNote[channel] > 0)
             {
-                if (newNote == note) found = true;
-                return found;
-            }
-            _ = ReadNotes(channel, Stop);
-            return found;
-        }
-
-        /// <summary>
-        /// Return if samples are used on channel 5.
-        /// </summary>
-        public bool HasDAC()
-        {
-            for (int i = 0; i < Instruments.Length; i++)
-            {
-                if (Instruments[i].Type == Instrument.DAC)
+                bool Stop(byte newNote)
                 {
-                    int[] channels = GetInstrumentUsage(i);
-                    if (Array.IndexOf(channels, 5) >= 0) return true;
+                    if (newNote == note) found = true;
+                    return found;
                 }
+                _ = ReadNotes(channel, Stop);
             }
-            return false;
+            return found;
         }
 
         /// <summary>
@@ -174,14 +179,17 @@ namespace SF2MusicCooker.Furnace
             List<int> channels = new List<int>(Channels);
             for (int channel = 0; channel < Channels; channel++)
             {
-                bool active = instrument == 0;
-                foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
+                if (FirstNote[channel] > 0)
                 {
-                    var cell = tick.ActiveChannelCell;
-                    if (cell.Instrument == instrument) active = true;
-                    else if (cell.Instrument != PatternCell.InstrumentAbsent) active = false;
-                    if (cell.HasNewNote && active) { channels.Add(channel); break; }
-                    else if (tick.NextPosition <= tick.Position) break;
+                    bool active = instrument == 0;
+                    foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
+                    {
+                        var cell = tick.ActiveChannelCell;
+                        if (cell.Instrument == instrument) active = true;
+                        else if (cell.Instrument != PatternCell.InstrumentAbsent) active = false;
+                        if (cell.HasNewNote && active) { channels.Add(channel); break; }
+                        else if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
+                    }
                 }
             }
             return channels.ToArray();
@@ -330,6 +338,91 @@ namespace SF2MusicCooker.Furnace
             return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff * n, A4Tuning);
         }
 
+        /// <summary>
+        /// Get the friendly name of a channel.
+        /// </summary>
+        public string GetChannelName(int channel)
+        {
+            if (Channels == 10)
+            {
+                if (channel == 5 && DAC)
+                    return "FM 6 (DAC)";
+                else if (channel <= 5)
+                    return "FM " + (channel + 1);
+                else if (channel <= 8)
+                    return "Square " + (channel - 5);
+                else
+                    return "Noise";
+            }
+            else
+            {
+                // Generic case (for example, when we read some extended channel 3 .fur file)
+                return (channel + 1).ToString();
+            }
+        }
+
+        /// <summary>
+        /// Calculate loop position, first note and DAC flag. Must be called after you are done with edits.
+        /// This method must be called before calling HasNote, ReadNotes, GetInstrumentUsage or GetUsedInstruments methods.
+        /// This method must be called before accessing Loop, FirstNote or DAC properties.
+        /// If you try nonetheless, all these methods will behave like no note is present in the Furnace file.
+        /// After calling Calculate, you may no longer edit the file (i.e: you must consider it frozen).
+        /// </summary>
+        public void Calculate()
+        {
+            // WARNING: Order of operations is important here
+            Loop = FindLoop();
+            for (int channel = 0; channel < Channels; channel++) FirstNote[channel] = FindFirstNote(channel);
+            DAC = FindDAC();
+        }
+
+        private Loop FindLoop()
+        {
+            HashSet<Position> encountered = new HashSet<Position>();
+            int ticks = 0;
+            foreach (Tick tick in Player.Run(this, -1, 0, Position.Start))
+            {
+                ticks++;
+                encountered.Add(tick.Position);
+                if (tick.NextPosition <= tick.Position && encountered.Contains(tick.NextPosition))
+                {
+                    return new Loop(tick.NextPosition, tick.Position, ticks);
+                }
+            }
+            return new Loop(Loop.None, Loop.None, ticks);
+        }
+
+        private int FindFirstNote(int channel)
+        {
+            int ticks = 0;
+            foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
+            {
+                ticks++;
+                if (tick.ActiveChannelCell.HasNewNote)
+                {
+                    return ticks;
+                }
+                else if (tick.NextPosition == Loop.Start && tick.Position == Loop.End)
+                {
+                    break;
+                }
+            }
+            return 0;
+        }
+
+        private bool FindDAC()
+        {
+            for (int i = 0; i < Instruments.Length; i++)
+            {
+                if (Instruments[i].Type == Instrument.DAC)
+                {
+                    int[] channels = GetInstrumentUsage(i);
+                    if (Array.IndexOf(channels, 5) >= 0) return true;
+                }
+            }
+            return false;
+        }
+
         public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float masterVolume, float tickRate, float rateCoeff, int a4tuning)
         {
             KeyByChannelAndOrder = keyByChannelAndOrder;
@@ -340,6 +433,11 @@ namespace SF2MusicCooker.Furnace
             TickRate = tickRate;
             RateCoeff = rateCoeff;
             A4Tuning = a4tuning;
+
+            // Default safe values, until Calculate is called
+            Loop = new Loop(Loop.None, Loop.None, 0);
+            FirstNote = new int[Channels];
+            DAC = false;
         }
 
         /// <summary>

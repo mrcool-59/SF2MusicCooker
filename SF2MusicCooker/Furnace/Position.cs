@@ -13,6 +13,14 @@ namespace SF2MusicCooker.Furnace
             Row = row;
         }
 
+        public Position Next(int rows)
+        {
+            if ((Row + 1) >= rows)
+                return new Position(Order + 1, 0);
+            else
+                return new Position(Order, Row + 1);
+        }
+
         public int CompareTo(Position other)
         {
             if (Order == other.Order)

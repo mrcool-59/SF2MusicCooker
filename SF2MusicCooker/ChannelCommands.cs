@@ -107,7 +107,7 @@ namespace SF2MusicCooker
         public void Generate(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, PitchTable pitch)
         {
             if (file.Channels != _channels.Length)
-                throw new NotSupportedException("Furnace file must have " + _channels.Length + " channels"); // 6 from YM2612 + 4 from PSG
+                throw new NotSupportedException("Furnace file must have " + _channels.Length + " channels"); // 6 from YM + 4 from PSG
 
             // Create tuned maps
             TunedMap tuned = pitch.CreateTunedMap(file.A4Tuning);
@@ -117,24 +117,21 @@ namespace SF2MusicCooker
             map.Check(file, _requiresDAC, out byte dac);
             DAC = dac;
 
-            // Compute loop position
-            Position loopStart = FindLoopStart(file, true);
-
             // Fill each channel
             for (int channel = 0; channel < file.Channels; channel++)
             {
-                _channels[channel] = GenerateChannel(file, options, map, envelopes, tuned, tunedPsg, channel, loopStart);
+                _channels[channel] = GenerateChannel(file, options, map, envelopes, tuned, tunedPsg, channel);
             }
 
             // Verify clamped notes
-            PrintClamped(tuned, "YM2612", "--transposefm");
+            PrintClamped(tuned, "YM", "--transposefm");
             PrintClamped(tunedPsg, "PSG tone", "--transposepsg");
 
             // Update empty flag
             Empty = Array.TrueForAll(_channels, c => c == null || c == "channel_end");
         }
 
-        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, TunedMap tuned, TunedMap tunedPsg, int channel, Position loopStart)
+        private string GenerateChannel(FurnaceFile file, Options options, InstrumentMap map, PSGInstruments envelopes, TunedMap tuned, TunedMap tunedPsg, int channel)
         {
             // Mask verification
             if ((_mask & (1 << channel)) == 0) return null;
@@ -142,9 +139,9 @@ namespace SF2MusicCooker
             // Do not generate channels that are empty or muted
             if (!file.HasNote(channel) || options.IsMuted(channel)) return "channel_end";
 
-            // We must be able to reach the first note
-            int firstNoteTicks = FindFirstNote(file, channel, options.DumpNotes);
-            if (firstNoteTicks == 0) return "channel_end";
+            // We get the position of the first note and loop info
+            int firstNoteTicks = file.FirstNote[channel];
+            Loop loop = file.Loop;
 
             // Identify the channel we're dealing with
             bool dac = channel == 5 && DAC == 0;
@@ -195,13 +192,13 @@ namespace SF2MusicCooker
                 ticks++;
 
                 // For troubleshooting
-                if (options.DumpNotes) commands.Add("; " + tick.Dump());
+                if (options.DumpNotes) commands.Add("; " + tick.Dump(file.Rows));
 
                 // Verify that note/silence length we got is not absurd
                 VerifyExtremeLength(tick, maxPredictLength);
 
                 // Mark beginning of loop
-                if (tick.Position == loopStart)
+                if (tick.Position == loop.Start)
                 {
                     commands.Add("mainLoopStart");
                     loopState = StateSnapshot.Requested; // Will happen at the next note
@@ -269,7 +266,7 @@ namespace SF2MusicCooker
                     WriteSilence(tick.SilenceLength);
                 }
 
-                if (tick.NextPosition <= tick.Position && tick.NextPosition == loopStart)
+                if (tick.NextPosition == loop.Start && tick.Position == loop.End)
                 {
                     // Before the we cross the loop, we may have to apply some state changes...
                     if (loopState.IsValid)
@@ -410,7 +407,7 @@ namespace SF2MusicCooker
             {
                 if (warnings.Add(what))
                 {
-                    string message = string.Format("! Channel {0} @ {1} -> {2}", GetChannelName(channel), tick.Position, what);
+                    string message = string.Format("! Channel {0} @ {1} -> {2}", file.GetChannelName(channel), tick.Position, what);
                     Console.WriteLine(message);
                 }
             }
@@ -770,71 +767,6 @@ namespace SF2MusicCooker
             {
                 return Noise.Value(note, noiseMode).ToString();
             }
-        }
-
-        private Position FindLoopStart(FurnaceFile file, bool print)
-        {
-            Position loopStart = file.End;
-            Position loopEnd = loopStart;
-            int ticks = 0;
-            foreach (Tick tick in Player.Run(file, -1, 0, Position.Start))
-            {
-                ticks++;
-                if (tick.NextPosition <= tick.Position)
-                {
-                    loopStart = tick.NextPosition;
-                    loopEnd = tick.Position;
-                    break;
-                }
-            }
-            if (print && ticks > 0)
-            {
-                Console.WriteLine("> Executed {0} ticks before ending playback", ticks);
-                if (loopStart != file.End)
-                    Console.WriteLine("> Music contains a loop: {0} -> {1}", loopEnd, loopStart);
-                else
-                    Console.WriteLine("> Music doesn't contain a loop");
-            }
-            return loopStart;
-        }
-
-        private int FindFirstNote(FurnaceFile file, int channel, bool print)
-        {
-            int firstNoteTicks = 0;
-            int ticks = 0;
-            foreach (Tick tick in Player.Run(file, channel, 0, Position.Start))
-            {
-                ticks++;
-                if (tick.ActiveChannelCell.HasNewNote)
-                {
-                    firstNoteTicks = ticks;
-                    break;
-                }
-                else if (tick.NextPosition <= tick.Position)
-                {
-                    break;
-                }
-            }
-            if (ticks > 0)
-            {
-                if (firstNoteTicks <= 0)
-                    Console.WriteLine("! Channel {0} first note never happens", GetChannelName(channel));
-                else if (print)
-                    Console.WriteLine("> Channel {0} first note tick: {1}", GetChannelName(channel), ticks);
-            }
-            return firstNoteTicks;
-        }
-
-        private string GetChannelName(int channel)
-        {
-            if (channel == 5 && DAC == 0)
-                return "FM 6 (DAC)";
-            else if (channel <= 5)
-                return "FM " + (channel + 1);
-            else if (channel <= 8)
-                return "Square " + (channel - 5);
-            else
-                return "Noise";
         }
 
         private static readonly LoopOptimizer optimizer = new LoopOptimizer(repeats => "countedLoopStart " + (repeats - 1), _ => "countedLoopEnd",

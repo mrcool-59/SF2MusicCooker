@@ -60,6 +60,37 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Print loop data.
+        /// </summary>
+        public static void PrintLoop(FurnaceFile file)
+        {
+            Loop loop = file.Loop;
+            if (loop.Ticks > 0)
+            {
+                Console.WriteLine("> Executed {0} ticks before ending playback", loop.Ticks);
+                if (loop.Start != Loop.None)
+                    Console.WriteLine("> Music contains a loop: {0} -> {1}", loop.End, loop.Start);
+                else
+                    Console.WriteLine("> Music doesn't contain a loop");
+            }
+        }
+
+        /// <summary>
+        /// Print first note tick for each channel.
+        /// </summary>
+        public static void PrintFirstNote(FurnaceFile file)
+        {
+            int[] firstNote = file.FirstNote;
+            for (int channel = 0; channel < firstNote.Length; channel++)
+            {
+                if (firstNote[channel] > 0)
+                    Console.WriteLine("> Channel {0} first note tick: {1}", file.GetChannelName(channel), firstNote[channel]);
+                else
+                    Console.WriteLine("> Channel {0} has no notes and will be ignored", file.GetChannelName(channel));
+            }
+        }
+
+        /// <summary>
         /// Adjust the play rate of the Furnace file for optimal compatibility and return adjusted Furnace file.
         /// </summary>
         public static void AdjustPlayRate(ref FurnaceFile file, bool sfx, bool enabled)

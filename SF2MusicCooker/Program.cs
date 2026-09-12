@@ -289,7 +289,7 @@ namespace SF2MusicCooker
                     if (newFile != file)
                     {
                         file = newFile;
-                        Console.WriteLine("! YM2612 is in Extended Channel 3 mode, it is unsupported and the extra channels will be ignored");
+                        Console.WriteLine("! YM is in Extended Channel 3 mode, it is unsupported and the extra channels will be ignored");
                     }
 
                     // Remove notes we don't support in the note bible
@@ -308,11 +308,6 @@ namespace SF2MusicCooker
                         if (removed > 0) Console.WriteLine("> Removed {0} note off commands (OFF)", removed);
                     }
 
-                    // Identify the instruments that are really used and verify their usage is valid
-                    Instrument[] usedInstruments = file.GetUsedInstruments(true, true, true);
-                    int unused = file.Instruments.Length - usedInstruments.Length;
-                    if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
-
                     // Sample rate coeff for samples
                     file.ScaleSamples(options.SampleRateCoeff);
 
@@ -324,11 +319,25 @@ namespace SF2MusicCooker
                         Console.WriteLine("> Muted {0} samples (--mutesamples)", numSamples);
                     }
 
-                    // Adjust the playback rate to play nice with YM2612 timer and SFXs play speed
+                    // Adjust the playback rate to play nice with YM timer and SFXs play speed
                     AsmSheetWriter.AdjustPlayRate(ref file, input.PointerName != null, !options.PreserveRate);
+
+                    // We are done with edits
+                    file.Calculate();
+
+                    // Identify the instruments that are really used and verify their usage is valid
+                    Instrument[] usedInstruments = file.GetUsedInstruments(true, true, true);
+                    int unused = file.Instruments.Length - usedInstruments.Length;
+                    if (unused > 0) Console.WriteLine("> This file has {0} unused instruments", unused);
 
                     // Warn the user of unsupported effects the .fur file may have
                     AsmSheetWriter.PrintUnsupportedEffects(file);
+
+                    // Print loop info of this .fur file
+                    AsmSheetWriter.PrintLoop(file);
+
+                    // Print first note ticks of this .fur file
+                    if (options.DumpNotes) AsmSheetWriter.PrintFirstNote(file);
 
                     // Complete the global FM instruments by those present in this .fur file, if they are really used
                     instruments.AddMany(usedInstruments, options.DumpNotes);

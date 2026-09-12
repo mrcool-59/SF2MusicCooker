@@ -1,8 +1,5 @@
 ﻿Version 0.99:
-- Shop: PSG output suspicious (retester)
 - YM/PSG note frequencies replacement/expansion
-- Calcul de la main loop au niveau du Furnace file directement (requiert que le tick de destination ait été déjà touché pour que ça soit la position de main loop)
-	=> Implement a spaghetti .fur file to test that
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64

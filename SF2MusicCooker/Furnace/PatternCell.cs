@@ -105,7 +105,9 @@ namespace SF2MusicCooker.Furnace
                     switch (effect.Type)
                     {
                         case Effect.GoNext:
-                            delayedEffects.Add(new Effect(effect.Type, (byte)Math.Min(0xFF, effect.Value * n)));
+                            int scaledValue = effect.Value * n;
+                            if (scaledValue > 0xFF) throw new OverflowException("Play rate adjustment caused a value overflow on 'go to next pattern' effect");
+                            delayedEffects.Add(new Effect(effect.Type, (byte)scaledValue));
                             break;
                         case Effect.GoTo:
                         case Effect.End:

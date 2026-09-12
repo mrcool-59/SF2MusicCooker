@@ -117,7 +117,7 @@ namespace SF2MusicCooker
         */
 
         /// <summary>
-        /// Get the indexes of all Cube notes (for either YM2612 or PSG), optionally matching a filter predicate.
+        /// Get the indexes of all Cube notes (for either YM or PSG), optionally matching a filter predicate.
         /// </summary>
         public byte[] GetNotes(bool psg, Predicate<byte> filter = null)
         {
@@ -145,7 +145,7 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Get YM2612 frequency from its raw register value.
+        /// Get YM frequency from its raw register value.
         /// </summary>
         public static int GetYMFrequency(int value)
         {
@@ -194,7 +194,7 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Create a tuned map for the specified A4 tuning value for YM2612.
+        /// Create a tuned map for the specified A4 tuning value for YM.
         /// </summary>
         public TunedMap CreateTunedMap(int a4tuning)
         {

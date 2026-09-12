@@ -51,7 +51,7 @@
         /// <summary>
         /// Get a friendly representation of a tick.
         /// </summary>
-        public string Dump()
+        public string Dump(int rows)
         {
             string suffix = string.Empty;
             string next = string.Empty;
@@ -74,7 +74,7 @@
                 if (Vibrato.Active) suffix += ", vibrato = " + Vibrato;
             }
 
-            if (NextPosition <= Position)
+            if (Position.Next(rows) != NextPosition)
             {
                 next = "  [go to " + NextPosition + "]";
             }

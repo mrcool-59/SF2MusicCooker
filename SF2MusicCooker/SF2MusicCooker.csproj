@@ -58,6 +58,7 @@
     <Compile Include="Furnace\FurnaceFile.cs" />
     <Compile Include="AsmSheetWriter.cs" />
     <Compile Include="FMInstruments.cs" />
+    <Compile Include="Furnace\Loop.cs" />
     <Compile Include="Furnace\Player.cs" />
     <Compile Include="Furnace\Pattern.cs" />
     <Compile Include="Furnace\PatternCell.cs" />
