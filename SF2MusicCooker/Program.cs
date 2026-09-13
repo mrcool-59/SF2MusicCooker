@@ -316,14 +316,14 @@ namespace SF2MusicCooker
                     if (options.MuteSamples && numSamples > 0)
                     {
                         file.MuteSamples();
-                        Console.WriteLine("> Muted {0} samples (--mutesamples)", numSamples);
+                        Console.WriteLine("> Muted {0} samples (--mutesamples) and disabled DAC channel", numSamples);
                     }
 
                     // Adjust the playback rate to play nice with YM timer and SFXs play speed
                     AsmSheetWriter.AdjustPlayRate(ref file, input.PointerName != null, !options.PreserveRate);
 
                     // We are done with edits
-                    file.Calculate();
+                    file.Calculate(options.MuteSamples);
 
                     // Sample support check
                     if (file.DAC && !output.SupportSamples) throw new NotSupportedException("This " + output.Name + " repository is not set up to support custom samples (is it missing a feature branch merge?)");

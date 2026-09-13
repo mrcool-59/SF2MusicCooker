@@ -208,7 +208,7 @@ namespace SF2MusicCooker
                     List<int> furnaceNotes = pair.Value;
                     if (furnaceNotes.Count > 1)
                     {
-                        int frequency = notes[pair.Key].Frequency;
+                        int frequency = notes[pair.Key - offset].Frequency;
                         int mainFurnaceNote = Tools.SelectMin(furnaceNotes, note => Math.Abs(GetFurnaceFrequency(a4tuning, note + noteShift) - frequency));
                     
                         foreach (int furnaceNote in furnaceNotes)
@@ -347,16 +347,13 @@ namespace SF2MusicCooker
                     FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
                     file = file.DropExtended();
                     file.RemoveUnsupportedNotes();
-                    file.Calculate();
+                    file.Calculate(disableDAC: true);
 
                     TunedMap tuned = CreateTunedMap(file.A4Tuning, false);
                     TunedMap tunedPsg = CreatePSGTunedMap(file.A4Tuning);
 
-                    for (int channel = 0; channel < file.Channels; channel++)
+                    for (int channel = 0; channel <= 8; channel++) // Skip noise generator
                     {
-                        if (channel == 5 && file.DAC) continue; // Skip channel 6 in DAC mode
-                        else if (channel >= 9) continue; // Skip noise generator
-
                         byte[] notes = file.ReadNotes(channel);
                         bool psg = channel > 5;
                         NoteBible.Transpose(notes, psg ? options.TransposePSG : options.TransposeFM);

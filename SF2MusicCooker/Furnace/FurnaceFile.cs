@@ -368,12 +368,13 @@ namespace SF2MusicCooker.Furnace
         /// If you try nonetheless, all these methods will behave like no note is present in the Furnace file.
         /// After calling Calculate, you may no longer edit the file (i.e: you must consider it frozen).
         /// </summary>
-        public void Calculate()
+        public void Calculate(bool disableDAC = false)
         {
             // WARNING: Order of operations is important here
             Loop = FindLoop();
             for (int channel = 0; channel < Channels; channel++) FirstNote[channel] = FindFirstNote(channel);
             DAC = FindDAC();
+            if (DAC && disableDAC) { DAC = false; FirstNote[5] = 0; }
         }
 
         private Loop FindLoop()
