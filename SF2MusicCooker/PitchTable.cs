@@ -66,7 +66,7 @@ namespace SF2MusicCooker
         };
         */
 
-        private const int FM_OFFSET = 24; // See macros.asm
+        private const int YM_OFFSET = 24; // See macros.asm
 
         private readonly struct Entry
         {
@@ -173,7 +173,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Get the name of a Cube note.
         /// </summary>
-        public string GetCubeNoteName(int cubeNote)
+        public string GetCubeNoteName(byte cubeNote)
         {
             if (_names.TryGetValue(cubeNote, out string name))
                 return name;
@@ -183,14 +183,14 @@ namespace SF2MusicCooker
 
         private TunedMap CreateTunedMap(Entry[] notes, int a4tuning, int noteShift, int offset)
         {
-            int[] f2c = new int[NoteBible.LENGTH];
+            byte[] f2c = new byte[NoteBible.LENGTH];
             if (notes.Length > 0)
             {
                 for (int i = 0; i < f2c.Length; i++)
                 {
                     int frequency = GetFurnaceFrequency(a4tuning, i + noteShift);
                     Entry entry = Tools.SelectMin(notes, e => Math.Abs(e.Frequency - frequency));
-                    f2c[i] = entry.Note + offset;
+                    f2c[i] = (byte)(entry.Note + offset);
                 }
             }
             return new TunedMap(f2c, GetCubeNoteName);
@@ -199,11 +199,11 @@ namespace SF2MusicCooker
         /// <summary>
         /// Create a tuned map for the specified A4 tuning value for YM.
         /// </summary>
-        public TunedMap CreateTunedMap(int a4tuning)
+        public TunedMap CreateTunedMap(int a4tuning, bool offset = true)
         {
             // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
             // 24 is the hardcoded offset in macros.asm
-            return CreateTunedMap(_notes, a4tuning, 7, FM_OFFSET);
+            return CreateTunedMap(_notes, a4tuning, 7, offset ? YM_OFFSET : 0);
         }
 
         /// <summary>
@@ -256,10 +256,12 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Count the notes used by a sheet.
+        /// Count the Cube notes used by a sheet.
         /// </summary>
-        public void CountNotes(string asm, NoteCounter counter)
+        public void CountNotes(string asm, NoteCounter cubeCounter)
         {
+            if (cubeCounter == null) throw new ArgumentNullException(nameof(cubeCounter));
+
             Dictionary<string, int> reverseMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var pair in _names)
@@ -291,10 +293,55 @@ namespace SF2MusicCooker
 
             Regex regex = new Regex("noteL?[ \t]+([a-zA-Z0-9]+)");
             Regex regexPsg = new Regex("psgNoteL?[ \t]+([a-zA-Z0-9]+)");
-            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), FM_OFFSET), IsNotNoiseChannel);
+            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), YM_OFFSET), IsNotNoiseChannel);
             byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), 0), IsNotNoiseChannel);
 
-            counter.Add(usedNotes, usedPsgNotes);
+            // NOTE: title screen music, ending music and various SFXs seem to use PSG notes outside legal range (> 63)
+            // This would cause out-of-bounds reads into the YM_LEVELS array or even SLOTS_PER_ALGO array
+            // SFX_51 is the worst offender, playing PSG note C7 (index = 84)
+
+            cubeCounter.Add(usedNotes, usedPsgNotes);
+        }
+
+        /// <summary>
+        /// Count the Furnace and Cube notes used by custom musics.
+        /// </summary>
+        public void CountNotes(Input[] inputs, NoteCounter cubeCounter, NoteCounter furnaceCounter)
+        {
+            if (cubeCounter == null) throw new ArgumentNullException(nameof(cubeCounter));
+            if (furnaceCounter == null) throw new ArgumentNullException(nameof(furnaceCounter));
+
+            foreach (Input input in inputs)
+            {
+                FileInfo fur = input.Fur;
+                Options options = input.Options;
+
+                using (FileStream stream = fur.OpenRead())
+                {
+                    FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
+                    file = file.DropExtended();
+                    file.RemoveUnsupportedNotes();
+                    file.Calculate();
+
+                    TunedMap tuned = CreateTunedMap(file.A4Tuning, false);
+                    TunedMap tunedPsg = CreatePSGTunedMap(file.A4Tuning);
+
+                    for (int channel = 0; channel < file.Channels; channel++)
+                    {
+                        if (channel == 5 && file.DAC) continue; // Skip channel 6 in DAC mode
+                        else if (channel >= 9) continue; // Skip noise generator
+
+                        byte[] notes = file.ReadNotes(channel);
+                        bool psg = channel > 5;
+                        NoteBible.Transpose(notes, psg ? options.TransposePSG : options.TransposeFM);
+                        furnaceCounter.Add(notes, psg);
+
+                        TunedMap map = psg ? tunedPsg : tuned;
+                        byte[] cubeNotes = map.F2C(notes);
+                        cubeCounter.Add(cubeNotes, psg);
+                    }
+                }
+            }
         }
 
         private static Entry[] ReadFrequencies(string path, Func<int, int> freqFn)

@@ -8,8 +8,8 @@ namespace SF2MusicCooker
     {
         // TODO: change this to no longer rely on min/max => determine the main note value (using negative value for non-primary notes?)
 
-        private readonly int[] _f2c;
-        private readonly Func<int, string> _c2n;
+        private readonly byte[] _f2c;
+        private readonly Func<byte, string> _c2n;
         private readonly List<byte> _clamped;
         private readonly int _minNote;
         private readonly int _maxNote;
@@ -29,11 +29,21 @@ namespace SF2MusicCooker
         /// <summary>
         /// Find the Cube note for a given Furnace 'note'.
         /// </summary>
-        public int F2C(byte note)
+        public byte F2C(byte note)
         {
             NoteBible.Verify(note);
             CheckClamped(note);
             return _f2c[note - NoteBible.BASE_VALUE];
+        }
+
+        /// <summary>
+        /// Find the Cube notes for given Furnace 'notes'.
+        /// </summary>
+        public byte[] F2C(byte[] notes)
+        {
+            byte[] cubeNotes = new byte[notes.Length];
+            for (int i = 0; i < cubeNotes.Length; i++) cubeNotes[i] = F2C(notes[i]);
+            return cubeNotes;
         }
 
         /// <summary>
@@ -53,7 +63,7 @@ namespace SF2MusicCooker
             }
         }
 
-        public TunedMap(int[] f2c, Func<int, string> c2n = null)
+        public TunedMap(byte[] f2c, Func<byte, string> c2n = null)
         {
             if (f2c == null || f2c.Length != NoteBible.LENGTH)
                 throw new ArgumentException(nameof(f2c), "must have length " + NoteBible.LENGTH);

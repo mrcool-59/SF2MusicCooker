@@ -373,16 +373,17 @@ namespace SF2MusicCooker
         {
             if (!enabled || inputs == null || inputs.Length == 0 || !SupportCustomFrequencies) return;
 
-            // We start of by counting the notes of vanilla musics / SFXs
+            // We start off by counting Cube notes of vanilla musics / SFXs
             NoteCounter cubeCounter = CountVanillaNotes();
 
-            // Then we show to the user notes that are unused by the sound driver
+            // We need then to count the Cube and Furnace notes of custom musics / SFXs
+            NoteCounter furnaceCounter = new NoteCounter();
+            Pitch.CountNotes(inputs, cubeCounter, furnaceCounter);
+
+            // Then we show to the user Cube notes that are unused by the sound driver
             if (print) PrintUnusedNotes(cubeCounter);
 
-            // We need to figure out the notes we will need to support from the custom musics
-            NoteCounter furnaceCounter = CountCustomNotes(inputs);
-
-            // Then, allocate notes as needed
+            // Then, recycle notes as needed, priorizing the most frequent notes in middle frequencies
             // TODO
         }
 
@@ -394,38 +395,6 @@ namespace SF2MusicCooker
 
             foreach (Song song in GetAllSongs(false)) Process(song.Sheet);
             foreach (SFX sfx in GetAllSFXs(false)) Process(sfx.Sheet);
-
-            return counter;
-        }
-
-        private NoteCounter CountCustomNotes(Input[] inputs)
-        {
-            NoteCounter counter = new NoteCounter();
-
-            foreach (Input input in inputs)
-            {
-                FileInfo fur = input.Fur;
-                Options options = input.Options;
-
-                using (FileStream stream = fur.OpenRead())
-                {
-                    FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
-                    file = file.DropExtended();
-                    file.RemoveUnsupportedNotes();
-                    file.Calculate();
-
-                    for (int channel = 0; channel < file.Channels; channel++)
-                    {
-                        if (channel == 5 && file.DAC) continue; // Skip channel 6 in DAC mode
-                        else if (channel >= 9) continue; // Skip noise generator
-
-                        byte[] notes = file.ReadNotes(channel);
-                        bool psg = channel > 5;
-                        NoteBible.Transpose(notes, psg ? options.TransposePSG : options.TransposeFM);
-                        counter.Add(notes, psg);
-                    }
-                }
-            }
 
             return counter;
         }
