@@ -264,6 +264,15 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Change the filename of a file path.
+        /// </summary>
+        public static string Rename(string path, string filename)
+        {
+            string folder = Path.GetDirectoryName(path);
+            return Path.Combine(folder, filename);
+        }
+
+        /// <summary>
         /// Return hexadecimal representation of one byte.
         /// </summary>
         public static string Hex1(byte x)
@@ -296,6 +305,14 @@ namespace SF2MusicCooker
         public static string Hex1ASM(byte x)
         {
             return HexASM(new byte[1] { x });
+        }
+
+        /// <summary>
+        /// Return hexadecimal representation of two bytes that is suitable to be put into ASM output.
+        /// </summary>
+        public static string Hex2ASM(ushort x)
+        {
+            return HexASM(new byte[2] { (byte)(x >> 8), (byte)x });
         }
 
         /// <summary>

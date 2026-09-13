@@ -48,6 +48,16 @@ namespace SF2MusicCooker
         /// </summary>
         public bool HasExtBanks { get { return Array.Exists(_banks, bank => bank.Name.Contains("musicbankext")); } }
 
+        /// <summary>
+        /// True if channel 6 in DAC mode is supported.
+        /// </summary>
+        public bool SupportSamples { get; }
+
+        /// <summary>
+        /// True if custom YM and PSG frequencies are supported.
+        /// </summary>
+        public bool SupportCustomFrequencies { get; }
+
         public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, string[] pcmNames, int pcmBaseOffset, int pcmSlots = PCMInstruments.MAX_SLOTS, int instrumentSlots = FMInstruments.MAX_SLOTS, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
@@ -76,6 +86,11 @@ namespace SF2MusicCooker
             Envelopes = new PSGInstruments(paths.PsgInstruments);
 
             Pitch = new PitchTable(paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames);
+
+            SupportSamples = File.Exists(Tools.Rename(paths.PcmSamples, "pcm_samples-standard.asm"));
+
+            SupportCustomFrequencies = File.Exists(Tools.Rename(paths.YmFrequencies, "ym_frequencies-standard.asm"))
+                                    && File.Exists(Tools.Rename(paths.PsgFrequencies, "psg_frequencies-standard.asm"));
         }
 
         /// <summary>
@@ -356,7 +371,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void PlanExtendedNotes(Input[] inputs, bool enabled, bool print)
         {
-            if (!enabled || inputs == null || inputs.Length == 0) return;
+            if (!enabled || inputs == null || inputs.Length == 0 || !SupportCustomFrequencies) return;
 
             // We start of by counting the notes of vanilla musics / SFXs
             NoteCounter cubeCounter = CountVanillaNotes();
@@ -562,6 +577,7 @@ namespace SF2MusicCooker
             WriteASMSoundTest(path);
             WriteFMInstruments(path);
             WriteSamples(path, path);
+            WriteFrequencies(path, path);
         }
 
         /// <summary>
@@ -574,8 +590,10 @@ namespace SF2MusicCooker
             string ymInstFolder = Path.GetDirectoryName(_paths.YmInstBin);
             string musicBanksFolder = _banks.Length > 0 ? Path.GetDirectoryName(_paths.MusicBankFolders[0]) : null;
             string sfxBanksFolder = _sfxBanks.Length > 0 ? Path.GetDirectoryName(_paths.SfxBankFolders[0]) : null;
-            string pcmSamplesFolder = Path.GetDirectoryName(_paths.PcmSamples);
+            string pcmSamplesFolder = SupportSamples ? Path.GetDirectoryName(_paths.PcmSamples) : null;
             string pcmBanksFolder = Samples.NumBanks > 0 ? Path.GetDirectoryName(_paths.PcmBankFiles[0]) : null;
+            string ymFrequenciesFolder = SupportCustomFrequencies ? Path.GetDirectoryName(_paths.YmFrequencies) : null;
+            string psgFrequenciesFolder = SupportCustomFrequencies ? Path.GetDirectoryName(_paths.PsgFrequencies) : null;
 
             foreach (Bank bank in _banks)
             {
@@ -595,6 +613,7 @@ namespace SF2MusicCooker
             WriteASMSoundTest(_paths.SoundTestFolder);
             WriteFMInstruments(ymInstFolder);
             WriteSamples(pcmSamplesFolder, pcmBanksFolder);
+            WriteFrequencies(ymFrequenciesFolder, psgFrequenciesFolder);
         }
 
         private void DeleteAndCreateFolder(string path)
@@ -722,7 +741,17 @@ namespace SF2MusicCooker
 
         private void WriteSamples(string pcmSamplesPath, string pcmBanksPath)
         {
-            Samples.Write(pcmSamplesPath, pcmBanksPath);
+            if (pcmSamplesPath != null && pcmBanksPath != null)
+                Samples.Write(pcmSamplesPath, pcmBanksPath);
+        }
+
+        private void WriteFrequencies(string ymFrequenciesPath, string psgFrequenciesPath)
+        {
+            if (ymFrequenciesPath != null && psgFrequenciesPath != null)
+            {
+                Pitch.WriteFrequencies(ymFrequenciesPath);
+                Pitch.WritePSGFrequencies(psgFrequenciesPath);
+            }
         }
 
         /// <summary>

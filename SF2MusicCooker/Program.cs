@@ -325,6 +325,9 @@ namespace SF2MusicCooker
                     // We are done with edits
                     file.Calculate();
 
+                    // Sample support check
+                    if (file.DAC && !output.SupportSamples) throw new NotSupportedException("This " + output.Name + " repository is not set up to support custom samples (is it missing a feature branch merge?)");
+
                     // Identify the instruments that are really used and verify their usage is valid
                     Instrument[] usedInstruments = file.GetUsedInstruments(true, true, true);
                     int unused = file.Instruments.Length - usedInstruments.Length;
