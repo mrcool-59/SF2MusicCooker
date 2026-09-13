@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SF2MusicCooker.Furnace;
+using System;
 
 namespace SF2MusicCooker
 {
@@ -6,6 +7,8 @@ namespace SF2MusicCooker
     {
         private readonly int[] _fm;
         private readonly int[] _psg;
+
+        public delegate int Metric(byte note, int count);
 
         /// <summary>
         /// Reset the note counter.
@@ -54,15 +57,42 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Return note counters in ascending order.
+        /// Return notes in descending order specified by the supplied metric.
         /// </summary>
-        public void ToSorted(bool psg, out byte[] notes, out int[] counts)
+        public byte[] ToSorted(bool psg, Metric metric)
         {
             int[] source = psg ? _psg : _fm;
-            counts = (int[])source.Clone();
-            notes = new byte[source.Length];
+            int[] values = (int[])source.Clone();
+            for (int i = 0; i < values.Length; i++) values[i] = metric((byte)i, source[i]);
+
+            byte[] notes = new byte[source.Length];
             for (int i = 0; i < notes.Length; i++) notes[i] = (byte)i;
-            Array.Sort(counts, notes);
+            Array.Sort(values, notes);
+            Array.Reverse(notes);
+            notes = Array.FindAll(notes, note => NoteBible.Clamp(note) == note); // Keep only valid notes
+            return notes;
+        }
+
+        /// <summary>
+        /// Calculate the mean note (or return C-4 if no note is present).
+        /// </summary>
+        public byte Mean(bool psg)
+        {
+            int[] source = psg ? _psg : _fm;
+
+            int total = 0;
+            foreach (int count in source) total += count;
+
+            if (total > 0)
+            {
+                int sum = total / 2;
+                for (int i = 0; i < source.Length; i++)
+                {
+                    sum -= source[i];
+                    if (sum <= 0) return (byte)i;
+                }
+            }
+            return 0x6C; // C-4
         }
 
         public NoteCounter()

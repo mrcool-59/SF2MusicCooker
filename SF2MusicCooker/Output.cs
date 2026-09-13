@@ -381,10 +381,21 @@ namespace SF2MusicCooker
             Pitch.CountNotes(inputs, cubeCounter, furnaceCounter);
 
             // Then we show to the user Cube notes that are unused by the sound driver
-            if (print) PrintUnusedNotes(cubeCounter);
+            byte[] unusedNotes = Pitch.GetNotes(false, note => cubeCounter.Get(note, false) == 0);
+            byte[] unusedPsgNotes = Pitch.GetNotes(true, note => cubeCounter.Get(note, true) == 0);
+            if (print) PrintUnusedNotes(unusedNotes.Length, unusedPsgNotes.Length);
 
-            // Then, recycle notes as needed, priorizing the most frequent notes in middle frequencies
-            // TODO
+            // Set-up a metric to identify the top priority notes to add
+            byte meanYM = furnaceCounter.Mean(false);
+            byte meanPSG = furnaceCounter.Mean(true);
+            int MetricYM(byte note, int count) => (256 - Math.Abs(note - meanYM)) * (count + 1);
+            int MetricPSG(byte note, int count) => (256 - Math.Abs(note - meanPSG)) * (count + 1);
+            byte[] sortedNotes = furnaceCounter.ToSorted(false, MetricYM);
+            byte[] sortedPsgNotes = furnaceCounter.ToSorted(true, MetricPSG);
+
+            // Then extend notes!
+            Pitch.ExtendNotes(unusedNotes, sortedNotes);
+            Pitch.ExtendPSGNotes(unusedPsgNotes, sortedPsgNotes);
         }
 
         private NoteCounter CountVanillaNotes()
@@ -399,19 +410,16 @@ namespace SF2MusicCooker
             return counter;
         }
 
-        private void PrintUnusedNotes(NoteCounter counter)
+        private void PrintUnusedNotes(int ymCount, int psgCount)
         {
-            byte[] unusedNotes = Pitch.GetNotes(false, note => counter.Get(note, false) == 0);
-            byte[] unusedPsgNotes = Pitch.GetNotes(true, note => counter.Get(note, true) == 0);
-
             void Print(string what, int count)
             {
                 if (count > 0)
                     Console.WriteLine("> There {0} {1} unused {2} note{3} that can be recycled.", count > 1 ? "are" : "is", count, what, count > 1 ? "s" : "");
             }
 
-            Print("YM", unusedNotes.Length);
-            Print("PSG", unusedPsgNotes.Length);
+            Print("YM", ymCount);
+            Print("PSG", psgCount);
         }
 
         /// <summary>

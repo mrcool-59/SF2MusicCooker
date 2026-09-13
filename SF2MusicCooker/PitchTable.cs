@@ -66,7 +66,9 @@ namespace SF2MusicCooker
         };
         */
 
-        private const int YM_OFFSET = 24; // See macros.asm
+        private const int YM_OFFSET = 24; // This is the hardcoded offset in macros.asm
+        private const int YM_SHIFT = 7; // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
+        private const int PSG_SHIFT = -12; // I didn't investigate why there is -1 octave (-12)
 
         private readonly struct Entry
         {
@@ -85,39 +87,6 @@ namespace SF2MusicCooker
         private readonly Entry[] _notes;
         private readonly Entry[] _psgNotes;
         private readonly Dictionary<int, string> _names;
-
-        // TODO
-        // private ExtendedNotes _extendedNotes = ExtendedNotes.None;
-        // private ExtendedNotes _extendedPsgNotes = ExtendedNotes.None;
-
-        // TODO
-        /*
-        /// <summary>
-        /// Mark certain Cube notes as unused.
-        /// </summary>
-        public void MarkUnused(byte[] notes, byte[] psgNotes)
-        {
-            if (notes.Length == 0 && psgNotes.Length == 0) return;
-            if (_extendedNotes != ExtendedNotes.None) throw new InvalidOperationException("Unused notes have already been marked");
-
-            RegisterLookup lookup = new RegisterLookup();
-
-            ushort YMResolver(int a4tuning, byte note)
-            {
-                int frequency = GetFurnaceFrequency(a4tuning, note);
-                return lookup.GetYMRegister(frequency);
-            }
-
-            ushort PSGResolver(int a4tuning, byte note)
-            {
-                int frequency = GetFurnaceFrequency(a4tuning, note);
-                return lookup.GetPSGRegister(frequency);
-            }
-
-            _extendedNotes = new ExtendedNotes(notes, YMResolver);
-            _extendedPsgNotes = new ExtendedNotes(psgNotes, PSGResolver);
-        }
-        */
 
         /// <summary>
         /// Get the indexes of all Cube notes (for either YM or PSG), optionally matching a filter predicate.
@@ -181,7 +150,7 @@ namespace SF2MusicCooker
                 return cubeNote.ToString();
         }
 
-        private TunedMap CreateTunedMap(Entry[] notes, int a4tuning, int noteShift, int offset)
+        private TunedMap CreateTunedMap(Entry[] notes, int a4tuning, int shift, int offset)
         {
             byte[] f2c = new byte[NoteBible.LENGTH];
             if (notes.Length > 0)
@@ -189,7 +158,7 @@ namespace SF2MusicCooker
                 Dictionary<int, List<int>> c2f = new Dictionary<int, List<int>>();
                 for (int i = 0; i < f2c.Length; i++)
                 {
-                    int frequency = GetFurnaceFrequency(a4tuning, i + noteShift);
+                    int frequency = GetFurnaceFrequency(a4tuning, i + shift);
                     Entry entry = Tools.SelectMin(notes, e => Math.Abs(e.Frequency - frequency));
                     byte cubeNote = (byte)(entry.Note + offset);
 
@@ -209,7 +178,7 @@ namespace SF2MusicCooker
                     if (furnaceNotes.Count > 1)
                     {
                         int frequency = notes[pair.Key - offset].Frequency;
-                        int mainFurnaceNote = Tools.SelectMin(furnaceNotes, note => Math.Abs(GetFurnaceFrequency(a4tuning, note + noteShift) - frequency));
+                        int mainFurnaceNote = Tools.SelectMin(furnaceNotes, note => Math.Abs(GetFurnaceFrequency(a4tuning, note + shift) - frequency));
                     
                         foreach (int furnaceNote in furnaceNotes)
                         {
@@ -225,11 +194,9 @@ namespace SF2MusicCooker
         /// <summary>
         /// Create a tuned map for the specified A4 tuning value for YM.
         /// </summary>
-        public TunedMap CreateTunedMap(int a4tuning, bool offset = true)
+        public TunedMap CreateTunedMap(int a4tuning)
         {
-            // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
-            // 24 is the hardcoded offset in macros.asm
-            return CreateTunedMap(_notes, a4tuning, 7, offset ? YM_OFFSET : 0);
+            return CreateTunedMap(_notes, a4tuning, YM_SHIFT, YM_OFFSET);
         }
 
         /// <summary>
@@ -237,8 +204,7 @@ namespace SF2MusicCooker
         /// </summary>
         public TunedMap CreatePSGTunedMap(int a4tuning)
         {
-            // I didn't investigate why there is -1 octave (-12)
-            return CreateTunedMap(_psgNotes, a4tuning, -12, 0);
+            return CreateTunedMap(_psgNotes, a4tuning, PSG_SHIFT, 0);
         }
 
         /// <summary>
@@ -286,6 +252,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void CountNotes(string asm, NoteCounter cubeCounter)
         {
+            if (asm == null) throw new ArgumentNullException(nameof(asm));
             if (cubeCounter == null) throw new ArgumentNullException(nameof(cubeCounter));
 
             Dictionary<string, int> reverseMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -334,6 +301,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void CountNotes(Input[] inputs, NoteCounter cubeCounter, NoteCounter furnaceCounter)
         {
+            if (inputs == null) throw new ArgumentNullException(nameof(inputs));
             if (cubeCounter == null) throw new ArgumentNullException(nameof(cubeCounter));
             if (furnaceCounter == null) throw new ArgumentNullException(nameof(furnaceCounter));
 
@@ -349,8 +317,8 @@ namespace SF2MusicCooker
                     file.RemoveUnsupportedNotes();
                     file.Calculate(disableDAC: true);
 
-                    TunedMap tuned = CreateTunedMap(file.A4Tuning, false);
-                    TunedMap tunedPsg = CreatePSGTunedMap(file.A4Tuning);
+                    TunedMap tuned = CreateTunedMap(_notes, file.A4Tuning, YM_SHIFT, 0);
+                    TunedMap tunedPsg = CreateTunedMap(_psgNotes, file.A4Tuning, PSG_SHIFT, 0);
 
                     for (int channel = 0; channel <= 8; channel++) // Skip noise generator
                     {
@@ -366,6 +334,51 @@ namespace SF2MusicCooker
                         if (file.A4Tuning == FurnaceFile.StandardA4Tuning) furnaceCounter.Add(notes, psg);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Extend notes by recycling unused YM notes, using a priority list of Furnace notes.
+        /// </summary>
+        public void ExtendNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes)
+        {
+            ExtendNotes(unusedCubeNotes, sortedFurnaceNotes, _notes, YM_SHIFT);
+        }
+
+        /// <summary>
+        /// Extend notes by recycling unused PSG notes, using a priority list of Furnace notes.
+        /// </summary>
+        public void ExtendPSGNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes)
+        {
+            ExtendNotes(unusedCubeNotes, sortedFurnaceNotes, _psgNotes, PSG_SHIFT);
+        }
+
+        private void ExtendNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes, Entry[] notes, int shift)
+        {
+            if (unusedCubeNotes == null) throw new ArgumentNullException(nameof(unusedCubeNotes));
+            if (sortedFurnaceNotes == null) throw new ArgumentNullException(nameof(unusedCubeNotes));
+
+            TunedMap map = CreateTunedMap(notes, FurnaceFile.StandardA4Tuning, shift, 0);
+            RegisterValueLookup lookup = new RegisterValueLookup(notes != _notes);
+            string what = notes == _notes ? "YM" : "PSG";
+            int cursor = 0;
+
+            foreach (byte furnaceNote in sortedFurnaceNotes)
+            {
+                if (cursor >= unusedCubeNotes.Length) break;
+
+                if (map.IsSupported(furnaceNote)) continue;
+
+                int frequency = GetFurnaceFrequency(FurnaceFile.StandardA4Tuning, furnaceNote + shift - NoteBible.BASE_VALUE);
+                ushort value = lookup.Frequency2Value(frequency);
+
+                if (Array.Exists(notes, note => note.Value == value)) continue;
+
+                byte cubeNote = unusedCubeNotes[cursor++];
+
+                notes[cubeNote] = new Entry(cubeNote, value, frequency);
+
+                Console.WriteLine("> Recycled {0} driver note {1} to support {2} Furnace note with register value: {3}", what, cubeNote, NoteBible.NameOf(furnaceNote), value);
             }
         }
 

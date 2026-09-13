@@ -1,5 +1,7 @@
 ﻿Version 0.99:
 - YM/PSG note frequencies replacement/expansion
+	=> Looks like we replace PSG notes we shouldn't (SF1 attack broken)
+	=> Looks like the frequency of replaced PSG notes is incorrect (also see SF1 attack)
 
 Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64

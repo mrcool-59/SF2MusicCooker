@@ -51,7 +51,6 @@
     <Compile Include="BankSFX.cs" />
     <Compile Include="ChannelCommands.cs" />
     <Compile Include="Envelope.cs" />
-    <Compile Include="ExtendedNotes.cs" />
     <Compile Include="FilePaths.cs" />
     <Compile Include="Furnace\Effect.cs" />
     <Compile Include="Furnace\FeatureInterpreter.cs" />
@@ -71,7 +70,7 @@
     <Compile Include="NoteCounter.cs" />
     <Compile Include="PSGInstruments.cs" />
     <Compile Include="EnvelopeGuesser.cs" />
-    <Compile Include="RegisterLookup.cs" />
+    <Compile Include="RegisterValueLookup.cs" />
     <Compile Include="TunedMap.cs" />
     <Compile Include="InstrumentMap.cs" />
     <Compile Include="LoopOptimizer.cs" />
