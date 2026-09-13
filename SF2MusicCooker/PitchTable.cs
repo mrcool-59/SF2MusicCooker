@@ -186,11 +186,37 @@ namespace SF2MusicCooker
             byte[] f2c = new byte[NoteBible.LENGTH];
             if (notes.Length > 0)
             {
+                Dictionary<int, List<int>> c2f = new Dictionary<int, List<int>>();
                 for (int i = 0; i < f2c.Length; i++)
                 {
                     int frequency = GetFurnaceFrequency(a4tuning, i + noteShift);
                     Entry entry = Tools.SelectMin(notes, e => Math.Abs(e.Frequency - frequency));
-                    f2c[i] = (byte)(entry.Note + offset);
+                    byte cubeNote = (byte)(entry.Note + offset);
+
+                    if (!c2f.TryGetValue(cubeNote, out List<int> furnaceNotes))
+                    {
+                        furnaceNotes = new List<int>();
+                        c2f.Add(cubeNote, furnaceNotes);
+                    }
+
+                    furnaceNotes.Add(i);
+                    f2c[i] = cubeNote;
+                }
+                // Identify the supported notes vs. clamped notes
+                foreach (var pair in c2f)
+                {
+                    List<int> furnaceNotes = pair.Value;
+                    if (furnaceNotes.Count > 1)
+                    {
+                        int frequency = notes[pair.Key].Frequency;
+                        int mainFurnaceNote = Tools.SelectMin(furnaceNotes, note => Math.Abs(GetFurnaceFrequency(a4tuning, note + noteShift) - frequency));
+                    
+                        foreach (int furnaceNote in furnaceNotes)
+                        {
+                            if (furnaceNote != mainFurnaceNote)
+                                f2c[furnaceNote] |= 0x80; // Mark as not supported (thus clamped) with bit 7
+                        }
+                    }
                 }
             }
             return new TunedMap(f2c, GetCubeNoteName);
@@ -334,11 +360,13 @@ namespace SF2MusicCooker
                         byte[] notes = file.ReadNotes(channel);
                         bool psg = channel > 5;
                         NoteBible.Transpose(notes, psg ? options.TransposePSG : options.TransposeFM);
-                        furnaceCounter.Add(notes, psg);
 
                         TunedMap map = psg ? tunedPsg : tuned;
                         byte[] cubeNotes = map.F2C(notes);
                         cubeCounter.Add(cubeNotes, psg);
+
+                        // Only count Furnace notes if using standard A4 tuning, to avoid bad statistics about actually needed Furnace notes
+                        if (file.A4Tuning == FurnaceFile.StandardA4Tuning) furnaceCounter.Add(notes, psg);
                     }
                 }
             }
