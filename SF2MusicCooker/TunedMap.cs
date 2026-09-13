@@ -27,7 +27,7 @@ namespace SF2MusicCooker
         /// </summary>
         public bool IsSupported(byte note)
         {
-            return (_f2c[note] & 0x80) == 0;
+            return (_f2c[note - NoteBible.BASE_VALUE] & 0x80) == 0;
         }
 
         /// <summary>
