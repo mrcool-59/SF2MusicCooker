@@ -1,5 +1,4 @@
 ;05 = --dumpnotes
 ;33 = --dumpuncompressed
 25 = -m10
-24 = -dn -nnm
 21 = -ms
