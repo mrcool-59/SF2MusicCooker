@@ -140,6 +140,27 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
+        /// Get the ASM value to output for note/psgNote commands.
+        /// </summary>
+        public static string GetASMOutput(byte note, TunedMap tuned, TunedMap tunedPsg, bool psg, bool disableNoteMacros)
+        {
+            if (disableNoteMacros)
+            {
+                if (psg)
+                    return tunedPsg.F2C(note).ToString();
+                else
+                    return tuned.F2C(note) - YM_OFFSET + "+" + YM_OFFSET;
+            }
+            else
+            {
+                if (psg)
+                    return tunedPsg.F2CName(note);
+                else
+                    return tuned.F2CName(note);
+            }
+        }
+
+        /// <summary>
         /// Get the name of a Cube note.
         /// </summary>
         public string GetCubeNoteName(byte cubeNote)

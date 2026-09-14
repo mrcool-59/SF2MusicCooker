@@ -439,7 +439,7 @@ namespace SF2MusicCooker
             void WriteNote(byte note, int release, int length)
             {
                 if (!noise) NoteBible.Transpose(ref note, psg ? options.TransposePSG : options.TransposeFM);
-                string value = noise ? NOISE(note) : options.NoNoteMacros ? (psg ? tunedPsg : tuned).F2C(note).ToString() : (psg ? tunedPsg : tuned).F2CName(note);
+                string value = noise ? NOISE(note) : PitchTable.GetASMOutput(note, tuned, tunedPsg, psg, options.NoNoteMacros);
                 WriteNoteOrSample(value, release, length, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
             }
 
