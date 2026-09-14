@@ -68,7 +68,8 @@ namespace SF2MusicCooker
 
         private const int YM_OFFSET = 24; // This is the hardcoded offset in macros.asm
         private const int YM_SHIFT = 7; // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
-        private const int PSG_SHIFT = -12; // I didn't investigate why there is -1 octave (-12)
+        private const int PSG_OFFSET = 21; // This is the hardcoded offset in parse_tone_data.asm (sub 15h in $$newNote routine)
+        private const int PSG_SHIFT = -33; // I didn't investigate why there is -1 octave (-12) in addition to the offset
 
         private readonly struct Entry
         {
@@ -147,7 +148,7 @@ namespace SF2MusicCooker
             if (disableNoteMacros)
             {
                 if (psg)
-                    return tunedPsg.F2C(note).ToString();
+                    return tunedPsg.F2C(note) - PSG_OFFSET + "+" + PSG_OFFSET;
                 else
                     return tuned.F2C(note) - YM_OFFSET + "+" + YM_OFFSET;
             }
@@ -225,7 +226,7 @@ namespace SF2MusicCooker
         /// </summary>
         public TunedMap CreatePSGTunedMap(int a4tuning)
         {
-            return CreateTunedMap(_psgNotes, a4tuning, PSG_SHIFT, 0);
+            return CreateTunedMap(_psgNotes, a4tuning, PSG_SHIFT, PSG_OFFSET);
         }
 
         /// <summary>
@@ -310,7 +311,7 @@ namespace SF2MusicCooker
             Regex regex = new Regex("noteL?[ \t]+([a-zA-Z0-9]+)");
             Regex regexPsg = new Regex("psgNoteL?[ \t]+([a-zA-Z0-9]+)");
             byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), YM_OFFSET), IsNotNoiseChannel);
-            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), 0), IsNotNoiseChannel);
+            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), PSG_OFFSET), IsNotNoiseChannel);
 
             // NOTE: title screen music, ending music and various SFXs seem to use PSG notes outside legal range (> 63)
             // This would cause out-of-bounds reads into the YM_LEVELS array or even SLOTS_PER_ALGO array
@@ -382,7 +383,7 @@ namespace SF2MusicCooker
             if (sortedFurnaceNotes == null) throw new ArgumentNullException(nameof(unusedCubeNotes));
 
             bool psg = notes == _psgNotes;
-            int shift = psg ? PSG_SHIFT : YM_OFFSET;
+            int shift = psg ? PSG_SHIFT : YM_SHIFT;
             TunedMap map = CreateTunedMap(notes, FurnaceFile.StandardA4Tuning, shift, 0);
             RegisterValueLookup lookup = new RegisterValueLookup(psg);
             Func<int, int> freqFn = GetFreqFn(psg);
