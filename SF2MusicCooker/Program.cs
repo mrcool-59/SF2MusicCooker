@@ -167,7 +167,13 @@ namespace SF2MusicCooker
             {
                 Tools.ExtractNumberAndName(fur.Name, true, out int number, out int moveFrom, out string name);
 
-                if (arguments.Only >= 0 && number != arguments.Only) continue;
+                if (arguments.Only >= 0)
+                {
+                    if (number != arguments.Only) continue;
+
+                    // If only processing one music: put it as music 33 so it can play immediately in test menu
+                    number = moveFrom = 33;
+                }
 
                 // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
                 int pairNumber = output.GetPairedMusic(number);
