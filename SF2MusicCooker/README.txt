@@ -108,6 +108,7 @@ The following options can be specified globally or per-music/per-SFX:
 --removerelease				or		-rr		Remove all note release commands (===) in all channels
 --removeoff					or		-ro		Remove all note off commands (OFF) in all channels
 --noenvelopeguessing		or		-neg	Disable guessing of the proper PSG envelope to use based on channel volume commands (gives different results and may use less space)
+--nonotemacros				or		-nnm	Disable the use of note macros in note/psgNote commands, decimal note index will be used instead (only useful for developers)
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)

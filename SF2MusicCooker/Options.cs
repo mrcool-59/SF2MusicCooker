@@ -30,6 +30,7 @@ namespace SF2MusicCooker
         public readonly bool RemoveRelease;
         public readonly bool RemoveOff;
         public readonly bool NoEnvelopeGuessing;
+        public readonly bool NoNoteMacros;
         public readonly bool NoOptimize;
         public readonly bool DumpNotes;
         public readonly bool DumpUncompressed;
@@ -74,6 +75,7 @@ namespace SF2MusicCooker
                                other.RemoveRelease || RemoveRelease,
                                other.RemoveOff || RemoveOff,
                                other.NoEnvelopeGuessing || NoEnvelopeGuessing,
+                               other.NoNoteMacros || NoNoteMacros,
                                other.NoOptimize || NoOptimize,
                                other.DumpNotes || DumpNotes,
                                other.DumpUncompressed || DumpUncompressed,
@@ -122,6 +124,7 @@ namespace SF2MusicCooker
             RemoveRelease = Exists("--removerelease") || Exists("-rr");
             RemoveOff = Exists("--removeoff") || Exists("-ro");
             NoEnvelopeGuessing = Exists("--noenvelopeguessing") || Exists("-neg");
+            NoNoteMacros = Exists("--nonotemacros") || Exists("-nnm");
             NoOptimize = Exists("--nooptimize") || Exists("-no");
             DumpNotes = Exists("--dumpnotes") || Exists("-dn");
             DumpUncompressed = Exists("--dumpuncompressed") || Exists("-du");
@@ -133,7 +136,7 @@ namespace SF2MusicCooker
             else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noEnvelopeGuessing, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG, float sampleRateCoeff, float volumeCoeff, string volumeMode)
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG, float sampleRateCoeff, float volumeCoeff, string volumeMode)
         {
             Mute = mute;
             Isolate = isolate;
@@ -143,6 +146,7 @@ namespace SF2MusicCooker
             RemoveRelease = removeRelease;
             RemoveOff = removeOff;
             NoEnvelopeGuessing = noEnvelopeGuessing;
+            NoNoteMacros = noNoteMacros;
             NoOptimize = noOptimize;
             DumpNotes = dumpNotes;
             DumpUncompressed = dumpUncompressed;
@@ -156,6 +160,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, null);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, null);
     }
 }
