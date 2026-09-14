@@ -176,6 +176,9 @@ namespace SF2MusicCooker
                 // Prepare the options
                 Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
 
+                // If only processing one music, set number to 33 so it can play immediately in test menu
+                if (arguments.Only >= 0) number = moveFrom = 33;
+
                 // Build the input
                 Input input = new Input(fur, number, pairNumber, options, name);
                 inputs.Add(input);
@@ -189,9 +192,6 @@ namespace SF2MusicCooker
                 // Create a deferred sheet
                 Sheet sheet = Sheet.Later(builder);
                 sheets.Add(sheet);
-
-                // If only processing one music, set number to 33 so it can play immediately in test menu
-                if (arguments.Only >= 0) number = moveFrom = 33;
 
                 // Send to output!
                 Song song = new Song(number, name, asmName, sheet);
