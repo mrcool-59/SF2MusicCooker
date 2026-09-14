@@ -255,6 +255,8 @@ namespace SF2MusicCooker
             if (asm == null) throw new ArgumentNullException(nameof(asm));
             if (cubeCounter == null) throw new ArgumentNullException(nameof(cubeCounter));
 
+            // TODO: potentially incorrect notes if current note shifting != 0
+
             Dictionary<string, int> reverseMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var pair in _names)
@@ -342,7 +344,7 @@ namespace SF2MusicCooker
         /// </summary>
         public void ExtendNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes)
         {
-            ExtendNotes(unusedCubeNotes, sortedFurnaceNotes, _notes, YM_SHIFT);
+            ExtendNotes(unusedCubeNotes, sortedFurnaceNotes, _notes);
         }
 
         /// <summary>
@@ -350,17 +352,21 @@ namespace SF2MusicCooker
         /// </summary>
         public void ExtendPSGNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes)
         {
-            ExtendNotes(unusedCubeNotes, sortedFurnaceNotes, _psgNotes, PSG_SHIFT);
+            ExtendNotes(unusedCubeNotes, sortedFurnaceNotes, _psgNotes);
         }
 
-        private void ExtendNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes, Entry[] notes, int shift)
+        private void ExtendNotes(byte[] unusedCubeNotes, byte[] sortedFurnaceNotes, Entry[] notes)
         {
             if (unusedCubeNotes == null) throw new ArgumentNullException(nameof(unusedCubeNotes));
             if (sortedFurnaceNotes == null) throw new ArgumentNullException(nameof(unusedCubeNotes));
 
+            bool psg = notes == _psgNotes;
+            int shift = psg ? PSG_SHIFT : YM_OFFSET;
             TunedMap map = CreateTunedMap(notes, FurnaceFile.StandardA4Tuning, shift, 0);
-            RegisterValueLookup lookup = new RegisterValueLookup(notes != _notes);
-            string what = notes == _notes ? "YM" : "PSG";
+            RegisterValueLookup lookup = new RegisterValueLookup(psg);
+            Func<int, int> freqFn = GetFreqFn(psg);
+            string what = psg ? "PSG" : "YM";
+
             int cursor = 0;
 
             foreach (byte furnaceNote in sortedFurnaceNotes)
@@ -369,24 +375,34 @@ namespace SF2MusicCooker
 
                 if (map.IsSupported(furnaceNote)) continue;
 
-                int frequency = GetFurnaceFrequency(FurnaceFile.StandardA4Tuning, furnaceNote + shift - NoteBible.BASE_VALUE);
+                int frequency = GetFurnaceFrequency(FurnaceFile.StandardA4Tuning, furnaceNote - NoteBible.BASE_VALUE + shift);
                 ushort value = lookup.Frequency2Value(frequency);
+                int actualFrequency = freqFn(value);
 
                 if (Array.Exists(notes, note => note.Value == value)) continue;
 
                 byte cubeNote = unusedCubeNotes[cursor++];
 
-                notes[cubeNote] = new Entry(cubeNote, value, frequency);
+                notes[cubeNote] = new Entry(cubeNote, value, actualFrequency);
 
                 Console.WriteLine("> Recycled {0} driver note {1} to support {2} Furnace note with register value: {3}", what, cubeNote, NoteBible.NameOf(furnaceNote), value);
             }
         }
 
-        private static Entry[] ReadFrequencies(string path, Func<int, int> freqFn)
+        private static Func<int, int> GetFreqFn(bool psg)
+        {
+            if (psg)
+                return GetPSGFrequency;
+            else
+                return GetYMFrequency;
+        }
+
+        private static Entry[] ReadFrequencies(string path, bool psg)
         {
             string asm = File.ReadAllText(path);
             int[] values = Tools.GetAllNumericElements(asm, "dw");
 
+            Func<int, int> freqFn = GetFreqFn(psg);
             Entry[] entries = new Entry[values.Length];
             for (int i = 0; i < entries.Length; i++) entries[i] = new Entry((byte)i, (ushort)values[i], freqFn(values[i]));
             return entries;
@@ -394,8 +410,8 @@ namespace SF2MusicCooker
 
         public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath)
         {
-            _notes = ReadFrequencies(ymFrequenciesPath, GetYMFrequency);
-            _psgNotes = ReadFrequencies(psgFrequenciesPath, GetPSGFrequency);
+            _notes = ReadFrequencies(ymFrequenciesPath, false);
+            _psgNotes = ReadFrequencies(psgFrequenciesPath, true);
             _names = Tools.ReadASMEnumReverseMap(notesNamePath);
         }
 
