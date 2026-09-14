@@ -167,13 +167,7 @@ namespace SF2MusicCooker
             {
                 Tools.ExtractNumberAndName(fur.Name, true, out int number, out int moveFrom, out string name);
 
-                if (arguments.Only >= 0)
-                {
-                    if (number != arguments.Only) continue;
-
-                    // If only processing one music: put it as music 33 so it can play immediately in test menu
-                    number = moveFrom = 33;
-                }
+                if (arguments.Only >= 0 && number != arguments.Only) continue;
 
                 // Some musics come in pairs in vanilla SF2, we need to carefully handle those to not break the reassembly when replacing these musics
                 int pairNumber = output.GetPairedMusic(number);
@@ -195,6 +189,9 @@ namespace SF2MusicCooker
                 // Create a deferred sheet
                 Sheet sheet = Sheet.Later(builder);
                 sheets.Add(sheet);
+
+                // If only processing one music, set number to 33 so it can play immediately in test menu
+                if (arguments.Only >= 0) number = moveFrom = 33;
 
                 // Send to output!
                 Song song = new Song(number, name, asmName, sheet);
