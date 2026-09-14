@@ -393,6 +393,10 @@ namespace SF2MusicCooker
             byte[] sortedNotes = furnaceCounter.ToSorted(false, MetricYM);
             byte[] sortedPsgNotes = furnaceCounter.ToSorted(true, MetricPSG);
 
+            // Keep only valid notes that we actually need
+            sortedNotes = Array.FindAll(sortedNotes, note => furnaceCounter.Get(note, false) > 0);
+            sortedPsgNotes = Array.FindAll(sortedPsgNotes, note => furnaceCounter.Get(note, true) > 0);
+
             // Then extend notes!
             Pitch.ExtendNotes(unusedNotes, sortedNotes);
             Pitch.ExtendPSGNotes(unusedPsgNotes, sortedPsgNotes);

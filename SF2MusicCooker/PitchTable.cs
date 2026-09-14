@@ -278,6 +278,7 @@ namespace SF2MusicCooker
             if (cubeCounter == null) throw new ArgumentNullException(nameof(cubeCounter));
 
             // TODO: potentially incorrect notes if current note shifting != 0
+            // TODO: noise channel exclusion gimmick is not necessary, simply filter invalid notes (those < 21)
 
             Dictionary<string, int> reverseMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 

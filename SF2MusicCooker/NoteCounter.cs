@@ -69,7 +69,6 @@ namespace SF2MusicCooker
             for (int i = 0; i < notes.Length; i++) notes[i] = (byte)i;
             Array.Sort(values, notes);
             Array.Reverse(notes);
-            notes = Array.FindAll(notes, note => NoteBible.Clamp(note) == note); // Keep only valid notes
             return notes;
         }
 

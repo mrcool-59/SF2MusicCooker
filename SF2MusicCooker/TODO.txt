@@ -1,10 +1,4 @@
-﻿Version 0.99:
-- YM/PSG note frequencies replacement/expansion
-	=> Looks like we replace PSG notes we shouldn't (SF1 attack broken)
-	=> Looks like the frequency of replaced PSG notes is incorrect (also see SF1 attack)
-		EXPLANATION: sub 15h non pris en compte!!
-
-Version 1.0:
+﻿Version 1.0:
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - PCM banks: 6 extra PCM banks might be what's needed
