@@ -149,7 +149,7 @@ namespace SF2MusicCooker
             bool noise = channel == 9;
 
             // Volume to cube helper
-            Volume volume = new Volume(Volume.ParseStrategy(options.VolumeMode), file.MasterVolume * options.VolumeCoeff);
+            Volume volume = options.ToVolume(file.MasterVolume);
             byte VOL_F2C(byte value) => psg ? volume.PSG(value) : volume.Y2C(value);
 
             // Prepare state

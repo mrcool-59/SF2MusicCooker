@@ -22,6 +22,15 @@ namespace SF2MusicCooker
         private static readonly Regex volumeCoeffLongRegex = new Regex("^--volume=([0-9.]+)$");
         private static readonly Regex volumeCoeffShortRegex = new Regex("^-v=([0-9.]+)$");
 
+        private static readonly Regex volumeFMCoeffLongRegex = new Regex("^--volumefm=([0-9.]+)$");
+        private static readonly Regex volumeFMCoeffShortRegex = new Regex("^-vfm=([0-9.]+)$");
+
+        private static readonly Regex volumePSGCoeffLongRegex = new Regex("^--volumepsg=([0-9.]+)$");
+        private static readonly Regex volumePSGCoeffShortRegex = new Regex("^-vpsg=([0-9.]+)$");
+
+        private static readonly Regex volumeSampleCoeffLongRegex = new Regex("^--volumesample=([0-9.]+)$");
+        private static readonly Regex volumeSampleCoeffShortRegex = new Regex("^-vs=([0-9.]+)$");
+
         public readonly int Mute;
         public readonly int Isolate;
         public readonly int[] MuteInstruments;
@@ -42,6 +51,9 @@ namespace SF2MusicCooker
         public readonly int TransposePSG;
         public readonly float SampleRateCoeff;
         public readonly float VolumeCoeff;
+        public readonly float VolumeFMCoeff;
+        public readonly float VolumePSGCoeff;
+        public readonly float VolumeSampleCoeff;
         public readonly string VolumeMode;
 
         /// <summary>
@@ -61,6 +73,14 @@ namespace SF2MusicCooker
         public bool IsAllowed(int instrument)
         {
             return Array.IndexOf(MuteInstruments, instrument) == -1;
+        }
+
+        /// <summary>
+        /// Build the associated volume object.
+        /// </summary>
+        public Volume ToVolume(float masterVolume)
+        {
+            return new Volume(Volume.ParseStrategy(VolumeMode), masterVolume * VolumeCoeff, VolumeFMCoeff, VolumePSGCoeff, VolumeSampleCoeff);
         }
 
         /// <summary>
@@ -91,6 +111,9 @@ namespace SF2MusicCooker
                                other.TransposePSG + TransposePSG,
                                other.SampleRateCoeff * SampleRateCoeff,
                                other.VolumeCoeff * VolumeCoeff,
+                               other.VolumeFMCoeff * VolumeFMCoeff,
+                               other.VolumePSGCoeff * VolumePSGCoeff,
+                               other.VolumeSampleCoeff * VolumeSampleCoeff,
                                other.VolumeMode ?? VolumeMode);
         }
 
@@ -144,11 +167,17 @@ namespace SF2MusicCooker
             TransposePSG = Tools.ParseIntArg(args, transposePSGLongRegex, transposePSGShortRegex, 0);
             SampleRateCoeff = Tools.ParseFloatArg(args, sampleRateCoeffLongRegex, sampleRateCoeffShortRegex, 1f);
             VolumeCoeff = Tools.ParseFloatArg(args, volumeCoeffLongRegex, volumeCoeffShortRegex, 1f);
+            VolumeFMCoeff = Tools.ParseFloatArg(args, volumeFMCoeffLongRegex, volumeFMCoeffShortRegex, 1f);
+            VolumePSGCoeff = Tools.ParseFloatArg(args, volumePSGCoeffLongRegex, volumePSGCoeffShortRegex, 1f);
+            VolumeSampleCoeff = Tools.ParseFloatArg(args, volumeSampleCoeffLongRegex, volumeSampleCoeffShortRegex, 1f);
             if (Exists("--volume:linear") || Exists("-v:l")) VolumeMode = "linear";
             else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, bool preserveRate, bool removeRelease, bool removeOff, bool removeVol, bool removePan, bool removeLegato, bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG, float sampleRateCoeff, float volumeCoeff, string volumeMode)
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, bool preserveRate,
+            bool removeRelease, bool removeOff, bool removeVol, bool removePan, bool removeLegato,
+            bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG,
+            float sampleRateCoeff, float volumeCoeff, float volumeFMCoeff, float volumePSGCoeff, float volumeSampleCoeff, string volumeMode)
         {
             Mute = mute;
             Isolate = isolate;
@@ -170,12 +199,15 @@ namespace SF2MusicCooker
             TransposePSG = transposePSG;
             SampleRateCoeff = sampleRateCoeff;
             VolumeCoeff = volumeCoeff;
+            VolumeFMCoeff = volumeFMCoeff;
+            VolumePSGCoeff = volumePSGCoeff;
+            VolumeSampleCoeff = volumeSampleCoeff;
             VolumeMode = volumeMode;
         }
 
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, null);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, 1f, 1f, 1f, null);
     }
 }

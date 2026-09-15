@@ -13,13 +13,21 @@ namespace SF2MusicCooker
 
         private readonly byte[] _ym2cube;
         private readonly float _volume;
+        private readonly float _volumeFM;
+        private readonly float _volumePSG;
+        private readonly float _volumeSample;
+
+        /// <summary>
+        /// Volume coefficient to apply to samples.
+        /// </summary>
+        public float Sample { get { return _volume * _volumeSample; } }
 
         /// <summary>
         /// Convert YM volume to the closest equivalent Cube volume.
         /// </summary>
         public byte Y2C(byte ymVolume)
         {
-            ymVolume = (byte)Math.Max(0, Math.Min(0x7F, (int)Math.Round(ymVolume * _volume)));
+            ymVolume = (byte)Math.Max(0, Math.Min(0x7F, (int)Math.Round(ymVolume * _volume * _volumeFM)));
             if (_ym2cube != null)
                 return _ym2cube[ymVolume];
             else
@@ -31,16 +39,19 @@ namespace SF2MusicCooker
         /// </summary>
         public byte PSG(byte psgVolume)
         {
-            return (byte)Math.Min(0x0F, Math.Round(psgVolume * _volume));
+            return (byte)Math.Min(0x0F, Math.Round(psgVolume * _volume * _volumePSG));
         }
 
-        public Volume(Strategy strategy = Strategy.Nearest, float volume = 1f)
+        public Volume(Strategy strategy = Strategy.Nearest, float volume = 1f, float volumeFM = 1f, float volumePSG = 1f, float volumeSample = 1f)
         {
             if (strategy == Strategy.Linear)
                 _ym2cube = null;
             else
                 _ym2cube = MakeTable(strategy != Strategy.Nearest);
             _volume = (float)Math.Sqrt(volume);
+            _volumeFM = (float)Math.Sqrt(volumeFM);
+            _volumePSG = (float)Math.Sqrt(volumePSG);
+            _volumeSample = (float)Math.Sqrt(volumeSample);
         }
 
         public static Strategy ParseStrategy(string x)

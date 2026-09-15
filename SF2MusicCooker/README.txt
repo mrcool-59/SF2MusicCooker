@@ -119,7 +119,10 @@ The following options can be specified globally or per-music/per-SFX:
 --transposefm=x				or		-tfm=x	Transpose Furnace FM notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
 --transposepsg=x			or		-tpsg=x	Transpose Furnace PSG tone notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
 --sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound engine has a limit when playing very high pitched samples)
---volume=x					or		-v=x	Multiply the master volume by x (can be useful to get rid of saturated output without touching the original .fur file)
+--volume=x					or		-v=x	Multiply master volume by x (default is x=1.0)
+--volumefm=x				or		-vfm=x	Multiply FM volume by x
+--volumepsg=x				or		-vpsg=x	Multiply PSG volume by x
+--volumesample=x			or		-vs=x	Multiply samples volume by x [warning: same samples played at different volumes will result in different samples in ROM]
 --volume:linear				or		-v:l	Use linear YM volume (technically incorrect but may give interesting results depending on the music)
 --volume:nearest			or		-v:n	Use nearest instead of truncating when mapping YM volume to SF2 sound driver volume (gives subtly different results)
 

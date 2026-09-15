@@ -105,7 +105,7 @@ namespace SF2MusicCooker
             int actualPeriod = PCMSample.ComputePeriod(sample.Rate);
             int actualRate = PCMSample.ComputeRate(actualPeriod);
             data = Resample(sample.Data, sample.Rate, actualRate);
-            HalfwayShiftInPlace(data);
+            Sample.HalfwayShiftInPlace(data);
 
             float coeff = (float)a4tuning / FurnaceFile.StandardA4Tuning;
             int playRate = PitchTable.ShiftFrequency(actualRate, note - NoteBible.C4_VALUE, coeff);
@@ -115,11 +115,6 @@ namespace SF2MusicCooker
         private static byte[] Resample(byte[] data, int fromRate, int toRate)
         {
             return (byte[])data.Clone(); // TODO: not implemented (NOTE: probably don't resample if close enough...)
-        }
-
-        private static void HalfwayShiftInPlace(byte[] data)
-        {
-            for (int i = 0; i < data.Length; i++) data[i] = (byte)(0x80 + data[i]);
         }
 
         private bool FindOrAllocate(byte[] data, bool canAllocate, out int bank, out int offset)

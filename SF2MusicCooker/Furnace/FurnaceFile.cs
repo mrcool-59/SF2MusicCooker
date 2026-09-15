@@ -349,13 +349,13 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
-        /// Adjust the sample rates of all samples in the file.
+        /// Adjust the sample rates and volume of all samples in the file.
         /// </summary>
-        public void ScaleSamples(float coeff)
+        public void ScaleSamples(float rateCoeff, float volumeCoeff)
         {
             for (int i = 0; i < Samples.Length; i++)
             {
-                Samples[i] = Samples[i].MultiplyRate(coeff);
+                Samples[i] = Samples[i].Multiply(rateCoeff, volumeCoeff);
             }
         }
 

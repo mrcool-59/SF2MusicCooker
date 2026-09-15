@@ -329,8 +329,9 @@ namespace SF2MusicCooker
                     // Apply rewrite logic
                     Rewriter.Execute(file, options.EnableRewrite);
 
-                    // Sample rate coeff for samples
-                    file.ScaleSamples(options.SampleRateCoeff);
+                    // Sample rate and volume coeffs for samples
+                    Volume volume = options.ToVolume(file.MasterVolume);
+                    file.ScaleSamples(options.SampleRateCoeff, volume.Sample);
 
                     // Mute samples switch
                     int numSamples = file.Samples.Length;

@@ -28,10 +28,36 @@ namespace SF2MusicCooker.Furnace
             if (Depth == 16 && data.Length == length) Depth = 8;
         }
 
-        public Sample MultiplyRate(float coeff)
+        public static void HalfwayShiftInPlace(byte[] data)
         {
-            int newRate = (int)Math.Round(Rate * coeff);
-            return new Sample(Name, Length, newRate, Depth, LoopDirection, LoopStart, LoopEnd, Data);
+            for (int i = 0; i < data.Length; i++) data[i] = (byte)(0x80 + data[i]);
+        }
+
+        private static byte[] ScalePCM(byte[] data, float coeff)
+        {
+            if (Math.Abs(1f - coeff) > 0.00001f)
+            {
+                data = (byte[])data.Clone();
+                HalfwayShiftInPlace(data);
+                for (int i = 0; i < data.Length; i++)
+                {
+                    float v = (data[i] - 128f) / 128f * coeff;
+                    data[i] = (byte)Math.Max(-sbyte.MinValue, Math.Min(sbyte.MaxValue, Math.Round(v * 128f)));
+                }
+                HalfwayShiftInPlace(data);
+            }
+            return data;
+        }
+
+        public Sample Multiply(float rateCoeff, float volumeCoeff)
+        {
+            int newRate = (int)Math.Round(Rate * rateCoeff);
+            byte[] newData = ScalePCM(Data, volumeCoeff);
+
+            if (newRate != Rate || newData != Data)
+                return new Sample(Name, Length, newRate, Depth, LoopDirection, LoopStart, LoopEnd, newData);
+            else
+                return this;
         }
 
         public void Verify()
