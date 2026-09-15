@@ -71,6 +71,7 @@
     <Compile Include="PSGInstruments.cs" />
     <Compile Include="EnvelopeGuesser.cs" />
     <Compile Include="RegisterValueLookup.cs" />
+    <Compile Include="Rewriter.cs" />
     <Compile Include="TunedMap.cs" />
     <Compile Include="InstrumentMap.cs" />
     <Compile Include="LoopOptimizer.cs" />

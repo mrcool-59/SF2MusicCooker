@@ -9,6 +9,7 @@
         public const byte PanTrinary = 0x80;
         public const byte NoiseMode = 0x20;
         public const byte Legato = 0xEA;
+        public const byte LegatoSingleTick = 0xEF; // Unofficial effect
         public const byte Detune = 0x53;
         public const byte Portamento = 0x03;
         public const byte Vibrato = 0x04;
@@ -21,7 +22,7 @@
         /// </summary>
         public static readonly byte[] SupportedEffects = new byte[]
         {
-            GoTo, GoNext, End, Pan, PanTrinary, NoiseMode, Legato, Detune, Portamento, Vibrato, VibratoShape, SetTempo,
+            GoTo, GoNext, End, Pan, PanTrinary, NoiseMode, Legato, LegatoSingleTick, Detune, Portamento, Vibrato, VibratoShape, SetTempo,
             0xC0, 0xC1, 0xC2, 0xC3 // Cxxx effects (up to C3FF)
         };
 

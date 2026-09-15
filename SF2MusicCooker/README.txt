@@ -104,9 +104,13 @@ The following options can be specified globally or per-music/per-SFX:
 --isolateN					or		-iN		(N = 1..10) If present disable output of all channels except channel N (you can stack multiple --isolateN options)
 --muteinstrument=x			or		-mi=x	Mute Furnace instrument x in the output (can be stacked multiple times with different values)
 --mutesamples				or		-ms		Disable output of channel 6 if it plays samples (useful to work around issues with samples)
+--enablerewrite				or		-er		Enable tricks to support volume/panning changes between notes, this will increase size of output and alter the results
 --preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed (see caveat below for explanations)
 --removerelease				or		-rr		Remove all note release commands (===) in all channels
 --removeoff					or		-ro		Remove all note off commands (OFF) in all channels
+--removevol					or		-rv		Remove all volume effects in all channels
+--removepan					or		-rp		Remove all panning effects in all channels
+--removelegato				or		-rl		Remove all legato effects in all channels
 --noenvelopeguessing		or		-neg	Disable guessing of the proper PSG envelope to use based on channel volume commands (gives different results and may use less space)
 --nonotemacros				or		-nnm	Disable the use of note macros in note/psgNote commands, decimal note index will be used instead (only useful for developers)
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)

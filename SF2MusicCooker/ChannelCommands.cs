@@ -157,6 +157,7 @@ namespace SF2MusicCooker
             HashSet<string> warnings = new HashSet<string>();
             StateSnapshot loopState = StateSnapshot.Invalid;
             bool legato = false;
+            int singleTickLegato = 0;
             float newTimer = 0f;
             ushort psgFurnaceInstrument = 0xFFFF;
             ushort currentInstrument = 0xFFFF; // Will force instrument to be set on the first note
@@ -457,10 +458,8 @@ namespace SF2MusicCooker
 
                 while (length > 0)
                 {
-                    if (legato && length == release)
-                        WriteSetReleaseOrSustain(-1); // Legato is enabled and this note doesn't have a key release
-                    else if (length >= 0x100)
-                        WriteSetReleaseOrSustain(-1); // This command is sustained because it goes above the max length of a single command (i.e: another one is required)
+                    if ((legato && length == release && singleTickLegato == 0) || (singleTickLegato == 1) || length >= 0x100)
+                        WriteSetReleaseOrSustain(-1); // Sustained note when: legato without key release, single tick legato or note longer than max length of a single note command
                     else
                         WriteSetReleaseOrSustain(length - release); // This command will end, we can also set when it should be released
 
@@ -719,6 +718,8 @@ namespace SF2MusicCooker
                 {
                     legato = effect.Value != 0x00;
                 }
+
+                singleTickLegato = cell.TryGetEffect(Effect.LegatoSingleTick, out effect) ? (effect.Value != 0x00 ? 1 : -1) : 0;
             }
 
             void GuessPSGInstrument(Tick tick, ref int noteRelease)

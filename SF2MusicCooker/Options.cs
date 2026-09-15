@@ -26,9 +26,13 @@ namespace SF2MusicCooker
         public readonly int Isolate;
         public readonly int[] MuteInstruments;
         public readonly bool MuteSamples;
+        public readonly bool EnableRewrite;
         public readonly bool PreserveRate;
         public readonly bool RemoveRelease;
         public readonly bool RemoveOff;
+        public readonly bool RemoveVol;
+        public readonly bool RemovePan;
+        public readonly bool RemoveLegato;
         public readonly bool NoEnvelopeGuessing;
         public readonly bool NoNoteMacros;
         public readonly bool NoOptimize;
@@ -71,9 +75,13 @@ namespace SF2MusicCooker
                                other.Isolate | Isolate,
                                Tools.Combine(other.MuteInstruments, MuteInstruments),
                                other.MuteSamples || MuteSamples,
+                               other.EnableRewrite || EnableRewrite,
                                other.PreserveRate || PreserveRate,
                                other.RemoveRelease || RemoveRelease,
                                other.RemoveOff || RemoveOff,
+                               other.RemoveVol || RemoveVol,
+                               other.RemovePan || RemovePan,
+                               other.RemoveLegato || RemoveLegato,
                                other.NoEnvelopeGuessing || NoEnvelopeGuessing,
                                other.NoNoteMacros || NoNoteMacros,
                                other.NoOptimize || NoOptimize,
@@ -120,9 +128,13 @@ namespace SF2MusicCooker
             for (int i = 1; i <= 10; i++) if (Exists("--isolate" + i) || Exists("-i" + i)) Isolate |= 1 << (i - 1);
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
             MuteInstruments = Tools.ParseMultiArg(args, muteInstrumentLongRegex, muteInstrumentShortRegex, Tools.ConvertASMValue);
+            EnableRewrite = Exists("--enablerewrite") || Exists("-er");
             PreserveRate = Exists("--preserverate") || Exists("-pr");
             RemoveRelease = Exists("--removerelease") || Exists("-rr");
             RemoveOff = Exists("--removeoff") || Exists("-ro");
+            RemoveVol = Exists("--removevol") || Exists("-rv");
+            RemovePan = Exists("--removepan") || Exists("-rp");
+            RemoveLegato = Exists("--removelegato") || Exists("-rl");
             NoEnvelopeGuessing = Exists("--noenvelopeguessing") || Exists("-neg");
             NoNoteMacros = Exists("--nonotemacros") || Exists("-nnm");
             NoOptimize = Exists("--nooptimize") || Exists("-no");
@@ -136,15 +148,19 @@ namespace SF2MusicCooker
             else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool preserveRate, bool removeRelease, bool removeOff, bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG, float sampleRateCoeff, float volumeCoeff, string volumeMode)
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, bool preserveRate, bool removeRelease, bool removeOff, bool removeVol, bool removePan, bool removeLegato, bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG, float sampleRateCoeff, float volumeCoeff, string volumeMode)
         {
             Mute = mute;
             Isolate = isolate;
             MuteSamples = muteSamples;
             MuteInstruments = muteInstruments;
+            EnableRewrite = enableRewrite;
             PreserveRate = preserveRate;
             RemoveRelease = removeRelease;
             RemoveOff = removeOff;
+            RemoveVol = removeVol;
+            RemovePan = removePan;
+            RemoveLegato = removeLegato;
             NoEnvelopeGuessing = noEnvelopeGuessing;
             NoNoteMacros = noNoteMacros;
             NoOptimize = noOptimize;
@@ -160,6 +176,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, null);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, null);
     }
 }

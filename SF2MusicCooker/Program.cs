@@ -299,17 +299,35 @@ namespace SF2MusicCooker
                     int removed = file.RemoveUnsupportedNotes();
                     if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
 
-                    // Remove === and OFF notes if the option is enabled
+                    // Remove various elements if the appropriate option is enabled
                     if (options.RemoveRelease)
                     {
-                        removed = file.RemoveNotes(PatternCell.NoteRelease);
+                        removed = file.RemoveNote(PatternCell.NoteRelease);
                         if (removed > 0) Console.WriteLine("> Removed {0} note release commands (===)", removed);
                     }
                     if (options.RemoveOff)
                     {
-                        removed = file.RemoveNotes(PatternCell.NoteOff);
+                        removed = file.RemoveNote(PatternCell.NoteOff);
                         if (removed > 0) Console.WriteLine("> Removed {0} note off commands (OFF)", removed);
                     }
+                    if (options.RemoveVol)
+                    {
+                        removed = file.RemoveVolume();
+                        if (removed > 0) Console.WriteLine("> Removed {0} volume commands", removed);
+                    }
+                    if (options.RemovePan)
+                    {
+                        removed = file.RemoveEffect(Effect.Pan) + file.RemoveEffect(Effect.PanTrinary);
+                        if (removed > 0) Console.WriteLine("> Removed {0} panning commands", removed);
+                    }
+                    if (options.RemoveLegato)
+                    {
+                        removed = file.RemoveEffect(Effect.Legato) + file.RemoveEffect(Effect.LegatoSingleTick);
+                        if (removed > 0) Console.WriteLine("> Removed {0} legato commands", removed);
+                    }
+
+                    // Apply rewrite logic
+                    Rewriter.Execute(file, options.EnableRewrite);
 
                     // Sample rate coeff for samples
                     file.ScaleSamples(options.SampleRateCoeff);

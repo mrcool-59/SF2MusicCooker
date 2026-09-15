@@ -254,27 +254,71 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
-        /// Remove a specific note from all patterns and return the number of cells changed.
+        /// Transform cells from all patterns through a transformer function and return the number of cells changed.
         /// </summary>
-        public int RemoveNotes(int note)
+        public int Transform(Func<PatternCell, PatternCell> transformer)
         {
-            if (note == PatternCell.NoteAbsent)
-                throw new ArgumentException(nameof(note));
-
-            int removed = 0;
+            int changed = 0;
             foreach (Pattern pattern in PatternByKey.Values)
             {
                 for (int i = 0; i < pattern.Rows; i++)
                 {
                     PatternCell cell = pattern.Get(i);
-                    if (cell.Note == note)
+                    PatternCell newCell = transformer(cell) ?? PatternCell.Empty;
+
+                    if (cell != newCell)
                     {
-                        removed++;
-                        pattern.Set(i, new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects));
+                        changed++;
+                        pattern.Set(i, newCell);
                     }
                 }
             }
-            return removed;
+            return changed;
+        }
+
+        /// <summary>
+        /// Remove a specific note from all patterns and return the number of cells changed.
+        /// </summary>
+        public int RemoveNote(int note)
+        {
+            if (note == PatternCell.NoteAbsent)
+                throw new ArgumentException(nameof(note));
+
+            return Transform(cell =>
+            {
+                if (cell.Note == note)
+                    return new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects);
+                else
+                    return cell;
+            });
+        }
+
+        /// <summary>
+        /// Remove all volume commands from all patterns and return the number of cells changed.
+        /// </summary>
+        public int RemoveVolume()
+        {
+            return Transform(cell =>
+            {
+                if (cell.Volume != PatternCell.VolumeAbsent)
+                    return new PatternCell(cell.Note, cell.Instrument, PatternCell.VolumeAbsent, cell.Effects);
+                else
+                    return cell;
+            });
+        }
+
+        /// <summary>
+        /// Remove a specific effect type from all patterns and return the number of cells changed.
+        /// </summary>
+        public int RemoveEffect(byte type)
+        {
+            return Transform(cell =>
+            {
+                if (cell.TryGetEffect(type, out _))
+                    return new PatternCell(cell.Note, cell.Instrument, cell.Volume, Array.FindAll(cell.Effects, e => e.Type != type));
+                else
+                    return cell;
+            });
         }
 
         /// <summary>
@@ -282,25 +326,15 @@ namespace SF2MusicCooker.Furnace
         /// </summary>
         public int RemoveUnsupportedNotes()
         {
-            int removed = 0;
-            foreach (Pattern pattern in PatternByKey.Values)
+            return Transform(cell =>
             {
-                for (int i = 0; i < pattern.Rows; i++)
+                if (cell.HasNewNote)
                 {
-                    PatternCell cell = pattern.Get(i);
-                    if (cell.HasNewNote)
-                    {
-                        byte note = NoteBible.Clamp(cell.Note);
-                        if (note != cell.Note)
-                        {
-                            // If clamping has changed the value, it means it is an unsupported note
-                            removed++;
-                            pattern.Set(i, new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects));
-                        }
-                    }
+                    byte note = NoteBible.Clamp(cell.Note); // If clamping has changed the value, it means it is an unsupported note
+                    if (note != cell.Note) return new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects);
                 }
-            }
-            return removed;
+                return cell;
+            });
         }
 
         /// <summary>
