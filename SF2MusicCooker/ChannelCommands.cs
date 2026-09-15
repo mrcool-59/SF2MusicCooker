@@ -156,8 +156,6 @@ namespace SF2MusicCooker
             List<string> commands = new List<string>(file.Orders * file.Rows); // Rough estimate of the needed capacity
             HashSet<string> warnings = new HashSet<string>();
             StateSnapshot loopState = StateSnapshot.Invalid;
-            bool legato = false;
-            int singleTickLegato = 0;
             float newTimer = 0f;
             ushort psgFurnaceInstrument = 0xFFFF;
             ushort currentInstrument = 0xFFFF; // Will force instrument to be set on the first note
@@ -216,7 +214,6 @@ namespace SF2MusicCooker
                 ReadPortamento(tick, dac || psg);
                 ReadVibrato(tick, dac || noise);
                 ReadNoiseMode(tick, !noise);
-                ReadLegato(tick);
 
                 // Apply note change
                 if (cell.HasNewNote)
@@ -231,11 +228,13 @@ namespace SF2MusicCooker
                     // Finally, write note/sample command
                     if (psg || options.IsAllowed(currentInstrument))
                     {
+                        bool legato = ReadForceSustain(tick) ?? tick.Legato;
+
                         if (dac)
                         {
                             if (map.Sample(currentInstrument, cell.Note, out byte sample))
                             {
-                                WriteSample(sample, noteRelease, noteLength);
+                                WriteSample(sample, noteRelease, noteLength, legato);
                             }
                             else
                             {
@@ -245,7 +244,7 @@ namespace SF2MusicCooker
                         }
                         else
                         {
-                            WriteNote(cell.Note, noteRelease, noteLength);
+                            WriteNote(cell.Note, noteRelease, noteLength, legato);
                         }
                     }
                     else
@@ -437,19 +436,19 @@ namespace SF2MusicCooker
                 }
             }
 
-            void WriteNote(byte note, int release, int length)
+            void WriteNote(byte note, int release, int length, bool legato)
             {
                 if (!noise) NoteBible.Transpose(ref note, psg ? options.TransposePSG : options.TransposeFM);
                 string value = noise ? NOISE(note) : PitchTable.GetASMOutput(note, tuned, tunedPsg, psg, options.NoNoteMacros);
-                WriteNoteOrSample(value, release, length, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
+                WriteNoteOrSample(value, release, length, legato, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
             }
 
-            void WriteSample(byte sample, int release, int length)
+            void WriteSample(byte sample, int release, int length, bool legato)
             {
-                WriteNoteOrSample(BYTE(sample), release, length, "sample  ", "sampleL ");
+                WriteNoteOrSample(BYTE(sample), release, length, legato, "sample  ", "sampleL ");
             }
 
-            void WriteNoteOrSample(string value, int release, int length, string command, string commandL)
+            void WriteNoteOrSample(string value, int release, int length, bool legato, string command, string commandL)
             {
                 int cappedLength = Math.Min(length, release + 0x7F); // After releasing a command, we can't have it play for more than 0x7F ticks
                 int extraSilence = length - cappedLength;
@@ -458,8 +457,8 @@ namespace SF2MusicCooker
 
                 while (length > 0)
                 {
-                    if ((legato && length == release && singleTickLegato == 0) || (singleTickLegato == 1) || length >= 0x100)
-                        WriteSetReleaseOrSustain(-1); // Sustained note when: legato without key release, single tick legato or note longer than max length of a single note command
+                    if (legato || length >= 0x100)
+                        WriteSetReleaseOrSustain(-1); // Sustained note when legato is active or note is longer than max length of a single note command
                     else
                         WriteSetReleaseOrSustain(length - release); // This command will end, we can also set when it should be released
 
@@ -710,16 +709,11 @@ namespace SF2MusicCooker
                 }
             }
 
-            void ReadLegato(Tick tick)
+            bool? ReadForceSustain(Tick tick)
             {
                 PatternCell cell = tick.ActiveChannelCell;
 
-                if (cell.TryGetEffect(Effect.Legato, out Effect effect))
-                {
-                    legato = effect.Value != 0x00;
-                }
-
-                singleTickLegato = cell.TryGetEffect(Effect.LegatoSingleTick, out effect) ? (effect.Value != 0x00 ? 1 : -1) : 0;
+                return cell.TryGetEffect(Effect.ForceSustain, out Effect effect) ? (bool?)(effect.Value != 0x00) : null;
             }
 
             void GuessPSGInstrument(Tick tick, ref int noteRelease)

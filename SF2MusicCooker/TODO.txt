@@ -1,6 +1,7 @@
 ﻿Version 1.0:
 - TESTER: --volumefm=x --volumepsg=x --volumesample=x
 - TESTER: add artificial new notes (identical to the original note, in sustain mode) to be able to handle volume / panning changes per tick
+- Rewriter tests/improvement with dump notes enabled
 - Better portamento behavior (better match with Furnace behavior) with artificial legato on previous note (note: actual pitch slide is correct)
 ///
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64

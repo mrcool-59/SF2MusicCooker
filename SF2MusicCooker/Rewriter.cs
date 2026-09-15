@@ -41,9 +41,9 @@ namespace SF2MusicCooker
                 else if (ShouldRewrite(cell) && lastNoteCell != null)
                 {
                     // The previous note must have a single tick legato effect attached
-                    if (!lastNoteCell.TryGetEffect(Effect.LegatoSingleTick, out Effect effect) || effect.Value == 0x00)
+                    if (!lastNoteCell.TryGetEffect(Effect.ForceSustain, out Effect effect) || effect.Value == 0x00)
                     {
-                        Effect[] adjustedEffects = AppendEffect(lastNoteCell.Effects, new Effect(Effect.LegatoSingleTick, 0x01));
+                        Effect[] adjustedEffects = AppendEffect(lastNoteCell.Effects, new Effect(Effect.ForceSustain, 0x01));
                         PatternCell newLastNoteCell = new PatternCell(lastNoteCell.Note, lastNoteCell.Instrument, lastNoteCell.Volume, adjustedEffects);
                         file.PatternByKey[file.KeyByChannelAndOrder[channel, lastNotePosition.Order]].Set(lastNotePosition.Row, newLastNoteCell);
                     }

@@ -322,7 +322,7 @@ namespace SF2MusicCooker
                     }
                     if (options.RemoveLegato)
                     {
-                        removed = file.RemoveEffect(Effect.Legato) + file.RemoveEffect(Effect.LegatoSingleTick);
+                        removed = file.RemoveEffect(Effect.Legato);
                         if (removed > 0) Console.WriteLine("> Removed {0} legato commands", removed);
                     }
 

@@ -37,7 +37,12 @@
         /// </summary>
         public readonly VibratoState Vibrato;
 
-        public Tick(Position position, Position nextPosition, PatternCell activeChannelCell, int noteRelease, int noteLength, int silenceLength, VibratoState vibrato)
+        /// <summary>
+        /// True if the new note should be sustained (legato mode).
+        /// </summary>
+        public readonly bool Legato;
+
+        public Tick(Position position, Position nextPosition, PatternCell activeChannelCell, int noteRelease, int noteLength, int silenceLength, VibratoState vibrato, bool legato)
         {
             Position = position;
             NextPosition = nextPosition;
@@ -46,6 +51,7 @@
             NoteLength = noteLength;
             SilenceLength = silenceLength;
             Vibrato = vibrato;
+            Legato = legato;
         }
 
         /// <summary>
@@ -72,6 +78,8 @@
                 }
 
                 if (Vibrato.Active) suffix += ", vibrato = " + Vibrato;
+
+                if (Legato) suffix += ", legato";
             }
 
             if (Position.Next(rows) != NextPosition)

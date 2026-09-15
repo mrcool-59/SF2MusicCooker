@@ -21,6 +21,8 @@ namespace SF2MusicCooker.Furnace
             VibratoState vibratoState = new VibratoState();
             HashSet<Position> vibratoTaken = new HashSet<Position>();
 
+            bool legatoState = false;
+
             void ApplyVibrato(Effect vibrato, int vibratoDelay)
             {
                 byte speed = (byte)(vibrato.Value >> 4);
@@ -56,10 +58,16 @@ namespace SF2MusicCooker.Furnace
                 int noteRelease = 0;
                 int noteLength = 0;
                 int silenceLength = 0;
+                bool legato = false;
 
                 if (maxPredictLength > 0 && activeChannelCell != null)
                 {
-                    if (activeChannelCell.TryGetEffect(Effect.VibratoShape, out Effect effect))
+                    if (activeChannelCell.TryGetEffect(Effect.Legato, out Effect effect))
+                    {
+                        legatoState = effect.Value > 0;
+                    }
+
+                    if (activeChannelCell.TryGetEffect(Effect.VibratoShape, out effect))
                     {
                         shape = effect.Value;
                     }
@@ -68,6 +76,9 @@ namespace SF2MusicCooker.Furnace
                     {
                         // Figure out if a new vibrato should be applied with a delay
                         int vibratoDelay = 1;
+
+                        // Figure out if legato should be enabled for this note
+                        legato = legatoState;
 
                         foreach (Tick tick in Run(file, activeChannel, 0, position))
                         {
@@ -79,6 +90,12 @@ namespace SF2MusicCooker.Furnace
                                 noteRelease++;
                                 noteLength++;
                                 continue;
+                            }
+
+                            // We apply the last legato effect found up until the next note
+                            if (cell.TryGetEffect(Effect.Legato, out effect))
+                            {
+                                legato = effect.Value > 0;
                             }
 
                             // Take the first vibrato effect encountered after note starts and memorize its delay
@@ -174,7 +191,7 @@ namespace SF2MusicCooker.Furnace
 
                 // Submit to caller
                 Position nextPosition = new Position(order, row);
-                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength, vibratoState);
+                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength, vibratoState, legato && noteLength == noteRelease);
             }
         }
     }
