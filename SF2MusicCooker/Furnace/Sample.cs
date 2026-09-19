@@ -42,7 +42,7 @@ namespace SF2MusicCooker.Furnace
                 for (int i = 0; i < data.Length; i++)
                 {
                     float v = (data[i] - 128f) / 128f * coeff;
-                    data[i] = (byte)Math.Max(-sbyte.MinValue, Math.Min(sbyte.MaxValue, Math.Round(v * 128f)));
+                    data[i] = (byte)Math.Max(sbyte.MinValue, Math.Min(sbyte.MaxValue, 0x80 + Math.Round(v * 128f)));
                 }
                 HalfwayShiftInPlace(data);
             }

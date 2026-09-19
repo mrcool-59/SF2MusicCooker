@@ -104,7 +104,7 @@ The following options can be specified globally or per-music/per-SFX:
 --isolateN					or		-iN		(N = 1..10) If present disable output of all channels except channel N (you can stack multiple --isolateN options)
 --muteinstrument=x			or		-mi=x	Mute Furnace instrument x in the output (can be stacked multiple times with different values)
 --mutesamples				or		-ms		Disable output of channel 6 if it plays samples (useful to work around issues with samples)
---enablerewrite				or		-er		Enable tricks to support volume/panning changes between notes, this will increase size of output and alter the results
+--enablerewrite				or		-er		(Experimental feature) Enable tricks to support volume/panning changes between notes, will increase size of output and alter the results
 --preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed (see caveat below for explanations)
 --removerelease				or		-rr		Remove all note release commands (===) in all channels
 --removeoff					or		-ro		Remove all note off commands (OFF) in all channels
@@ -118,7 +118,7 @@ The following options can be specified globally or per-music/per-SFX:
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
 --transposefm=x				or		-tfm=x	Transpose Furnace FM notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
 --transposepsg=x			or		-tpsg=x	Transpose Furnace PSG tone notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
---sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound engine has a limit when playing very high pitched samples)
+--sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound driver has a limit when playing very high pitched samples)
 --volume=x					or		-v=x	Multiply master volume by x (default is x=1.0)
 --volumefm=x				or		-vfm=x	Multiply FM volume by x
 --volumepsg=x				or		-vpsg=x	Multiply PSG volume by x

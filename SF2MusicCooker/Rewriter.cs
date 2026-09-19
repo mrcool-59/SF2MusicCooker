@@ -18,7 +18,7 @@ namespace SF2MusicCooker
 
         private static void Execute(FurnaceFile file, int channel)
         {
-            if (!file.HasNote(channel)) return;
+            if ((channel == 5 && file.DAC) || !file.HasNote(channel)) return;
 
             Loop loop = file.Loop;
             PatternCell lastNoteCell = null;
