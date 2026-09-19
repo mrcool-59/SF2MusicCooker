@@ -1,6 +1,4 @@
 ﻿Version 1.0:
-- Better portamento behavior (better match with Furnace behavior) with legato on previous note
-///
 - Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
 	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
 - PCM banks: 6 extra PCM banks might be what's needed

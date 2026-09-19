@@ -228,13 +228,13 @@ namespace SF2MusicCooker
                     // Finally, write note/sample command
                     if (psg || options.IsAllowed(currentInstrument))
                     {
-                        bool legato = ReadForceSustain(tick) ?? tick.Legato;
+                        bool sustain = ReadForceSustain(tick) ?? tick.Sustain;
 
                         if (dac)
                         {
                             if (map.Sample(currentInstrument, cell.Note, out byte sample))
                             {
-                                WriteSample(sample, noteRelease, noteLength, legato);
+                                WriteSample(sample, noteRelease, noteLength, sustain);
                             }
                             else
                             {
@@ -244,7 +244,7 @@ namespace SF2MusicCooker
                         }
                         else
                         {
-                            WriteNote(cell.Note, noteRelease, noteLength, legato);
+                            WriteNote(cell.Note, noteRelease, noteLength, sustain);
                         }
                     }
                     else
@@ -436,19 +436,19 @@ namespace SF2MusicCooker
                 }
             }
 
-            void WriteNote(byte note, int release, int length, bool legato)
+            void WriteNote(byte note, int release, int length, bool sustain)
             {
                 if (!noise) NoteBible.Transpose(ref note, psg ? options.TransposePSG : options.TransposeFM);
                 string value = noise ? NOISE(note) : PitchTable.GetASMOutput(note, tuned, tunedPsg, psg, options.NoNoteMacros);
-                WriteNoteOrSample(value, release, length, legato, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
+                WriteNoteOrSample(value, release, length, sustain, psg ? "psgNote  " : "note  ", psg ? "psgNoteL " : "noteL ");
             }
 
-            void WriteSample(byte sample, int release, int length, bool legato)
+            void WriteSample(byte sample, int release, int length, bool sustain)
             {
-                WriteNoteOrSample(BYTE(sample), release, length, legato, "sample  ", "sampleL ");
+                WriteNoteOrSample(BYTE(sample), release, length, sustain, "sample  ", "sampleL ");
             }
 
-            void WriteNoteOrSample(string value, int release, int length, bool legato, string command, string commandL)
+            void WriteNoteOrSample(string value, int release, int length, bool sustain, string command, string commandL)
             {
                 int cappedLength = Math.Min(length, release + 0x7F); // After releasing a command, we can't have it play for more than 0x7F ticks
                 int extraSilence = length - cappedLength;
@@ -457,8 +457,8 @@ namespace SF2MusicCooker
 
                 while (length > 0)
                 {
-                    if (legato || length >= 0x100)
-                        WriteSetReleaseOrSustain(-1); // Sustained note when legato is active or note is longer than max length of a single note command
+                    if (sustain || length >= 0x100)
+                        WriteSetReleaseOrSustain(-1); // Sustained note happens when legato is active or note is longer than max length of a single note command
                     else
                         WriteSetReleaseOrSustain(length - release); // This command will end, we can also set when it should be released
 

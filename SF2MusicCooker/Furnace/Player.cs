@@ -59,6 +59,7 @@ namespace SF2MusicCooker.Furnace
                 int noteLength = 0;
                 int silenceLength = 0;
                 bool legato = false;
+                bool portamento = false;
 
                 if (maxPredictLength > 0 && activeChannelCell != null)
                 {
@@ -96,6 +97,12 @@ namespace SF2MusicCooker.Furnace
                             if (cell.TryGetEffect(Effect.Legato, out effect))
                             {
                                 legato = effect.Value > 0;
+                            }
+
+                            // An incoming portamento also requires the note to be sustained
+                            if (cell.HasNewNote && cell.TryGetEffect(Effect.Portamento, out effect))
+                            {
+                                portamento = effect.Value > 0;
                             }
 
                             // Take the first vibrato effect encountered after note starts and memorize its delay
@@ -191,7 +198,7 @@ namespace SF2MusicCooker.Furnace
 
                 // Submit to caller
                 Position nextPosition = new Position(order, row);
-                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength, vibratoState, legato && noteLength == noteRelease);
+                yield return new Tick(position, nextPosition, activeChannelCell, noteRelease, noteLength, silenceLength, vibratoState, (legato && noteLength == noteRelease) || portamento);
             }
         }
     }

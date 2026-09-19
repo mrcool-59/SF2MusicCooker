@@ -183,7 +183,7 @@
     <None Include="Test\%40music20-Obviously Town Theme.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music21-Choose a path.fur">
+    <None Include="Test\%40music21-Choose a Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music22-Maker%27s Ruin.fur">
