@@ -1,7 +1,4 @@
-﻿Version 1.0:
-- Extended banks feature: no playback pour certaines banks
-
-Version 1.1:
+﻿Version 1.1:
 - Option to force sustain on all DAC samples (?)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - Rewriter tests/improvement with dump notes enabled
