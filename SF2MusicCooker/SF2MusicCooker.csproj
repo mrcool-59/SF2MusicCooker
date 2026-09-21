@@ -345,7 +345,7 @@
     <None Include="__Run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="soundtest-standard.asm.tpl">
+    <None Include="soundtest.asm.tpl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="musicbank.asm.tpl">

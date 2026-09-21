@@ -183,7 +183,7 @@ namespace SF2MusicCooker
 
             int[] musicPairs = new int[] { 3, 4, 13, 14 };
 
-            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmSlots, instrumentSlots, ymFrequenciesSlots, musicPairs, "soundtest-standard.asm.tpl");
+            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmSlots, instrumentSlots, ymFrequenciesSlots, musicPairs, "soundtest.asm.tpl");
         }
 
         private Bank SelectMusicBank(int number)
