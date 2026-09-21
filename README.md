@@ -2,14 +2,15 @@
 Tool to assemble new musics for Shining Force 2 sound engine from Furnace (.fur) files
 
 ## Purpose of this project
-The purpose of this project is to create a convenient tool that allows the Shining Force 2 ROM hack community to easily add and replace musics in the game.
+The purpose of this project is to create a convenient tool that allows the Shining Force 2 ROM hack community to easily add and replace musics/SFXs in the game.
 The tool takes a bunch of Furnace files (.fur) and outputs assembly files (.asm) to replace files from the original SF2DISASM disassembly.
+To deal with complex musics, it also can output custom YM instruments, custom sample entries, custom PCM banks and custom YM frequencies.
 
 ## Challenges
 Hacking new musics into Shining Force 2 sound engine comes with a bunch of challenges and traps, some of which I'm still actively working on.
 - Limited ROM space (solved by the commmunity through ROM expansion)
 - Limited number of FM instruments
-- Limited bank space that the Z80 CPU needs to access for music sheets, samples and FM instruments
+- Limited bank space that the Z80 CPU needs to access for music sheets, PCM samples and FM instruments
 - Complexity of FM synthesis
 - Complexity of mapping Furnace music patterns to Shining Force 2 sound engine commands
 - Make the game rendition of the music sounds as close as possible to the Furnace rendition
@@ -17,9 +18,12 @@ Hacking new musics into Shining Force 2 sound engine comes with a bunch of chall
 
 ## How to use SF2 Music Cooker
 - Prepare Furnace music files (.fur) that use the Sega Genesis sound chips (YM2612 and SN76489)
-- Download the latest release zip and extract the binaries (NOTE: no official release is available yet)
+- Download the latest release zip and extract the binaries
 - Read carefully the README.txt file
+- Arrange your input files as instructed by the README.txt file
 - Execute the tool with the correct command line arguments
+- Build your ROM
+- Go into the sound test and verify it's working!
 
 ## How to build the project
 This tool is programmed using C# language and runs on .NET 4.8.1 framework.  

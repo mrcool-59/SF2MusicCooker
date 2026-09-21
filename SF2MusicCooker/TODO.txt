@@ -2,6 +2,7 @@
 - Option to force sustain on all DAC samples (?)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - Rewriter tests/improvement with dump notes enabled
+- Fix the vanilla YM/PSG note counting logic when 'shifting' is involved
 
 Version 1.1.1:
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
