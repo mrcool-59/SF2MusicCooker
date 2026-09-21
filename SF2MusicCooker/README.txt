@@ -40,6 +40,9 @@ HOW TO USE (SFX)
 	+sfxZZ-My new sound effect.fur			[ADD = ZZ is a SFX number NOT USED by vanilla SF2 SFXs, between 121-126] (yes it's quite tight)
 	@sfxWW-My replacement sound effect.fur	[REPLACE = WW is a SFX number USED by a vanilla SF2 SFXs, please refer to "disasm/enum/sfxs.asm" for the available list]
 - For SFXs, you cannot MOVE-REPLACE EXISTING SFXS. You can only ADD NEW SFXS or REPLACE EXISTING SFXS.
+- SFXs can only use some of the sound channels. They can be one of these 2 types:
+	- Type 1: can use PSG tone 3 and Noise channels
+	- Type 2: can use FM 4, FM 5 and the 6th channel in DAC mode (samples)
 - Everything that applies above to musics also apply to SFXs.
 - Except for this: in vanilla game SFX data, some SFXs depend on other SFXs (due to shared pointers).
 - If you replace a SFX that is a dependency to other SFXs, the tool will error unless you replace ALL involved SFXs, all at once.
@@ -66,11 +69,11 @@ Each Music Bank can hold 32768 bytes and SF2 Music Cooker will add a comment int
 The vanilla game comes with Music Bank 0 (musics 1 to 32) and Music Bank 1 (musics 33 to 64). Sadly, these two Music Banks are *almost* full.
 For this reason, REPLACE EXISTING MUSICS feature can be pretty limited if you try to import songs that take more space than their vanilla music counterpart.
 
-Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Musics Banks inside the expanded ROM space space.
+Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Musics Banks inside the expanded ROM space.
 If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 3 extra, fully available Music Banks to host all your custom music needs.
 These are called Music Bank Ext 0 (musics 49 to 56), Music Bank Ext 1 (musics 57 to 60) and Music Bank Ext 2 (musics 61 to 64).
 As you can see, the Music Bank 1 range was cut down compared to the vanilla game. Its range is now 33 to 48.
-Under this new Music Banks layout, you should put your largest musics into 57 to 64 range, and keep the smaller musics for 1 to 32 range.
+Under this new Music Banks layout, you should especially put your largest musics into 57 to 64 range, and keep the smaller musics for 1 to 32 range.
 Ultimately it is up to you how you want to distribute your musics across music banks, the only condition is that it fits!
 
 The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0, 1 or 2.
@@ -98,7 +101,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 --nopostbuild				or		-npb	Do not run POSTBUILD.bat, even if it's provided
 --autoyes					or		-ay		Automatically confirm to write files to SF2DISASM folder
 --autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
---input=X					or		-i=X	Read files in "X" folder instead of "Input" folder (only useful for developers)
+--input=X					or		-i=X	Read files in "X" folder instead of "Input" folder
 --onlyN						or		-oN		(N = 1..126) Only process the .fur file for the given music/SFX number and ignore the rest (only useful for developers)
 
 The following options can be specified globally or per-music/per-SFX:
@@ -145,16 +148,16 @@ SF2 Music Cooker currently supports:
 - Channel 6 in DAC mode (samples) 
 - PSG channels (3 square tones + 1 noise generator)
 - Notes between C-0 and B-9 on Furnace side (120 notes), unsupported notes are filtered out
-- Furnace notes are mapped to SF2 sound driver notes in a best effort fashion (84 YM notes and 64 PSG tone notes are available), notes in unsupported octaves are clamped
-- By default, SF2 sound driver supports YM notes from C-1 to B-7 and PSG tone notes from C-(-1) to D#4 (but as noted above, we don't allow Furnace notes from octave -1)
-- This tool has the ability to recycle unused YM and PSG tone notes to reach unsupported octaves in custom musics you provide (please do not rely on this too much)
+- Furnace notes are mapped to SF2 sound driver notes in a best effort fashion (84 YM notes and 64 PSG tone notes are available in vanilla SF2), notes in unsupported octaves are clamped
+- By default, SF2 sound driver supports YM notes from C-1 to B-7 and PSG tone notes from A-0 to C-6
+- This tool has the ability to add 4 extra YM notes and recycle unused YM and PSG tone notes to reach unsupported octaves in custom musics you provide (please do not rely on this too much)
 - You can use volume macros for your Furnace PSG instruments; if you do, this tool will use the most similar volume envelope in the SF2 sound driver
 - If you don't use volume macros for your Furnace PSG instruments, this tool will instead try to guess the volume envelope from volume commands on the channel
 - Arbitrary tempo for musics (see below for special caveats about the tick rate)
 - New FM instruments, these will get added to the vanilla SF2 instruments
 - New samples, these will get added to the vanilla SF2 samples (almost impossible to do without using expanded PCM banks)
 - Effects supported by the SF2 sound driver, such as volume, panning, vibrato
-- Song loop/end marker effects, as well as "jump to next pattern" effect
+- Furnace effects "end song", "jump to pattern" and "jump to next pattern" (to make the song loop or not)
 - Song size reduction by detecting "repeated command patterns" and replacing them with counted loops
 - Reasonably long songs that use many FM instruments and notes (as long as it can fit in the assembled ROM)
 - New songs will appear in the Sound Test; the Sound Test is also improved with better SFX names and circular navigation
@@ -163,8 +166,8 @@ SF2 Music Cooker doesn't plan to support (unless there is an *overwhelming* dema
 - Custom vibrato shapes / depth
 - Custom PSG envelopes
 - Additional song size reduction by detecting voltas (repeats with different endings)
-- Furnace features such as "macros" (for FM instruments or samples), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
-- Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool (the 'vgm2fur' Python tool is promising here)
+- Furnace features such as "macros" (only exception is volume macros for PSG instruments), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)
+- Other file formats, such as VGM format, you will have to adapt them yourself into .fur files before using this tool (the 'vgm2fur' Python tool is very promising)
 - Shining Force 1 (maybe most of the puzzle pieces are already solved and it wouldn't require *that* much effort, but I didn't look at SF1 DISASM and music engine at all)
 
 Special caveat about tick rates:
