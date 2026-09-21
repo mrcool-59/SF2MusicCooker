@@ -67,17 +67,20 @@ The vanilla game comes with Music Bank 0 (musics 1 to 32) and Music Bank 1 (musi
 For this reason, REPLACE EXISTING MUSICS feature can be pretty limited if you try to import songs that take more space than their vanilla music counterpart.
 
 Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Musics Banks inside the expanded ROM space space.
-If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 2 extra, fully available Music Banks to host all your custom music needs.
-These are called Music Bank Ext 0 (musics 49 to 56) and Music Bank Ext 1 (musics 57 to 64).
+If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 3 extra, fully available Music Banks to host all your custom music needs.
+These are called Music Bank Ext 0 (musics 49 to 56), Music Bank Ext 1 (musics 57 to 60) and Music Bank Ext 2 (musics 61 to 64).
 As you can see, the Music Bank 1 range was cut down compared to the vanilla game. Its range is now 33 to 48.
+Under this new Music Banks layout, you should put your largest musics into 57 to 64 range, and keep the smaller musics for 1 to 32 range.
+Ultimately it is up to you how you want to distribute your musics across music banks, the only condition is that it fits!
 
-The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0 and Music Bank Ext 1.
+The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0, 1 or 2.
 
 For SFXs, it appears the SFX Bank from the vanilla game still has some space available, so space should (hopefully) not be a concern here.
 There is no Extra Bank feature for SFX Bank, you have to fit everything into a single bank.
 
 For musics and SFXs that use samples, the vanilla game comes with 2 PCM banks (PCM Bank 0 and PCM Bank 1) that are pretty much full.
-[NOT YET AVAILABLE] Four Extra PCM banks (PCM Bank Ext 0, 1, 2, 3) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
+Four Extra PCM banks (PCM Bank Ext 0, 1, 2, 3) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
+Additionally, the sound driver has been modified to support 60 different samples, up from original 17.
 
 
 

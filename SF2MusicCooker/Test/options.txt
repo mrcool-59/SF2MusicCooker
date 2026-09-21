@@ -1,4 +1,4 @@
 ;05 = --dumpnotes
 ;33 = --dumpuncompressed
 25 = -m10
-21 = -ms -vpsg=1.3 -vfm=0.95
+21 = -vpsg=1.3 -vfm=0.95

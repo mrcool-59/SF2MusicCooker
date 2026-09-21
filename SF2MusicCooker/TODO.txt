@@ -1,7 +1,5 @@
 ﻿Version 1.0:
-- Extended banks feature: no playback pour les musics 49-56 et probablement aussi 57-64
-	=> J'ai essayé de conserver le sub 20h, mais peut être que finalement il vaut mieux mettre sub 30h et faire une banque naturelle de 8 pointers
-- PCM banks: 6 extra PCM banks might be what's needed
+- Extended banks feature: no playback pour certaines banks
 
 Version 1.1:
 - Option to force sustain on all DAC samples (?)
@@ -11,6 +9,7 @@ Version 1.1:
 Version 1.1.1:
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
+	=> Choose a Path: weird sample output for intro
 	=> Maker's Ruin: long notes
 	=> Test-3 Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
 	=> Test-3 Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play

@@ -431,11 +431,22 @@ namespace SF2MusicCooker
             return entries;
         }
 
-        public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath)
+        private static Entry[] MakeExtra(int offset, int length)
+        {
+            Entry[] entries = new Entry[length];
+            for (int i = 0; i < entries.Length; i++) entries[i] = new Entry((byte)(offset + i), 0x0000, -999999);
+            return entries;
+        }
+
+        public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath, int ymFrequenciesSlots)
         {
             _notes = ReadFrequencies(ymFrequenciesPath, false);
             _psgNotes = ReadFrequencies(psgFrequenciesPath, true);
             _names = Tools.ReadASMEnumReverseMap(notesNamePath);
+
+            // We might have room to expand YM frequencies a little...
+            int extraLength = ymFrequenciesSlots - _notes.Length;
+            if (extraLength >= 0) _notes = Tools.Combine(_notes, MakeExtra(_notes.Length, extraLength));
         }
 
         private PitchTable()

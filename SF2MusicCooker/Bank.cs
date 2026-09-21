@@ -43,11 +43,6 @@ namespace SF2MusicCooker
         public int LastNumber { get { return FirstNumber + Length - 1; } }
 
         /// <summary>
-        /// Start index of the physical segment.
-        /// </summary>
-        public int SegmentOffset { get { return FirstNumber == 1 ? 0 : 32; } } // TODO: SF2 specific hack, will hopefully be removed soon once I figure out how to make extra banks work ingame with bank switching
-
-        /// <summary>
         /// List of custom songs in the bank.
         /// </summary>
         public IReadOnlyList<Song> Custom { get { return _custom; } }
@@ -162,23 +157,12 @@ namespace SF2MusicCooker
             int from = FirstNumber;
             int to = LastNumber;
 
-            for (int i = 1; i <= 32; i++)
+            for (int number = from; number <= to; number++)
             {
-                int number = SegmentOffset + i;
-                if (number >= from && number <= to)
-                {
-                    Song song = Find(number, out _);
-                    output.Append("\t\tdw Music_");
-                    output.Append(song == null ? to : number);
-                    output.AppendLine();
-                }
-                else
-                {
-                    output.Append("\t\tdw Music_");
-                    output.Append(to);
-                    output.Append("\t\t; SHADOWED");
-                    output.AppendLine();
-                }
+                Song song = Find(number, out _);
+                output.Append("\t\tdw Music_");
+                output.Append(song == null ? to : number);
+                output.AppendLine();
             }
 
             for (int number = from; number <= to; number++)

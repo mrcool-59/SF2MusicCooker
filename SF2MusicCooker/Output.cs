@@ -57,13 +57,10 @@ namespace SF2MusicCooker
         /// </summary>
         public bool SupportCustomFrequencies { get; }
 
-        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, int[] pcmBanks, string[] pcmNames, int pcmBaseOffset, int pcmSlots = PCMInstruments.MAX_SLOTS, int instrumentSlots = FMInstruments.MAX_SLOTS, int[] musicPairs = null, string soundTestTemplate = null)
+        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots = PCMInstruments.MAX_SLOTS, int instrumentSlots = FMInstruments.MAX_SLOTS, int ymFrequenciesSlots = 84, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
-
-            if (pcmNames == null)
-                throw new ArgumentNullException(nameof(pcmNames));
 
             if (musicPairs != null && musicPairs.Length % 2 != 0)
                 throw new ArgumentException("must contain an even number of elements (to form pairs)", nameof(musicPairs));
@@ -80,11 +77,11 @@ namespace SF2MusicCooker
 
             Instruments = new FMInstruments(instrumentSlots);
 
-            Samples = new PCMInstruments(pcmSlots, pcmBanks, pcmNames, pcmBaseOffset);
+            Samples = new PCMInstruments(pcmSlots, pcmBanks);
 
             Envelopes = new PSGInstruments(paths.PsgInstruments);
 
-            Pitch = new PitchTable(paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames);
+            Pitch = new PitchTable(paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames, ymFrequenciesSlots);
 
             SupportSamples = File.Exists(Tools.Rename(paths.PcmSamples, "pcm_samples-standard.asm"));
 
@@ -101,51 +98,33 @@ namespace SF2MusicCooker
             string patches = Path.Combine(rootFolder, "disasm\\sf2patches.asm");
 
             Console.WriteLine("Checking support for 'expanded musics' feature...");
-            bool hasExtBanks = VerifyPatch(patches, name, "EXPANDED_MUSIC_BANKS", "feature/expanded_musics");
+            bool hasExtMusicBanks = VerifyPatch(patches, name, "EXPANDED_MUSIC_BANKS", "feature/expanded_musics");
             Console.WriteLine("> Feature is supported! This tool may proceed.");
-            Console.WriteLine("> Expanded music banks are {0}", hasExtBanks ? "ENABLED" : "DISABLED");
+            Console.WriteLine("> Expanded music banks are {0}", hasExtMusicBanks ? "ENABLED" : "DISABLED");
+            bool hasExtPcmBanks = VerifyOptionalPatch(patches, "EXPANDED_PCM_BANKS", out _);
+            Console.WriteLine("> Expanded PCM banks are {0}", hasExtPcmBanks ? "ENABLED" : "DISABLED");
+            bool hasExtPcmEntries = VerifyOptionalPatch(patches, "EXPANDED_PCM_ENTRIES", out int extPctEntries);
+            Console.WriteLine("> Expanded PCM entries are {0} (value: {1})", hasExtPcmEntries ? "ENABLED" : "DISABLED", extPctEntries);
+            bool hasExtYmFrequencies = VerifyOptionalPatch(patches, "EXPANDED_YM_FREQUENCIES", out int extYmFrequencies);
+            Console.WriteLine("> Expanded YM frequencies are {0} (value: {1})", hasExtYmFrequencies ? "ENABLED" : "DISABLED", extYmFrequencies);
 
             FilePaths paths = new FilePaths(rootFolder);
 
             Bank[] banks;
-            int[] pcmBanks;
-            string[] pcmNames;
+            PCMInstruments.BankDefinition[] pcmBanks;
             int pcmSlots;
-            int instrumentSlots;
+            int ymFrequenciesSlots;
 
-            if (hasExtBanks)
+            if (hasExtMusicBanks)
             {
-                banks = new Bank[4]
+                banks = new Bank[5]
                 {
                     new Bank("musicbank0", 0x8000, 1, 32),
                     new Bank("musicbank1", 0x8000, 33, 16), // Shrinked compared to vanilla
                     new Bank("musicbankext0", 0x8000, 49, 8), // Extra bank 1
-                    new Bank("musicbankext1", 0x8000, 57, 8) // Extra bank 2
+                    new Bank("musicbankext1", 0x8000, 57, 4), // Extra bank 2
+                    new Bank("musicbankext2", 0x8000, 61, 4) // Extra bank 3
                 };
-
-                pcmBanks = new int[6]
-                {
-                    0x8000, // PCM bank 1
-                    0x3000, // PCM bank 2
-                    0x8000, // Extra bank 1
-                    0x8000, // Extra bank 2
-                    0x8000, // Extra bank 3
-                    0x8000, // Extra bank 4
-                };
-
-                pcmNames = new string[6]
-                {
-                    "pcmbank0",
-                    "pcmbank1",
-                    "pcmbankext0",
-                    "pcmbankext1",
-                    "pcmbankext2",
-                    "pcmbankext3",
-                };
-
-                pcmSlots = PCMInstruments.MAX_SLOTS;
-
-                instrumentSlots = FMInstruments.MAX_SLOTS;
             }
             else
             {
@@ -154,33 +133,57 @@ namespace SF2MusicCooker
                     new Bank("musicbank0", 0x8000, 1, 32),
                     new Bank("musicbank1", 0x8000, 33, 32)
                 };
+            }
 
-                pcmBanks = new int[2]
+            if (hasExtPcmBanks)
+            {
+                pcmBanks = new PCMInstruments.BankDefinition[6]
                 {
-                    0x8000, // PCM bank 1
-                    0x3000, // PCM bank 2
+                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext3", 6), // Extra bank 4
+                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext2", 5), // Extra bank 3
+                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext1", 4), // Extra bank 2
+                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext0", 3), // Extra bank 1
+                    new PCMInstruments.BankDefinition(0x8000, "pcmbank0", 1), // PCM bank 1
+                    new PCMInstruments.BankDefinition(0x3000, "pcmbank1", 2), // PCM bank 2
                 };
-
-                pcmNames = new string[2]
+            }
+            else
+            {
+                pcmBanks = new PCMInstruments.BankDefinition[2]
                 {
-                    "pcmbank0",
-                    "pcmbank1",
+                    new PCMInstruments.BankDefinition(0x8000, "pcmbank0", 1), // PCM bank 1
+                    new PCMInstruments.BankDefinition(0x3000, "pcmbank1", 2), // PCM bank 2
                 };
+            }
 
-                pcmSlots = 17; // FIXME: maybe it's possible to increase it a little without crashing
+            if (hasExtPcmEntries)
+            {
+                pcmSlots = extPctEntries; // We managed to increase it significantly, but we're still far from the theorical limit :-)
+            }
+            else
+            {
+                pcmSlots = 17; // 18 is the theorical max limit without the updated Wizcube driver, more and we overflow to Z80 RAM...
+            }
 
-                instrumentSlots = 80; // FIXME: maybe it's possible to increase it to the theorical max without issue
+            if (hasExtYmFrequencies)
+            {
+                ymFrequenciesSlots = extYmFrequencies; // Standard build has a few empty bytes to get 4 extra YM frequencies!
+            }
+            else
+            {
+                ymFrequenciesSlots = 84;
             }
 
             BankSFX[] sfxBanks = new BankSFX[1]
             {
-                // Quick calculation of available size for SFX bank: 64k - 44k (PCM bank 0-1) - 4k (FM instruments) - 8k (sound driver) = 8k remaining
-                new BankSFX("sfxbank", 0x2000)
+                new BankSFX("sfxbank", 0x1000) // SFX bank has 4k size
             };
+
+            int instrumentSlots = FMInstruments.MAX_SLOTS; // I see no reason why we wouldn't be able to use the max limit of 141 FM instruments
 
             int[] musicPairs = new int[] { 3, 4, 13, 14 };
 
-            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmNames, 0x8000, pcmSlots, instrumentSlots, musicPairs, "soundtest-standard.asm.tpl");
+            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmSlots, instrumentSlots, ymFrequenciesSlots, musicPairs, "soundtest-standard.asm.tpl");
         }
 
         private Bank SelectMusicBank(int number)
@@ -790,6 +793,16 @@ namespace SF2MusicCooker
                 throw new NotSupportedException("You are attempting to use this tool in a " + disasmName + " folder that doesn't support '" + patchName + "' patch."
                         + Environment.NewLine + "Please merge '" + featureBranchName + "' branch into your project and try again!");
             }
+            return value >= 1;
+        }
+
+        /// <summary>
+        /// Verify the specified patch file supports the provided optional patch and return it if is enabled.
+        /// </summary>
+        public static bool VerifyOptionalPatch(string patchesPath, string patchName, out int value)
+        {
+            Dictionary<string, int> map = Tools.ReadASMEnumMap(patchesPath);
+            if (!map.TryGetValue(patchName, out value)) return false;
             return value >= 1;
         }
     }

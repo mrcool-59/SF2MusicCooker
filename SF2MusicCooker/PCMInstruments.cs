@@ -17,6 +17,8 @@ namespace SF2MusicCooker
 
         private const byte UNUSED = 0xFF;
 
+        private const int BASE_OFFSET = 0x8000; // Z80 offset to ROM
+
         public readonly struct PCMSample
         {
             /// <summary>
@@ -25,7 +27,7 @@ namespace SF2MusicCooker
             public readonly int Period; 
 
             /// <summary>
-            /// The bank where the PCM sample data can be accessed.
+            /// The bank index where the PCM sample data can be accessed.
             /// </summary>
             public readonly int Bank;
 
@@ -42,10 +44,11 @@ namespace SF2MusicCooker
             /// <summary>
             /// Get ASM line to declare this PCM sample.
             /// </summary>
-            public string ToAsmLine(int baseOffset)
+            public string ToAsmLine(int[] numbers)
             {
-                ushort offset = (ushort)(Offset + baseOffset);
-                return string.Format("dw {0}, DAC_BANK_{1}, {2}, {3}", ((ushort)Period).ToString().PadLeft(2), (ushort)(Bank + 1), Tools.Hex2ASM((ushort)Length).PadLeft(6), Tools.Hex2ASM(offset));
+                ushort offset = (ushort)(Offset + BASE_OFFSET);
+                string pointer = string.Format("DAC_BANK_{0}", numbers[Bank]);
+                return string.Format("dw {0}, {1}, {2}, {3}", ((ushort)Period).ToString().PadLeft(2), pointer, Tools.Hex2ASM((ushort)Length).PadLeft(6), Tools.Hex2ASM(offset));
             }
 
             /// <summary>
@@ -94,11 +97,36 @@ namespace SF2MusicCooker
             public static readonly PCMSample Empty = new PCMSample(0, 0, 0, 0);
         }
 
+        public readonly struct BankDefinition
+        {
+            /// <summary>
+            /// Length of the bank.
+            /// </summary>
+            public readonly int Length;
+
+            /// <summary>
+            /// Name of the bank.
+            /// </summary>
+            public readonly string Name;
+
+            /// <summary>
+            /// ASM number of the bank.
+            /// </summary>
+            public readonly int Number;
+
+            public BankDefinition(int length, string name, int number)
+            {
+                Length = length;
+                Name = name;
+                Number = number;
+            }
+        }
+
         private readonly PCMSample[] _slots;
         private readonly byte[][] _banks;
-        private readonly string[] _names;
         private readonly int[] _cursors;
-        private readonly int _baseOffset;
+        private readonly string[] _names;
+        private readonly int[] _numbers;
 
         private static void Prepare(Sample sample, int a4tuning, int note, out byte[] data, out int period)
         {
@@ -393,18 +421,10 @@ namespace SF2MusicCooker
         /// <summary>
         /// Load the contents of 'pcm_samples.asm' and PCM banks.
         /// </summary>
-        public void Load(string pcmSamplesAsm, byte[][] banks)
+        public void Load(string pcmSamplesAsm, byte[][] banks, int[] indexes)
         {
             if (pcmSamplesAsm == null) throw new ArgumentNullException(nameof(pcmSamplesAsm));
-            if (banks.Length != _banks.Length) throw new ArgumentException("must have length " + _banks.Length, nameof(banks));
-
-            for (int bank = 0; bank < banks.Length; bank++)
-            {
-                if (banks[bank].Length != _banks[bank].Length)
-                    throw new FormatException("Bank '" + GetBankName(bank) + "' must have " + _banks[bank].Length + " bytes");
-
-                Buffer.BlockCopy(banks[bank], 0, _banks[bank], 0, banks[bank].Length);
-            }
+            if (indexes.Length != banks.Length) throw new ArgumentException("'indexes' and 'banks' must have the same length");
 
             string[] lines = Tools.GetAllStringElements(pcmSamplesAsm, new Regex("dw(.+)"));
             int index = 0;
@@ -416,9 +436,10 @@ namespace SF2MusicCooker
                 if (values.Length == 4)
                 {
                     int period = Tools.ConvertASMValue(values[0].Trim());
-                    int bank = PCMSample.ParseBankString(values[1].Trim(), banks.Length);
+                    int vanillaBank = PCMSample.ParseBankString(values[1].Trim(), banks.Length);
+                    int bank = indexes[vanillaBank];
                     int length = Tools.ConvertASMValue(values[2].Trim());
-                    int offset = Tools.ConvertASMValue(values[3].Trim()) - _baseOffset;
+                    int offset = Tools.ConvertASMValue(values[3].Trim()) - BASE_OFFSET;
 
                     _cursors[bank] = Math.Max(_cursors[bank], length + offset);
                     _slots[index] = new PCMSample(period, bank, length, offset);
@@ -428,6 +449,18 @@ namespace SF2MusicCooker
                 {
                     throw new FormatException("Malformed 'pcm_samples.asm' line: " + line);
                 }
+            }
+
+            for (int i = 0; i < indexes.Length; i++)
+            {
+                byte[] sourceBank = banks[i];
+                int bank = indexes[i];
+
+                if (sourceBank.Length != _banks[bank].Length)
+                    throw new FormatException("Bank '" + GetBankName(bank) + "' must have " + _banks[bank].Length + " bytes");
+
+                Buffer.BlockCopy(sourceBank, 0, _banks[bank], 0, sourceBank.Length);
+                Tools.Fill(_banks[bank], _cursors[bank], _banks[bank].Length - _cursors[bank], UNUSED);
             }
         }
 
@@ -439,13 +472,16 @@ namespace SF2MusicCooker
             if (pcmSamplesPath == null) throw new ArgumentNullException(nameof(pcmSamplesPath));
             if (pcmBanksFiles == null) throw new ArgumentNullException(nameof(pcmBanksFiles));
 
-            if (pcmBanksFiles.Length != _banks.Length) throw new NotSupportedException("At least 1 PCM bank is missing!");
-
             byte[][] banks = new byte[pcmBanksFiles.Length][];
-            for (int i = 0; i < pcmBanksFiles.Length; i++) banks[i] = File.ReadAllBytes(pcmBanksFiles[i]);
+            int[] indexes = new int[pcmBanksFiles.Length];
+            for (int i = 0; i < pcmBanksFiles.Length; i++)
+            {
+                banks[i] = File.ReadAllBytes(pcmBanksFiles[i]);
+                indexes[i] = Array.IndexOf(_names, Path.GetFileNameWithoutExtension(pcmBanksFiles[i]));
+            }
 
             string asm = File.ReadAllText(pcmSamplesPath);
-            Load(asm, banks);
+            Load(asm, banks, indexes);
         }
 
         /// <summary>
@@ -473,7 +509,7 @@ namespace SF2MusicCooker
             foreach (PCMSample sample in _slots)
             {
                 sb.Append("    ");
-                sb.AppendLine(sample.ToAsmLine(_baseOffset));
+                sb.AppendLine(sample.ToAsmLine(_numbers));
             }
             File.WriteAllText(Path.Combine(pcmSamplesPath, "pcm_samples-standard.asm"), sb.ToString().TrimEnd());
             Console.WriteLine("> Wrote 'pcm_samples-standard.asm' file!");
@@ -512,24 +548,24 @@ namespace SF2MusicCooker
             return lookup;
         }
 
-        public PCMInstruments(int slots, int[] bankLengths, string[] bankNames, int baseOffset)
+        public PCMInstruments(int slots, BankDefinition[] definitions)
         {
-            if (bankLengths == null) throw new ArgumentNullException(nameof(bankLengths));
-            if (bankNames == null) throw new ArgumentNullException(nameof(bankNames));
-            if (bankLengths.Length != bankNames.Length) throw new ArgumentException("'bankLengths' and 'bankNames' must have the same length");
-            if (baseOffset < 0) throw new ArgumentOutOfRangeException(nameof(baseOffset), "must be zero or positive");
+            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             if (slots <= 0) throw new ArgumentOutOfRangeException(nameof(slots), "cannot be zero or negative");
             if (slots > MAX_SLOTS) throw new NotSupportedException(MAX_SLOTS + " sample slots is the absolute maximum limit");
 
             _slots = new PCMSample[slots];
-            _banks = new byte[bankLengths.Length][];
-            _names = bankNames;
-            _cursors = new int[bankLengths.Length];
-            _baseOffset = baseOffset;
+            _banks = new byte[definitions.Length][];
+            _cursors = new int[definitions.Length];
+            _names = new string[definitions.Length];
+            _numbers = new int[definitions.Length];
 
-            for (int i = 0; i < bankLengths.Length; i++)
+            for (int i = 0; i < definitions.Length; i++)
             {
-                _banks[i] = new byte[bankLengths[i]];
+                BankDefinition definition = definitions[i];
+                _banks[i] = new byte[definition.Length];
+                _names[i] = definition.Name;
+                _numbers[i] = definition.Number;
             }
 
             Clear();
