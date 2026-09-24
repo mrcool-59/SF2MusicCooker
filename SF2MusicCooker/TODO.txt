@@ -1,4 +1,9 @@
-﻿Version 1.1:
+﻿Version 1.0.1:
+- Astral missing + Infinite loop herb pickup (vérifier si ça vient de standard-build ou non)
+- Intense battle.fur: contient "=== 00", à remplacer par "OFF"
+- Remove invalid DAC sample notes to avoid warnings and bad sample play lengths (Vapor Trail est dégueux par exemple)
+
+Version 1.1:
 - Option to force sustain on all DAC samples (?)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - Rewriter tests/improvement with dump notes enabled
@@ -16,4 +21,5 @@ Version 1.1.1:
 
 Version 1.2:
 - Auto-bank assignment feature
+- Rendre l'outil générique avec un fichier "Layouts.json"
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)

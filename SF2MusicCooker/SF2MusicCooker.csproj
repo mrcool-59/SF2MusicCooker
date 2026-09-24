@@ -264,19 +264,31 @@
     <None Include="Test-4\%40music35-Jingle VII.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music49-Final %28Robotnik BM%29.fur">
+    <None Include="Test-Ext\+music55%405-Battlescene %28Enemy%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music57-Intense Battle.fur">
+    <None Include="Test-Ext\+music56%402-Battlescene.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music58-Obviously Town Theme.fur">
+    <None Include="Test-Ext\+music57%4033-Intense Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music61-Galaxy Force II.fur">
+    <None Include="Test-Ext\+music58%4034-Evil Lair.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music62-Shrine %28Abridged%29.fur">
+    <None Include="Test-Ext\+music59%408-Obviously Town Theme.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music60%407-Final %28Robotnik BM%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music61%401-Galaxy Force II.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music62%4035-Shrine %28Abridged%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music63%409-Vapor Trail.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music01-Test Silence.fur">
