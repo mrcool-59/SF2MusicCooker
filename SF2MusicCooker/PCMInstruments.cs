@@ -1,4 +1,5 @@
-﻿using SF2MusicCooker.Furnace;
+﻿using Newtonsoft.Json;
+using SF2MusicCooker.Furnace;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -114,6 +115,7 @@ namespace SF2MusicCooker
             /// </summary>
             public readonly int Number;
 
+            [JsonConstructor]
             public BankDefinition(int length, string name, int number)
             {
                 Length = length;

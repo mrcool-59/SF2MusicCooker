@@ -19,8 +19,13 @@ namespace SF2MusicCooker
             {
                 arguments.ThrowIfInvalid();
                 string rootFolder = Path.GetFullPath(arguments.Path);
-                Console.WriteLine("Path to SF2DISASM: {0}", rootFolder);
-                Output output = Output.CreateForSF2DISASM(rootFolder);
+                Console.WriteLine("Path to repository: {0}", rootFolder);
+                if (!Directory.Exists(rootFolder)) throw new DirectoryNotFoundException("Folder \"" + rootFolder + "\" doesn't exist!");
+
+                Layout[] layouts = Layout.Load(rootFolder, "layouts.json");
+                Layout layout = Layout.Select(layouts) ?? throw new NotSupportedException("No layout matches the provided repository! (see layouts.json)");
+
+                Output output = layout.Build();
                 Console.WriteLine("Loading vanilla music data (numbers, names, sheets, FM instruments, PCM samples)...");
                 output.LoadVanilla();
 

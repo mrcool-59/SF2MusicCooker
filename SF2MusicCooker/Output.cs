@@ -57,7 +57,7 @@ namespace SF2MusicCooker
         /// </summary>
         public bool SupportCustomFrequencies { get; }
 
-        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots = PCMInstruments.MAX_SLOTS, int instrumentSlots = FMInstruments.MAX_SLOTS, int ymFrequenciesSlots = 84, int[] musicPairs = null, string soundTestTemplate = null)
+        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots, int instrumentSlots = FMInstruments.MAX_SLOTS, int ymFrequenciesSlots = 0, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
@@ -87,103 +87,6 @@ namespace SF2MusicCooker
 
             SupportCustomFrequencies = File.Exists(Tools.Rename(paths.YmFrequencies, "ym_frequencies-standard.asm"))
                                     && File.Exists(Tools.Rename(paths.PsgFrequencies, "psg_frequencies-standard.asm"));
-        }
-
-        /// <summary>
-        /// Create Output tailored for Shining Force 2 with SF2DISASM.
-        /// </summary>
-        public static Output CreateForSF2DISASM(string rootFolder)
-        {
-            const string name = "SF2DISASM";
-            string patches = Path.Combine(rootFolder, "disasm\\sf2patches.asm");
-
-            Console.WriteLine("Checking support for 'expanded musics' feature...");
-            bool hasExtMusicBanks = VerifyPatch(patches, name, "EXPANDED_MUSIC_BANKS", "feature/expanded_musics");
-            Console.WriteLine("> Feature is supported! This tool may proceed.");
-            Console.WriteLine("> Expanded music banks are {0}", hasExtMusicBanks ? "ENABLED" : "DISABLED");
-            bool hasExtPcmBanks = VerifyOptionalPatch(patches, "EXPANDED_PCM_BANKS", out _);
-            Console.WriteLine("> Expanded PCM banks are {0}", hasExtPcmBanks ? "ENABLED" : "DISABLED");
-            bool hasExtPcmEntries = VerifyOptionalPatch(patches, "EXPANDED_PCM_ENTRIES", out int extPctEntries);
-            Console.WriteLine("> Expanded PCM entries are {0} (value: {1})", hasExtPcmEntries ? "ENABLED" : "DISABLED", extPctEntries);
-            bool hasExtYmFrequencies = VerifyOptionalPatch(patches, "EXPANDED_YM_FREQUENCIES", out int extYmFrequencies);
-            Console.WriteLine("> Expanded YM frequencies are {0} (value: {1})", hasExtYmFrequencies ? "ENABLED" : "DISABLED", extYmFrequencies);
-
-            FilePaths paths = new FilePaths(rootFolder);
-
-            Bank[] banks;
-            PCMInstruments.BankDefinition[] pcmBanks;
-            int pcmSlots;
-            int ymFrequenciesSlots;
-
-            if (hasExtMusicBanks)
-            {
-                banks = new Bank[5]
-                {
-                    new Bank("musicbank0", 0x8000, 1, 32),
-                    new Bank("musicbank1", 0x8000, 33, 16), // Shrinked compared to vanilla
-                    new Bank("musicbankext0", 0x8000, 49, 8), // Extra bank 1
-                    new Bank("musicbankext1", 0x8000, 57, 4), // Extra bank 2
-                    new Bank("musicbankext2", 0x8000, 61, 4) // Extra bank 3
-                };
-            }
-            else
-            {
-                banks = new Bank[2]
-                {
-                    new Bank("musicbank0", 0x8000, 1, 32),
-                    new Bank("musicbank1", 0x8000, 33, 32)
-                };
-            }
-
-            if (hasExtPcmBanks)
-            {
-                pcmBanks = new PCMInstruments.BankDefinition[6]
-                {
-                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext3", 6), // Extra bank 4
-                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext2", 5), // Extra bank 3
-                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext1", 4), // Extra bank 2
-                    new PCMInstruments.BankDefinition(0x8000, "pcmbankext0", 3), // Extra bank 1
-                    new PCMInstruments.BankDefinition(0x8000, "pcmbank0", 1), // PCM bank 1
-                    new PCMInstruments.BankDefinition(0x3000, "pcmbank1", 2), // PCM bank 2
-                };
-            }
-            else
-            {
-                pcmBanks = new PCMInstruments.BankDefinition[2]
-                {
-                    new PCMInstruments.BankDefinition(0x8000, "pcmbank0", 1), // PCM bank 1
-                    new PCMInstruments.BankDefinition(0x3000, "pcmbank1", 2), // PCM bank 2
-                };
-            }
-
-            if (hasExtPcmEntries)
-            {
-                pcmSlots = extPctEntries; // We managed to increase it significantly, but we're still far from the theorical limit :-)
-            }
-            else
-            {
-                pcmSlots = 17; // 18 is the theorical max limit without the updated Wizcube driver, more and we overflow to Z80 RAM...
-            }
-
-            if (hasExtYmFrequencies)
-            {
-                ymFrequenciesSlots = extYmFrequencies; // Standard build has a few empty bytes to get 4 extra YM frequencies!
-            }
-            else
-            {
-                ymFrequenciesSlots = 84;
-            }
-
-            BankSFX[] sfxBanks = new BankSFX[1]
-            {
-                new BankSFX("sfxbank", 0x1000) // SFX bank has 4k size
-            };
-
-            int instrumentSlots = FMInstruments.MAX_SLOTS; // I see no reason why we wouldn't be able to use the max limit of 141 FM instruments
-
-            int[] musicPairs = new int[] { 3, 4, 13, 14 };
-
-            return new Output(name, paths, banks, sfxBanks, pcmBanks, pcmSlots, instrumentSlots, ymFrequenciesSlots, musicPairs, "soundtest.asm.tpl");
         }
 
         private Bank SelectMusicBank(int number)
@@ -780,30 +683,6 @@ namespace SF2MusicCooker
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Verify the specified patch file supports the provided patch and return it if is enabled.
-        /// </summary>
-        public static bool VerifyPatch(string patchesPath, string disasmName, string patchName, string featureBranchName)
-        {
-            Dictionary<string, int> map = Tools.ReadASMEnumMap(patchesPath);
-            if (!map.TryGetValue(patchName, out int value))
-            {
-                throw new NotSupportedException("You are attempting to use this tool in a " + disasmName + " folder that doesn't support '" + patchName + "' patch."
-                        + Environment.NewLine + "Please merge '" + featureBranchName + "' branch into your project and try again!");
-            }
-            return value >= 1;
-        }
-
-        /// <summary>
-        /// Verify the specified patch file supports the provided optional patch and return it if is enabled.
-        /// </summary>
-        public static bool VerifyOptionalPatch(string patchesPath, string patchName, out int value)
-        {
-            Dictionary<string, int> map = Tools.ReadASMEnumMap(patchesPath);
-            if (!map.TryGetValue(patchName, out value)) return false;
-            return value >= 1;
         }
     }
 }

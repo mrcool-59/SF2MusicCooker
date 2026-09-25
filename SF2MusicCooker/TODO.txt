@@ -22,5 +22,4 @@ Version 1.1.1:
 
 Version 1.2:
 - Auto-bank assignment feature
-- Rendre l'outil générique avec un fichier "Layouts.json"
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)

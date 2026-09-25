@@ -1,32 +1,64 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 
 namespace SF2MusicCooker
 {
     public sealed class FilePaths
     {
+        [JsonProperty("patches", Required = Required.Always)]
+        public readonly string Patches;
+
+        [JsonProperty("musicNumbersAndAsmNames", Required = Required.Always)]
         public readonly string MusicNumbersAndAsmNames;
+
+        [JsonProperty("sfxNumbersAndAsmNames", Required = Required.Always)]
         public readonly string SfxNumbersAndAsmNames;
+
+        [JsonProperty("noteNames", Required = Required.Always)]
         public readonly string NoteNames;
+
+        [JsonProperty("musicBankFolders", Required = Required.Always)]
         public readonly string[] MusicBankFolders;
+
+        [JsonProperty("sfxBankFolders", Required = Required.Always)]
         public readonly string[] SfxBankFolders;
+
+        [JsonProperty("pcmBankFiles", Required = Required.Always)]
         public readonly string[] PcmBankFiles;
+
+        [JsonProperty("pcmSamples", Required = Required.Always)]
         public readonly string PcmSamples;
+
+        [JsonProperty("ymInstBin", Required = Required.Always)]
         public readonly string YmInstBin;
+
+        [JsonProperty("ymFrequencies", Required = Required.Always)]
         public readonly string YmFrequencies;
+
+        [JsonProperty("psgFrequencies", Required = Required.Always)]
         public readonly string PsgFrequencies;
+
+        [JsonProperty("psgInstruments", Required = Required.Always)]
         public readonly string PsgInstruments;
+
+        [JsonProperty("musicNamesTxt", Required = Required.Default)]
         public readonly string MusicNamesTxt;
+
+        [JsonProperty("soundTestFolder", Required = Required.Default)]
         public readonly string SoundTestFolder;
 
-        /// <summary>
-        /// Build file paths appropriate in a generic way.
-        /// </summary>
-        public FilePaths(string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames, string noteNames,
+        [JsonConstructor]
+        public FilePaths(string patches, string musicNumbersAndAsmNames, string sfxNumbersAndAsmNames, string noteNames,
             string[] musicBankFolders, string[] sfxBankFolders, string[] pcmBankFiles,
             string pcmSamples, string ymInstBin, string ymFrequencies, string psgFrequencies, string psgInstruments,
             string musicNamesTxt = null, string soundTestFolder = null)
         {
+            ThrowIfNullOrEmptyElements(musicBankFolders, nameof(musicBankFolders));
+            ThrowIfNullOrEmptyElements(sfxBankFolders, nameof(sfxBankFolders));
+            ThrowIfNullOrEmptyElements(pcmBankFiles, nameof(pcmBankFiles));
+
+            Patches = patches ?? throw new ArgumentNullException(nameof(patches));
             MusicNumbersAndAsmNames = musicNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(musicNumbersAndAsmNames));
             SfxNumbersAndAsmNames = sfxNumbersAndAsmNames ?? throw new ArgumentNullException(nameof(sfxNumbersAndAsmNames));
             NoteNames = noteNames ?? throw new ArgumentNullException(nameof(noteNames));
@@ -42,40 +74,41 @@ namespace SF2MusicCooker
             SoundTestFolder = soundTestFolder;
         }
 
-        /// <summary>
-        /// Build file paths appropriate for SF2DISASM (numbers, names, sheets, FM instruments, samples).
-        /// </summary>
-        public FilePaths(string rootFolder)
+        private static void ThrowIfNullOrEmptyElements(string[] array, string name)
         {
-            if (rootFolder == null) throw new ArgumentNullException(nameof(rootFolder));
+            if (array != null)
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(array[i])) throw new FormatException("'" + name + "' elements cannot be null or empty strings");
+                }
+            }
+        }
 
-            string soundFolder = Path.Combine(rootFolder, "disasm\\data\\sound");
-            string driverFolder = Path.Combine(rootFolder, "disasm\\code\\common\\tech\\sound\\cubewiz\\data");
+        /// <summary>
+        /// Move file paths.
+        /// </summary>
+        public FilePaths Move(string rootPath)
+        {
+            if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
 
-            MusicNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\musics.asm");
-            SfxNumbersAndAsmNames = Path.Combine(rootFolder, "disasm\\enums\\sfxs.asm");
-            NoteNames = Path.Combine(soundFolder, "enums.asm");
-            MusicBankFolders = new string[2]
+            string M(string path)
             {
-                Path.Combine(soundFolder, "musicbank0"),
-                Path.Combine(soundFolder, "musicbank1"),
-            };
-            SfxBankFolders = new string[1]
+                return string.IsNullOrEmpty(path) ? null : Path.Combine(rootPath, path);
+            }
+
+            string[] MA(string[] array)
             {
-                Path.Combine(soundFolder, "sfxbank")
-            };
-            PcmBankFiles = new string[2]
-            {
-                Path.Combine(soundFolder, "pcmbank0.bin"),
-                Path.Combine(soundFolder, "pcmbank1.bin"),
-            };
-            PcmSamples = Path.Combine(driverFolder, "pcm_samples.asm");
-            YmInstBin = Path.Combine(soundFolder, "yminst.bin");
-            YmFrequencies = Path.Combine(driverFolder, "ym_frequencies.asm");
-            PsgFrequencies = Path.Combine(driverFolder, "psg_frequencies.asm");
-            PsgInstruments = Path.Combine(driverFolder, "psg_instruments.asm");
-            MusicNamesTxt = Path.Combine(soundFolder, "musicnames.txt");
-            SoundTestFolder = Path.Combine(rootFolder, "disasm\\code\\specialscreens\\witch");
+                if (array == null) return null;
+                array = (string[])array.Clone();
+                for (int i = 0; i < array.Length; i++) array[i] = M(array[i]);
+                return array;
+            }
+
+            return new FilePaths(M(Patches), M(MusicNumbersAndAsmNames), M(SfxNumbersAndAsmNames), M(NoteNames),
+                MA(MusicBankFolders), MA(SfxBankFolders), MA(PcmBankFiles),
+                M(PcmSamples), M(YmInstBin), M(YmFrequencies), M(PsgFrequencies), M(PsgInstruments),
+                M(MusicNamesTxt), M(SoundTestFolder));
         }
     }
 }

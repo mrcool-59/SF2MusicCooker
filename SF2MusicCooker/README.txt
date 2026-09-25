@@ -87,6 +87,25 @@ Additionally, the sound driver has been modified to support 60 different samples
 
 
 
+LAYOUTS (how to support other games, not just Shining Force 2, FOR ADVANCED USERS ONLY)
+-------
+
+The first thing SF2 Music Cooker does is to find the proper layout to use for the DISASM folder you pass as 1st argument when you run the program.
+The layout tells the tool where files are located, how many music/SFX/PCM banks there are, how many PCM samples are supported and so on.
+
+SF2 Music Cooker was built obviously with a focus on Shining Force 2, but the community can extend it to work with other games (Shining Force 1 anyone?).
+To do that, you need to extend the 'layouts.json' file and make sure the target game DISASM folder is sufficiently mature and has all the required files/folders.
+To be considered mature, the DISASM should have:
+- A custom CUBE sound driver (such as 'Cubewiz' sound driver used in SF2DISASM) where YM/PSG note frequencies and PCM sample entries are defined in nice .asm files
+- Music number/SFX number enums in their own .asm file
+- Code/data disassembly should be complete enough to reference music/SFX numbers through their respective enum instead of hardcoded values (otherwise MOVE-REPLACE won't work)
+When in doubt, take a look at how SF2DISASM does it and update your DISASM to be closer to it.
+
+The layouts.json file must also be modified if you make critical changes to your local SF2DISASM folder, such as changing the sound driver or ROM layout.
+If you forget this, important changes such as increasing the number of PCM samples available for use or adding new music banks won't be taken in account properly.
+
+
+
 OPTIONS (those can save your day or at least work around problems!)
 -------
 

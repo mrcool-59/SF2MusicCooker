@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -240,6 +241,7 @@ namespace SF2MusicCooker
             return overloaded;
         }
 
+        [JsonConstructor]
         public Bank(string name, int maxSize, int firstNumber, int length)
         {
             if (maxSize <= 0) throw new ArgumentOutOfRangeException(nameof(maxSize), "cannot be zero or negative");
