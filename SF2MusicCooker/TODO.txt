@@ -1,16 +1,17 @@
-﻿Version 1.0.1:
+﻿Version 1.1:
 - Astral missing: comprendre pourquoi (vérifier si ça vient de standard-build ou non)
 - Les boites de dialog/portrait ne scroll pas, voir si c'est intentionnel
 - Intense battle.fur: contient "=== 00", à remplacer par "OFF"
 - Remove invalid DAC sample notes to avoid warnings and bad sample play lengths (Vapor Trail est dégueux par exemple)
 
-Version 1.1:
+Version 1.2:
 - Option to force sustain on all DAC samples (?)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - Rewriter tests/improvement with dump notes enabled
 - Fix the vanilla YM/PSG note counting logic when 'shifting' is involved
 
-Version 1.1.1:
+Version 1.3:
+- Auto-bank assignment feature
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
 	=> Choose a Path: weird sample output for intro
@@ -20,6 +21,5 @@ Version 1.1.1:
 	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
 		(?) All of this might be related to required but suboptimal bank switching (hopefully not)
 
-Version 1.2:
-- Auto-bank assignment feature
+Version 1.4:
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
