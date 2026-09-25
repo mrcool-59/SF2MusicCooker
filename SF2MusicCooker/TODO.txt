@@ -1,7 +1,6 @@
 ﻿Version 1.1:
 - Astral missing: comprendre pourquoi (vérifier si ça vient de standard-build ou non)
 - Les boites de dialog/portrait ne scroll pas, voir si c'est intentionnel
-- Intense battle.fur: contient "=== 00", à remplacer par "OFF"
 
 Version 1.2:
 - Option to force sustain on all DAC samples (?)

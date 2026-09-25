@@ -304,6 +304,15 @@ namespace SF2MusicCooker
                     int removed = file.RemoveUnsupportedNotes();
                     if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
 
+                    // Transform note releases with 0 volume into note OFF
+                    file.Transform(cell =>
+                    {
+                        if (cell.Note == PatternCell.NoteRelease && cell.Volume == 0)
+                            return new PatternCell(PatternCell.NoteOff, cell.Instrument, cell.Volume, cell.Effects);
+                        else
+                            return cell;
+                    });
+
                     // Remove various elements if the appropriate option is enabled
                     if (options.RemoveRelease)
                     {
