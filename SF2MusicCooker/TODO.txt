@@ -1,5 +1,6 @@
 ﻿Version 1.0.1:
-- Astral missing + Infinite loop herb pickup (vérifier si ça vient de standard-build ou non)
+- Astral missing: comprendre pourquoi (vérifier si ça vient de standard-build ou non)
+- Les boites de dialog/portrait ne scroll pas, voir si c'est intentionnel
 - Intense battle.fur: contient "=== 00", à remplacer par "OFF"
 - Remove invalid DAC sample notes to avoid warnings and bad sample play lengths (Vapor Trail est dégueux par exemple)
 
