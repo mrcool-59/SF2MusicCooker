@@ -54,10 +54,8 @@ namespace SF2MusicCooker
 
         public InstrumentMap(FMInstruments instruments, PCMInstruments samples, FurnaceFile file, Instrument[] usedInstruments)
         {
-            HashSet<Instrument> usedSet = new HashSet<Instrument>(usedInstruments);
-
-            instrument2fm = instruments.Map(file.Instruments, usedSet);
-            instrument_note2sample = samples.Map(file, usedSet);
+            instrument2fm = instruments.Map(file.Instruments, new HashSet<Instrument>(usedInstruments));
+            instrument_note2sample = samples.Map(file);
         }
 
         private InstrumentMap()

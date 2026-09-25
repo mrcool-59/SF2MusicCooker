@@ -352,6 +352,14 @@ namespace SF2MusicCooker
                     // We are done with edits
                     file.Calculate(options.MuteSamples);
 
+                    // Actually, there's one last thing: remove notes on DAC channel that don't actually play a sample!
+                    removed = file.RemoveInvalidDACNotes();
+                    if (removed > 0)
+                    {
+                        Console.WriteLine("! Removed {0} invalid notes on DAC channel (notes that don't actually play a sample)", removed);
+                        file.Calculate(); // We need to recalculate
+                    }
+
                     // Sample support check
                     if (file.DAC && !output.SupportSamples) throw new NotSupportedException("This " + output.Name + " repository is not set up to support custom samples (is it missing a feature branch merge?)");
 
@@ -373,7 +381,7 @@ namespace SF2MusicCooker
                     instruments.AddMany(usedInstruments, options.DumpNotes);
 
                     // Complete the global samples by those present in this .fur file, if they are really used
-                    samples.AddMany(file, usedInstruments, options.DumpNotes);
+                    samples.AddMany(file, options.DumpNotes);
 
                     // Prepare the Furnace to Cube instrument map
                     InstrumentMap map = new InstrumentMap(instruments, samples, file, usedInstruments);

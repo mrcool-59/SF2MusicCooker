@@ -122,7 +122,7 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// Read notes of a channel.
         /// </summary>
-        public byte[] ReadNotes(int channel, Predicate<byte> stop = null)
+        public byte[] ReadNotes(int channel)
         {
             List<byte> notes = new List<byte>();
             if (FirstNote[channel] > 0)
@@ -130,11 +130,7 @@ namespace SF2MusicCooker.Furnace
                 foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
                 {
                     var cell = tick.ActiveChannelCell;
-                    if (cell.HasNewNote)
-                    {
-                        notes.Add(cell.Note);
-                        if (stop != null && stop(cell.Note)) break;
-                    }
+                    if (cell.HasNewNote) notes.Add(cell.Note);
                     if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
                 }
             }
@@ -147,24 +143,6 @@ namespace SF2MusicCooker.Furnace
         public bool HasNote(int channel)
         {
             return FirstNote[channel] > 0;
-        }
-
-        /// <summary>
-        /// Return if the channel plays the specified note.
-        /// </summary>
-        public bool HasNote(int channel, int note)
-        {
-            bool found = false;
-            if (FirstNote[channel] > 0)
-            {
-                bool Stop(byte newNote)
-                {
-                    if (newNote == note) found = true;
-                    return found;
-                }
-                _ = ReadNotes(channel, Stop);
-            }
-            return found;
         }
 
         /// <summary>
@@ -181,13 +159,12 @@ namespace SF2MusicCooker.Furnace
             {
                 if (FirstNote[channel] > 0)
                 {
-                    bool active = instrument == 0;
+                    ushort currentInstrument = 0;
                     foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
                     {
                         var cell = tick.ActiveChannelCell;
-                        if (cell.Instrument == instrument) active = true;
-                        else if (cell.Instrument != PatternCell.InstrumentAbsent) active = false;
-                        if (cell.HasNewNote && active) { channels.Add(channel); break; }
+                        if (cell.Instrument != PatternCell.InstrumentAbsent) currentInstrument = cell.Instrument;
+                        if (cell.HasNewNote && currentInstrument == instrument) { channels.Add(channel); break; }
                         else if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
                     }
                 }
@@ -220,20 +197,6 @@ namespace SF2MusicCooker.Furnace
                     usedInstruments.Add(instrument);
             }
             return usedInstruments.ToArray();
-        }
-
-        /// <summary>
-        /// Get all patterns for the specified channel. A pattern may appear multiple times if it is reused.
-        /// </summary>
-        public Pattern[] GetAllPatternsForChannel(int channel)
-        {
-            Pattern[] results = new Pattern[Orders];
-            for (int order = 0; order < results.Length; order++)
-            {
-                int key = KeyByChannelAndOrder[channel, order];
-                results[order] = PatternByKey[key];
-            }
-            return results;
         }
 
         /// <summary>
@@ -281,8 +244,7 @@ namespace SF2MusicCooker.Furnace
         /// </summary>
         public int RemoveNote(int note)
         {
-            if (note == PatternCell.NoteAbsent)
-                throw new ArgumentException(nameof(note));
+            if (note == PatternCell.NoteAbsent) throw new ArgumentException(nameof(note));
 
             return Transform(cell =>
             {
@@ -338,6 +300,89 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Remove notes that don't reference valid samples when channel 6 is in DAC mode.
+        /// </summary>
+        public int RemoveInvalidDACNotes()
+        {
+            const int DAC_CHANNEL = 5;
+            int changed = 0;
+            if (DAC)
+            {
+                Dictionary<ushort, SampleMap> instrument2map = MakeInstrument2SampleMap();
+                ushort currentInstrument = 0;
+
+                foreach (Tick tick in Player.Run(this, DAC_CHANNEL, 0, Position.Start))
+                {
+                    var cell = tick.ActiveChannelCell;
+                    if (cell.Instrument != PatternCell.InstrumentAbsent) currentInstrument = cell.Instrument;
+                    if (cell.HasNewNote && (!instrument2map.TryGetValue(currentInstrument, out SampleMap map) || map.Read(cell.Note).Invalid))
+                    {
+                        EditCell(DAC_CHANNEL, tick.Position, new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects));
+                        changed++;
+                    }
+                    if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
+                }
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// Iterate on channel 6 DAC notes and invoke callback on every valid instrument/note pair encountered.
+        /// Alternatively, invoke callback the first time a given sample is used.
+        /// </summary>
+        public int IterateDACNotes(bool iterateOncePerSample, DACCallback callback)
+        {
+            if (callback == null) throw new ArgumentNullException(nameof(callback));
+
+            const int DAC_CHANNEL = 5;
+            int count = 0;
+            if (DAC)
+            {
+                HashSet<int> gatekeeper = new HashSet<int>();
+                Dictionary<ushort, SampleMap> instrument2map = MakeInstrument2SampleMap();
+                ushort currentInstrument = 0;
+
+                foreach (Tick tick in Player.Run(this, DAC_CHANNEL, 0, Position.Start))
+                {
+                    var cell = tick.ActiveChannelCell;
+                    if (cell.Instrument != PatternCell.InstrumentAbsent) currentInstrument = cell.Instrument;
+                    if (cell.HasNewNote && instrument2map.TryGetValue(currentInstrument, out SampleMap map))
+                    {
+                        SampleMap.Entry entry = map.Read(cell.Note);
+                        if (!entry.Invalid)
+                        {
+                            int key = iterateOncePerSample ? entry.Sample : InstrumentMap.GetInstrumentAndNoteKey(currentInstrument, cell.Note);
+                            if (gatekeeper.Add(key))
+                            {
+                                callback(Samples[entry.Sample], entry.Note, key);
+                                count++;
+                            }
+                        }
+                    }
+                    if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
+                }
+            }
+            return count;
+        }
+
+        public delegate void DACCallback(Sample sample, int note, int key);
+
+        private Dictionary<ushort, SampleMap> MakeInstrument2SampleMap()
+        {
+            Dictionary<ushort, SampleMap> instrument2map = new Dictionary<ushort, SampleMap>();
+            for (int i = 0; i < Instruments.Length; i++)
+            {
+                Instrument instrument = Instruments[i];
+                if (instrument.Type == Instrument.DAC && !instrument.Unreferenced)
+                {
+                    SampleMap map = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
+                    instrument2map.Add((ushort)i, map);
+                }
+            }
+            return instrument2map;
+        }
+
+        /// <summary>
         /// Mute all samples in the file.
         /// </summary>
         public void MuteSamples()
@@ -370,6 +415,22 @@ namespace SF2MusicCooker.Furnace
             Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
             foreach (var pair in PatternByKey) patternByKey.Add(pair.Key, pair.Value.Multiply(n));
             return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff * n, A4Tuning);
+        }
+
+        /// <summary>
+        /// Get a cell within the Furnace file.
+        /// </summary>
+        public PatternCell GetCell(int channel, Position position)
+        {
+            return PatternByKey[KeyByChannelAndOrder[channel, position.Order]].Get(position.Row);
+        }
+
+        /// <summary>
+        /// Edit a cell within the Furnace file.
+        /// </summary>
+        public void EditCell(int channel, Position position, PatternCell newCell)
+        {
+            PatternByKey[KeyByChannelAndOrder[channel, position.Order]].Set(position.Row, newCell);
         }
 
         /// <summary>

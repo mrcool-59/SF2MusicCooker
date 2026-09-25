@@ -2,7 +2,6 @@
 - Astral missing: comprendre pourquoi (vérifier si ça vient de standard-build ou non)
 - Les boites de dialog/portrait ne scroll pas, voir si c'est intentionnel
 - Intense battle.fur: contient "=== 00", à remplacer par "OFF"
-- Remove invalid DAC sample notes to avoid warnings and bad sample play lengths (Vapor Trail est dégueux par exemple)
 
 Version 1.2:
 - Option to force sustain on all DAC samples (?)
@@ -14,6 +13,7 @@ Version 1.3:
 - Auto-bank assignment feature
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
+	=> Vapor Trail: suspicious note when looping + ugly samples
 	=> Choose a Path: weird sample output for intro
 	=> Maker's Ruin: long notes
 	=> Test-3 Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play

@@ -112,7 +112,7 @@ namespace SF2MusicCooker
                     }
                     else
                     {
-                        if (print) Console.WriteLine("! A duplicate of FM instrument '{0}' already exists in the instrument list! [{1}]", instrument.Name, index);
+                        if (print) Console.WriteLine("> A duplicate of FM instrument '{0}' already exists in the instrument list! [{1}]", instrument.Name, index);
                     }
                 }
             }

@@ -238,6 +238,7 @@ namespace SF2MusicCooker
                             }
                             else
                             {
+                                // Should no longer happen since we now clean bad DAC notes when loading the Furnace file
                                 WriteSilence(noteLength);
                                 Warning("Invalid instrument/note pair " + currentInstrument + "/" + NoteBible.NameOf(cell.Note) + " for DAC channel (unable to figure out sample to play)", tick);
                             }

@@ -45,11 +45,11 @@ namespace SF2MusicCooker
                     {
                         Effect[] adjustedEffects = AppendEffect(lastNoteCell.Effects, new Effect(Effect.ForceSustain, 0x01));
                         PatternCell newLastNoteCell = new PatternCell(lastNoteCell.Note, lastNoteCell.Instrument, lastNoteCell.Volume, adjustedEffects);
-                        file.PatternByKey[file.KeyByChannelAndOrder[channel, lastNotePosition.Order]].Set(lastNotePosition.Row, newLastNoteCell);
+                        file.EditCell(channel, lastNotePosition, newLastNoteCell);
                     }
 
                     PatternCell newCell = new PatternCell(lastNoteCell.Note, cell.Instrument, cell.Volume, cell.Effects);
-                    file.PatternByKey[file.KeyByChannelAndOrder[channel, position.Order]].Set(position.Row, newCell);
+                    file.EditCell(channel, position, newCell);
                 }
                 if (tick.NextPosition == loop.Start && tick.Position == loop.End) break;
             }

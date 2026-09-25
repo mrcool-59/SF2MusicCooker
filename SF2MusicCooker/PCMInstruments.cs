@@ -306,37 +306,20 @@ namespace SF2MusicCooker
         /// <summary>
         /// Add samples from a Furnace file.
         /// </summary>
-        public void AddMany(FurnaceFile file, Instrument[] usedInstruments, bool print)
+        public void AddMany(FurnaceFile file, bool print)
         {
-            foreach (Instrument instrument in usedInstruments)
+            _ = file.IterateDACNotes(true, (sample, note, _) =>
             {
-                if (instrument.Type == Instrument.DAC && Array.IndexOf(file.Instruments, instrument) >= 0)
+                int index = Add(sample, file.A4Tuning, note, out bool added);
+
+                if (print)
                 {
-                    SampleMap map = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
-
-                    for (int note = NoteBible.BASE_VALUE; note <= NoteBible.LAST_VALUE; note++)
-                    {
-                        SampleMap.Entry entry = map.Read(note);
-
-                        if (!entry.Invalid && file.HasNote(5, note))
-                        {
-                            // Sample is only added if it is used in channel 6
-
-                            Sample sample = file.Samples[entry.Sample];
-
-                            int index = Add(sample, file.A4Tuning, entry.Note, out bool added);
-
-                            if (print)
-                            {
-                                if (added)
-                                    Console.WriteLine("+ Added sample '{0}' to PCM bank! [{1}]", sample.Name, index);
-                                else
-                                    Console.WriteLine("! A duplicate of sample '{0}' already exists in the PCM bank! [{1}]", sample.Name, index);
-                            }
-                        }
-                    }
+                    if (added)
+                        Console.WriteLine("+ Added sample '{0}' to PCM bank! [{1}]", sample.Name, index);
+                    else
+                        Console.WriteLine("> A duplicate of sample '{0}' already exists in the PCM bank! [{1}]", sample.Name, index);
                 }
-            }
+            });
         }
 
         /// <summary>
@@ -520,33 +503,16 @@ namespace SF2MusicCooker
         /// <summary>
         /// Generate a file-to-global sample instrument map for the given Furnace file.
         /// </summary>
-        public Dictionary<int, byte> Map(FurnaceFile file, HashSet<Instrument> usedSet = null)
+        public Dictionary<int, byte> Map(FurnaceFile file)
         {
             Dictionary<int, byte> lookup = new Dictionary<int, byte>();
-            Instrument[] instruments = file.Instruments;
-            for (int i = 0; i < instruments.Length; i++)
+            _ = file.IterateDACNotes(false, (sample, note, key) =>
             {
-                Instrument instrument = instruments[i];
-                if (instrument.Type == Instrument.DAC && (usedSet == null || usedSet.Contains(instrument)))
-                {
-                    SampleMap map = FeatureInterpreter.ParseFurnaceSampleInstrument(instrument.Data);
+                int index = Find(sample, file.A4Tuning, note);
+                if (index >= 0x100) throw new OverflowException("Cannot have more than 255 samples");
 
-                    for (int note = NoteBible.BASE_VALUE; note <= NoteBible.LAST_VALUE; note++)
-                    {
-                        SampleMap.Entry entry = map.Read(note);
-
-                        if (!entry.Invalid && file.HasNote(5, note))
-                        {
-                            Sample sample = file.Samples[entry.Sample];
-
-                            int index = Find(sample, file.A4Tuning, entry.Note);
-                            if (index >= 0x100) throw new OverflowException("Cannot have more than 255 samples");
-
-                            lookup.Add(InstrumentMap.GetInstrumentAndNoteKey((ushort)i, (byte)note), (byte)index);
-                        }
-                    }
-                }
-            }
+                lookup.Add(key, (byte)index);
+            });
             return lookup;
         }
 

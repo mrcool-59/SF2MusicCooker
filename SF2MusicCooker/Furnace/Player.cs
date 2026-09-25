@@ -42,9 +42,7 @@ namespace SF2MusicCooker.Furnace
 
                 for (int channel = 0; channel < channels; channel++)
                 {
-                    int key = file.KeyByChannelAndOrder[channel, order];
-                    var pattern = file.PatternByKey[key];
-                    var cell = pattern.Get(row);
+                    PatternCell cell = file.GetCell(channel, position);
 
                     if (channel == activeChannel)
                         activeChannelCell = cell;
