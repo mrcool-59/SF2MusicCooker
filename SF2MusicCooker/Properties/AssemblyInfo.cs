@@ -2,5 +2,5 @@
 
 [assembly: AssemblyTitle("SF2 Music Cooker")]
 [assembly: AssemblyCopyright("Free to use by the community")]
-[assembly: AssemblyVersion("1.00")]
-[assembly: AssemblyFileVersion("1.00")]
+[assembly: AssemblyVersion("1.1.0")]
+[assembly: AssemblyFileVersion("1.1.0")]

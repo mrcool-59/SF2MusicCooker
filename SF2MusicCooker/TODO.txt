@@ -1,4 +1,5 @@
 ﻿Version 1.1:
+- Vapor Trail: extremely suspicious results, with desync'd channels!
 - Astral missing: comprendre pourquoi (vérifier si ça vient de standard-build ou non)
 - Les boites de dialog/portrait ne scroll pas, voir si c'est intentionnel
 
@@ -12,6 +13,7 @@ Version 1.3:
 - Auto-bank assignment feature
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
+	=> Audible clicks when music fades in (especially when resuming), is DAC channel to blame?
 	=> Vapor Trail: suspicious note when looping + ugly samples
 	=> Choose a Path: weird sample output for intro
 	=> Maker's Ruin: long notes

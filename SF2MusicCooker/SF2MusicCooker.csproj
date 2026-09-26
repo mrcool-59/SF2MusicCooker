@@ -272,6 +272,27 @@
     <None Include="Test-4\%40music35-Jingle VII.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test-Ext\%40music19-%28Dial Q o Mawase!%29 Jingle.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\%40music27-%28Dial Q o Mawase!%29 Jingle 2.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music50%4038-Military.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music51%4035-Mysterious.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music52-Enemy Healing.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music53-Healing.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext\+music54-Last Area %28Abridged%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test-Ext\+music55%405-Battlescene %28Enemy%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -293,10 +314,10 @@
     <None Include="Test-Ext\+music61%401-Galaxy Force II.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music62%4035-Shrine %28Abridged%29.fur">
+    <None Include="Test-Ext\+music62%4014-Shrine %28Abridged%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext\+music63%409-Vapor Trail.fur">
+    <None Include="Test-Ext\+music63-Vapor Trail.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music01-Test Silence.fur">
