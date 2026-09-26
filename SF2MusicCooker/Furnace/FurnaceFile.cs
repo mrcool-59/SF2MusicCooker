@@ -94,6 +94,11 @@ namespace SF2MusicCooker.Furnace
         public int[] FirstNote { get; }
 
         /// <summary>
+        /// Return the tick of the first silence for each channel (0 if the channel doesn't contain any silence).
+        /// </summary>
+        public int[] FirstSilence { get; }
+
+        /// <summary>
         /// True if the channel 6 plays samples (DAC mode).
         /// </summary>
         public bool DAC { get; private set; }
@@ -143,6 +148,16 @@ namespace SF2MusicCooker.Furnace
         public bool HasNote(int channel)
         {
             return FirstNote[channel] > 0;
+        }
+
+        /// <summary>
+        /// Get the tick of the first event (either a note or silence). Return 0 if the channel contains no note.
+        /// </summary>
+        public int GetFirstTick(int channel)
+        {
+            int firstNote = FirstNote[channel];
+            int firstSilence = FirstSilence[channel];
+            return firstSilence == 0 ? firstNote : Math.Min(firstNote, firstSilence);
         }
 
         /// <summary>
@@ -300,9 +315,42 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Replace note OFF commands (on FM channels only) by note release (if volume is not zero).
+        /// Also replace note release with zero volume by note OFF commands (on all channels).
+        /// </summary>
+        public int NormalizeNoteOff()
+        {
+            int changed = 0;
+            for (int channel = 0; channel < Channels; channel++)
+            {
+                if (FirstNote[channel] > 0)
+                {
+                    byte currentVolume = 0xFF;
+                    foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
+                    {
+                        var cell = tick.ActiveChannelCell;
+                        if (cell.Volume != PatternCell.VolumeAbsent) currentVolume = cell.Volume;
+                        if (channel <= 5 && cell.Note == PatternCell.NoteOff && currentVolume > 0x00)
+                        {
+                            EditCell(channel, tick.Position, new PatternCell(PatternCell.NoteRelease, cell.Instrument, cell.Volume, cell.Effects));
+                            changed++;
+                        }
+                        else if (cell.Note == PatternCell.NoteRelease && currentVolume == 0x00)
+                        {
+                            EditCell(channel, tick.Position, new PatternCell(PatternCell.NoteOff, cell.Instrument, cell.Volume, cell.Effects));
+                            changed++;
+                        }
+                        if (tick.NextPosition == Loop.Start && tick.Position == Loop.End) break;
+                    }
+                }
+            }
+            return changed;
+        }
+
+        /// <summary>
         /// Remove notes that don't reference valid samples when channel 6 is in DAC mode.
         /// </summary>
-        public int RemoveInvalidDACNotes()
+        public int RemoveInvalidDACNotes(bool disableDAC)
         {
             const int DAC_CHANNEL = 5;
             int changed = 0;
@@ -315,7 +363,7 @@ namespace SF2MusicCooker.Furnace
                 {
                     var cell = tick.ActiveChannelCell;
                     if (cell.Instrument != PatternCell.InstrumentAbsent) currentInstrument = cell.Instrument;
-                    if (cell.HasNewNote && (!instrument2map.TryGetValue(currentInstrument, out SampleMap map) || map.Read(cell.Note).Invalid))
+                    if (cell.HasNewNote && (disableDAC || !instrument2map.TryGetValue(currentInstrument, out SampleMap map) || map.Read(cell.Note).Invalid))
                     {
                         EditCell(DAC_CHANNEL, tick.Position, new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects));
                         changed++;
@@ -457,19 +505,22 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
-        /// Calculate loop position, first note and DAC flag. Must be called after you are done with edits.
-        /// This method must be called before calling HasNote, ReadNotes, GetInstrumentUsage or GetUsedInstruments methods.
-        /// This method must be called before accessing Loop, FirstNote or DAC properties.
+        /// Calculate loop position, first note and DAC flag. Must be called at least once, and whenever you make edits.
+        /// This method must be called before calling HasNote, ReadNotes, GetFirstTick, GetInstrumentUsage or GetUsedInstruments methods.
+        /// This method must be called before calling NormalizeNoteOff, RemoveInvalidDACNotes or IterateDACNotes methods.
+        /// This method must be called before accessing Loop, FirstNote, FirstSilence or DAC properties.
         /// If you try nonetheless, all these methods will behave like no note is present in the Furnace file.
-        /// After calling Calculate, you may no longer edit the file (i.e: you must consider it frozen).
         /// </summary>
-        public void Calculate(bool disableDAC = false)
+        public void Calculate()
         {
             // WARNING: Order of operations is important here
             Loop = FindLoop();
-            for (int channel = 0; channel < Channels; channel++) FirstNote[channel] = FindFirstNote(channel);
+            for (int channel = 0; channel < Channels; channel++)
+            {
+                FirstNote[channel] = FindFirstEvent(channel, true);
+                FirstSilence[channel] = FindFirstEvent(channel, false);
+            }
             DAC = FindDAC();
-            if (DAC && disableDAC) { DAC = false; FirstNote[5] = 0; }
         }
 
         private Loop FindLoop()
@@ -488,13 +539,13 @@ namespace SF2MusicCooker.Furnace
             return new Loop(Loop.None, Loop.None, ticks);
         }
 
-        private int FindFirstNote(int channel)
+        private int FindFirstEvent(int channel, bool isNote)
         {
             int ticks = 0;
             foreach (Tick tick in Player.Run(this, channel, 0, Position.Start))
             {
                 ticks++;
-                if (tick.ActiveChannelCell.HasNewNote)
+                if ((isNote && tick.ActiveChannelCell.HasNewNote) || (!isNote && tick.ActiveChannelCell.Note == PatternCell.NoteOff))
                 {
                     return ticks;
                 }
@@ -533,6 +584,7 @@ namespace SF2MusicCooker.Furnace
             // Default safe values, until Calculate is called
             Loop = new Loop(Loop.None, Loop.None, 0);
             FirstNote = new int[Channels];
+            FirstSilence = new int[Channels];
             DAC = false;
         }
 

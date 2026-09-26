@@ -139,8 +139,8 @@ namespace SF2MusicCooker
             // Do not generate channels that are empty or muted
             if (!file.HasNote(channel) || options.IsMuted(channel)) return "channel_end";
 
-            // We get the position of the first note and loop info
-            int firstNoteTicks = file.FirstNote[channel];
+            // We get the position of the first event (either note or silence) and loop info
+            int firstEventTicks = file.GetFirstTick(channel);
             Loop loop = file.Loop;
 
             // Identify the channel we're dealing with
@@ -175,10 +175,10 @@ namespace SF2MusicCooker
             byte noiseMode = 0x00;
 
             // PSG channel: ensure the channel starts OFF
-            if (psg && firstNoteTicks > 1) commands.Add("psgInst 0");
+            if (psg && firstEventTicks > 1) commands.Add("psgInst 0");
 
             // Write initial silence (before the first note)
-            WriteSilence(firstNoteTicks - 1);
+            WriteSilence(firstEventTicks - 1);
 
             // We assume notes should never be longer than this very generous length
             int maxPredictLength = file.Orders * file.Rows * 16;
@@ -253,7 +253,7 @@ namespace SF2MusicCooker
                         WriteSilence(noteLength);
                     }
                 }
-                else if (cell.Note == PatternCell.NoteOff && ticks >= firstNoteTicks)
+                else if (cell.Note == PatternCell.NoteOff)
                 {
                     if (psg && envelopes.HasResidualLevel(currentInstrument) && tick.SilenceLength > 4)
                     {
@@ -263,7 +263,6 @@ namespace SF2MusicCooker
 
                     FlushPendingChanges(psg, tick);
 
-                    // Please notice that note OFF commands are ignored if the first note hasn't been played yet
                     WriteSilence(tick.SilenceLength);
                 }
 

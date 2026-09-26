@@ -336,13 +336,15 @@ namespace SF2MusicCooker
                     FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
                     file = file.DropExtended();
                     file.RemoveUnsupportedNotes();
-                    file.Calculate(disableDAC: true);
+                    file.Calculate();
 
                     TunedMap tuned = CreateTunedMap(_notes, file.A4Tuning, YM_SHIFT, 0);
                     TunedMap tunedPsg = CreateTunedMap(_psgNotes, file.A4Tuning, PSG_SHIFT, 0);
 
                     for (int channel = 0; channel <= 8; channel++) // Skip noise generator
                     {
+                        if (channel == 5 && file.DAC) continue; // Skip DAC channel
+
                         byte[] notes = file.ReadNotes(channel);
                         bool psg = channel > 5;
                         NoteBible.Transpose(notes, psg ? options.TransposePSG : options.TransposeFM);

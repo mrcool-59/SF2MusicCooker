@@ -81,12 +81,27 @@ namespace SF2MusicCooker
         public static void PrintFirstNote(FurnaceFile file)
         {
             int[] firstNote = file.FirstNote;
+            int[] firstSilence = file.FirstSilence;
+
             for (int channel = 0; channel < firstNote.Length; channel++)
             {
                 if (firstNote[channel] > 0)
+                {
                     Console.WriteLine("> Channel {0} first note tick: {1}", file.GetChannelName(channel), firstNote[channel]);
+
+                    if (firstSilence[channel] > 0)
+                    {
+                        Console.WriteLine("> Channel {0} first silence tick: {1}", file.GetChannelName(channel), firstSilence[channel]);
+                    }
+                    else
+                    {
+                        Console.WriteLine("> Channel {0} has no silence", file.GetChannelName(channel));
+                    }
+                }
                 else
+                {
                     Console.WriteLine("> Channel {0} has no notes and will be ignored", file.GetChannelName(channel));
+                }
             }
         }
 

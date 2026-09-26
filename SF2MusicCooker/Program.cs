@@ -304,15 +304,6 @@ namespace SF2MusicCooker
                     int removed = file.RemoveUnsupportedNotes();
                     if (removed > 0) Console.WriteLine("! Removed {0} unsupported notes (notes must be between {1} and {2})", removed, NoteBible.FirstSupportedNote.Name, NoteBible.LastSupportedNote.Name);
 
-                    // Transform note releases with 0 volume into note OFF
-                    file.Transform(cell =>
-                    {
-                        if (cell.Note == PatternCell.NoteRelease && cell.Volume == 0)
-                            return new PatternCell(PatternCell.NoteOff, cell.Instrument, cell.Volume, cell.Effects);
-                        else
-                            return cell;
-                    });
-
                     // Remove various elements if the appropriate option is enabled
                     if (options.RemoveRelease)
                     {
@@ -358,16 +349,19 @@ namespace SF2MusicCooker
                     // Adjust the playback rate to play nice with YM timer and SFXs play speed
                     AsmSheetWriter.AdjustPlayRate(ref file, input.PointerName != null, !options.PreserveRate);
 
-                    // We are done with edits
-                    file.Calculate(options.MuteSamples);
+                    // We are done with first pass of edits
+                    file.Calculate();
 
-                    // Actually, there's one last thing: remove notes on DAC channel that don't actually play a sample!
-                    removed = file.RemoveInvalidDACNotes();
-                    if (removed > 0)
-                    {
-                        Console.WriteLine("! Removed {0} invalid notes on DAC channel (notes that don't actually play a sample)", removed);
-                        file.Calculate(); // We need to recalculate
-                    }
+                    // Make sure note OFF commands are avoided on FM channels and note releases with zero volume should be changed to note OFF
+                    int changed = file.NormalizeNoteOff();
+                    if (changed > 0) Console.WriteLine("> Normalized {0} note release/OFF commands", changed);
+
+                    // One very last thing: remove notes on DAC channel that don't actually play a sample! (or even disable DAC if requested)
+                    removed = file.RemoveInvalidDACNotes(options.MuteSamples);
+                    if (removed > 0 && !options.MuteSamples) Console.WriteLine("! Removed {0} invalid notes on DAC channel (notes that don't actually play a sample)", removed);
+
+                    // We might need to recalculate (second pass)
+                    if (changed > 0 || removed > 0) file.Calculate(); 
 
                     // Sample support check
                     if (file.DAC && !output.SupportSamples) throw new NotSupportedException("This " + output.Name + " repository is not set up to support custom samples (is it missing a feature branch merge?)");
