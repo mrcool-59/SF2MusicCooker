@@ -1,6 +1,4 @@
 ﻿Version 1.1:
-- Suspicious drum notes in "Shrine (Abridged)" even though it should be silent...
-	=> Happens after the first note!!
 - Tester fix: Ranged attack triggers support/ranged musics
 - Astral missing: comprendre pourquoi (vérifier si ça vient de standard-build ou non)
 - Les boites de dialog/portrait ne scroll pas, voir si c'est intentionnel

@@ -445,12 +445,16 @@ namespace SF2MusicCooker
 
             void WriteSample(byte sample, int release, int length, bool sustain)
             {
+                // A ludicrously long sample should be capped to 0xFF length, forced to sustain and padded with required silence
+                int extraSilence = length - 0xFF;
+                if (extraSilence > 0) { length = 0xFF; sustain = true; }
                 WriteNoteOrSample(BYTE(sample), release, length, sustain, "sample  ", "sampleL ");
+                WriteSilence(extraSilence);
             }
 
             void WriteNoteOrSample(string value, int release, int length, bool sustain, string command, string commandL)
             {
-                int cappedLength = Math.Min(length, release + 0x7F); // After releasing a command, we can't have it play for more than 0x7F ticks
+                int cappedLength = sustain ? length : Math.Min(length, release + 0x7F); // After releasing a command, we can't have it play for more than 0x7F ticks
                 int extraSilence = length - cappedLength;
 
                 length = cappedLength;
