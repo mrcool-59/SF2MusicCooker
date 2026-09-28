@@ -121,7 +121,9 @@ namespace SF2MusicCooker.Furnace
                 }
             }
 
-            return new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff, A4Tuning);
+            FurnaceFile result = new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff, A4Tuning);
+            result.RemoveEffect(2, Effect.Legato); // FIXME: maybe add an option to skip this edit
+            return result;
         }
 
         /// <summary>
@@ -234,10 +236,19 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// Transform cells from all patterns through a transformer function and return the number of cells changed.
         /// </summary>
-        public int Transform(Func<PatternCell, PatternCell> transformer)
+        public int Transform(Func<PatternCell, PatternCell> transformer, int channel = -1)
         {
+            IEnumerable<Pattern> patterns = PatternByKey.Values;
+
+            if (channel >= 0)
+            {
+                Pattern[] filteredPatterns = new Pattern[Orders];
+                for (int order = 0; order < filteredPatterns.Length; order++) filteredPatterns[order] = PatternByKey[KeyByChannelAndOrder[channel, order]];
+                patterns = filteredPatterns;
+            }
+
             int changed = 0;
-            foreach (Pattern pattern in PatternByKey.Values)
+            foreach (Pattern pattern in patterns)
             {
                 for (int i = 0; i < pattern.Rows; i++)
                 {
@@ -257,7 +268,7 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// Remove a specific note from all patterns and return the number of cells changed.
         /// </summary>
-        public int RemoveNote(int note)
+        public int RemoveNote(int note, int channel = -1)
         {
             if (note == PatternCell.NoteAbsent) throw new ArgumentException(nameof(note));
 
@@ -267,13 +278,13 @@ namespace SF2MusicCooker.Furnace
                     return new PatternCell(PatternCell.NoteAbsent, cell.Instrument, cell.Volume, cell.Effects);
                 else
                     return cell;
-            });
+            }, channel);
         }
 
         /// <summary>
         /// Remove all volume commands from all patterns and return the number of cells changed.
         /// </summary>
-        public int RemoveVolume()
+        public int RemoveVolume(int channel = -1)
         {
             return Transform(cell =>
             {
@@ -281,13 +292,13 @@ namespace SF2MusicCooker.Furnace
                     return new PatternCell(cell.Note, cell.Instrument, PatternCell.VolumeAbsent, cell.Effects);
                 else
                     return cell;
-            });
+            }, channel);
         }
 
         /// <summary>
         /// Remove a specific effect type from all patterns and return the number of cells changed.
         /// </summary>
-        public int RemoveEffect(byte type)
+        public int RemoveEffect(byte type, int channel = -1)
         {
             return Transform(cell =>
             {
@@ -295,7 +306,7 @@ namespace SF2MusicCooker.Furnace
                     return new PatternCell(cell.Note, cell.Instrument, cell.Volume, Array.FindAll(cell.Effects, e => e.Type != type));
                 else
                     return cell;
-            });
+            }, channel);
         }
 
         /// <summary>
