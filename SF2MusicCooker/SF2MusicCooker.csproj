@@ -272,6 +272,117 @@
     <None Include="Test-4\%40music35-Jingle VII.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test-Ext-Deluxe\%40music02-Unpromoted Attack.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music03-Promoted Attack.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music05-Enemy Attack.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music09-Intro.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music14-Goddess.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music19-Jingle Join.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music21-Jingle Save.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music22-Jingle Cure.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music24-Jingle Revive.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music25-Jingle Promotion.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music27-Jingle Item.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music36-Final Battle %28todo uninterruptable, require slight tuning%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music37-Funny Dwarfs.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music39-Castle.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\%40music40-Paradise City.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music29-Desert City.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music30-Seaside City.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music42-Newbie Battle.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music43-Entering North Parmecia.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music44-New Continent To Discover.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music45-Ixen-Unpromoted.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music46-Ixen-Promoted.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music47-Boss Battle %28todo uninterruptable%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music48%4038-Military.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music49%4035-Mysterious.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music50-Healing.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music51-Enemy Healing.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music52-Unpromoted Spell.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music53-Promoted Spell.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music54-Enemy Spell.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music58%4033-Important Battle.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music59%4034-Dungeon.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music60%408-Town Theme Deluxe.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music61%401-Doomed Continent.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music62-Airship.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music63-Vapor Trail.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music64-Choose a Path.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test-Ext\%40music19-%28Dial Q o Mawase!%29 Jingle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -399,6 +510,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="Test-3\options.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Test-Ext-Deluxe\options.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Test-Ext\options.txt">
