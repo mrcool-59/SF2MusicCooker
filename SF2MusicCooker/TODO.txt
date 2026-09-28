@@ -1,9 +1,11 @@
 ﻿Version 1.2:
+- Drop Extended: remove legato on the edited channels
 - Option to force sustain on all DAC samples (?)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
-- [retester Test input avant] Rewriter tests/improvement with dump notes enabled
+- [retest 'Test' folder beforehand] Rewriter tests/improvement with dump notes enabled
 - Fix the vanilla YM/PSG note counting logic when 'shifting' is involved
 - Generalize 'pairNumber' into array 'aliasNumbers', aliases must reside within the same bank or an error will occur, 'pairNumber' implicitly add an element to 'aliasNumbers'
+- Be extra cautious when a PSG channel uses an instrument that is not a PSG instrument, same remark for FM channels
 
 Version 1.3:
 - Auto-bank assignment feature
