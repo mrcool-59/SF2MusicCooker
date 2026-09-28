@@ -10,14 +10,11 @@ rem -----------------------------------------------
 rem Standard use, with manual confirmation required
 SF2MusicCooker.exe "%SF2DISASMPath%"
 
-rem Standard use, with counted loops optimization disabled (in case it causes issues)
-rem SF2MusicCooker.exe "%SF2DISASMPath%" --nooptimize
-
 rem Automated use, to do everything with 1 click
 rem SF2MusicCooker.exe "%SF2DISASMPath%" --autoyes --nopause
 
 rem Troubleshooting use
-rem SF2MusicCooker.exe "%SF2DISASMPath%" --dumpnotes --dumpuncompressed
+rem SF2MusicCooker.exe "%SF2DISASMPath%" --dumpnotes
 
 rem -----------------------------------------
 rem --- Advanced users: POSTBUILD script ----

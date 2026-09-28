@@ -55,7 +55,7 @@ GOLDEN RULES (this section is especially relevant to music composers)
 1. Please create custom Sega Genesis songs in Furnace in the most basic way: no macros, no extreme octave notes, no exotic effects (see "LIMITATIONS" below for more details).
 2. Your song should rely mostly on the standard 5 FM channels + the 6th channel. You can also use PSG tone channels 7 and 8.
 3. You can use samples in channel 6 (but you won't be able to it as FM channel for the *full* song). Samples should be small and you can't have too many of them.
-4. Important instruments should use FM channels 0, 1, 2 because other channels can be borrowed by sound effects during SF2 gameplay.
+4. Important instruments should use FM channels 1, 2, 3 because other channels can be borrowed by sound effects during SF2 gameplay.
 5. Space in the ROM is limited and you should avoid extremely long songs with a ludicrous number of FM instruments / samples ( but you can still try ;-) ).
 
 
@@ -64,12 +64,12 @@ ROM SPACE
 ---------
 
 The .fur files you submit to the tool will ultimately have to fit into the Music Banks of the ROM, otherwise the assembly will fail when you build the ROM.
-Each Music Bank can hold 32768 bytes and SF2 Music Cooker will add a comment into each generated music .asm file to give an estimation of how many bytes the song will take.
+Each Music Bank can hold 32768 bytes and SF2 Music Cooker will add a comment into each generated music .asm file to tell how many bytes the song will take.
 
 The vanilla game comes with Music Bank 0 (musics 1 to 32) and Music Bank 1 (musics 33 to 64). Sadly, these two Music Banks are *almost* full.
 For this reason, REPLACE EXISTING MUSICS feature can be pretty limited if you try to import songs that take more space than their vanilla music counterpart.
 
-Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Musics Banks inside the expanded ROM space.
+Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Music Banks inside the expanded ROM space.
 If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 3 extra, fully available Music Banks to host all your custom music needs.
 These are called Music Bank Ext 0 (musics 49 to 56), Music Bank Ext 1 (musics 57 to 60) and Music Bank Ext 2 (musics 61 to 64).
 As you can see, the Music Bank 1 range was cut down compared to the vanilla game. Its range is now 33 to 48.
@@ -96,7 +96,7 @@ The layout tells the tool where files are located, how many music/SFX/PCM banks 
 SF2 Music Cooker was built obviously with a focus on Shining Force 2, but the community can extend it to work with other games (Shining Force 1 anyone?).
 To do that, you need to extend the 'layouts.json' file and make sure the target game DISASM folder is sufficiently mature and has all the required files/folders.
 To be considered mature, the DISASM should have:
-- A custom CUBE sound driver (such as 'Cubewiz' sound driver used in SF2DISASM) where YM/PSG note frequencies and PCM sample entries are defined in nice .asm files
+- A custom CUBE sound driver (such as 'Cubewiz' sound driver used in SF2DISASM) where YM/PSG note frequencies and PCM sample entries are defined in nice, separate .asm files
 - Music number/SFX number enums in their own .asm file
 - Code/data disassembly should be complete enough to reference music/SFX numbers through their respective enum instead of hardcoded values (otherwise MOVE-REPLACE won't work)
 When in doubt, take a look at how SF2DISASM does it and update your DISASM to be closer to it.
@@ -118,7 +118,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 --nukeall					or		-na		Replace everything from vanilla game by emptiness (equivalent to --nukemusic --nukesfx)
 --nopause					or		-np		Do not ask to press a key to quit the program
 --nopostbuild				or		-npb	Do not run POSTBUILD.bat, even if it's provided
---autoyes					or		-ay		Automatically confirm to write files to SF2DISASM folder
+--autoyes					or		-ay		Automatically confirm to write files to DISASM folder
 --autono					or		-an		Automatically confirm to write files to Output folder (has priority over --autoyes)
 --input=X					or		-i=X	Read files in "X" folder instead of "Input" folder
 --onlyN						or		-oN		(N = 1..126) Only process the .fur file for the given music/SFX number and ignore the rest (only useful for developers)
@@ -141,13 +141,13 @@ The following options can be specified globally or per-music/per-SFX:
 --nooptimize				or		-no		Do not reduce the size of the music sheet with 'countedLoopStart/End' blocks (implicitly set if --dumpnotes is used)
 --dumpnotes					or		-dn		Write Furnace tracker commands alongside produced ASM commands in the music sheet (only useful for developers or curious people)
 --dumpuncompressed			or		-du		Write a copy of decompressed input Furnace file into "Uncompressed" folder (only useful for developers)
---transposefm=x				or		-tfm=x	Transpose Furnace FM notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
---transposepsg=x			or		-tpsg=x	Transpose Furnace PSG tone notes with this amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
+--transposefm=x				or		-tfm=x	Transpose Furnace FM notes with x amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
+--transposepsg=x			or		-tpsg=x	Transpose Furnace PSG tone notes with x amount of semitones (12 = +1 octave, -12 = -1 octave, default amount is 0)
 --sampleratecoeff=x			or		-src=x	Scale the sample rate of all samples by x (default is x=1.0, and sound driver has a limit when playing very high pitched samples)
---volume=x					or		-v=x	Multiply master volume by x (default is x=1.0)
+--volume=x					or		-v=x	Multiply master volume by x (default is x=1.0, see warning below about samples volume)
 --volumefm=x				or		-vfm=x	Multiply FM volume by x
 --volumepsg=x				or		-vpsg=x	Multiply PSG volume by x
---volumesample=x			or		-vs=x	Multiply samples volume by x [warning: same samples played at different volumes will result in different samples in ROM]
+--volumesample=x			or		-vs=x	Multiply samples volume by x [warning: same samples played at different volumes across songs will result in different samples in ROM]
 --volume:linear				or		-v:l	Use linear YM volume (technically incorrect but may give interesting results depending on the music)
 --volume:nearest			or		-v:n	Use nearest instead of truncating when mapping YM volume to SF2 sound driver volume (gives subtly different results)
 
@@ -170,7 +170,7 @@ SF2 Music Cooker currently supports:
 - Furnace notes are mapped to SF2 sound driver notes in a best effort fashion (84 YM notes and 64 PSG tone notes are available in vanilla SF2), notes in unsupported octaves are clamped
 - By default, SF2 sound driver supports YM notes from C-1 to B-7 and PSG tone notes from A-0 to C-6
 - This tool has the ability to add 4 extra YM notes and recycle unused YM and PSG tone notes to reach unsupported octaves in custom musics you provide (please do not rely on this too much)
-- You can use volume macros for your Furnace PSG instruments; if you do, this tool will use the most similar volume envelope in the SF2 sound driver
+- You can use volume macros for your Furnace PSG instruments; if you do, this tool will use that information to find the most similar volume envelope in the SF2 sound driver
 - If you don't use volume macros for your Furnace PSG instruments, this tool will instead try to guess the volume envelope from volume commands on the channel
 - Arbitrary tempo for musics (see below for special caveats about the tick rate)
 - New FM instruments, these will get added to the vanilla SF2 instruments
@@ -196,11 +196,11 @@ Special caveat about tick rates:
 - SFXs seem to play at the correct speed if music is between 30 and 60 hz (lower makes SFXs play slower, higher makes SFXs play faster)
 - Furnace files for SFXs should have a play rate between 58 and 62 hz (files slower than 30 hz will be multiplied to land in this range if possible)
 - This tool will try to artificially multiply frequency and pattern rows of musics to reach a tick rate >= 13 hz that plays nice with the SFXs
-- TL;DR / To summarize: Furnace files should play at 60 hz for SFXs, and somewhere between 30~60 hz for musics
+- TL;DR / To summarize: Furnace files should play at 60 hz for SFXs, and somewhere between 30~60 hz for musics, if you submit slower musics the tool will try to fix it for you ;)
 
 Special caveat for replacing music pairs (3, 4) and (13, 14):
 - Vanilla SF2 musics "Mitula Shrine" and "Elven Town" (13, 14) are closely related and combined together in the SF2DISASM music assembly files
 - The same applies for "Promoted Attack" and "Promoted Attack Loop" (3, 4)
 - This makes it very inconvenient to replace each music separately without affecting the other
 - You CAN replace these musics, but if you don't provide a replacement for the other music in the pair, the music you provided will also replace the other music in the pair
-- You CANNOT move-replace these musics
+- You CANNOT move-replace paired musics
