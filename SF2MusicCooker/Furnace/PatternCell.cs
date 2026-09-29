@@ -106,7 +106,9 @@ namespace SF2MusicCooker.Furnace
                     {
                         case Effect.GoNext:
                             int scaledValue = effect.Value * n;
-                            if (scaledValue > 0xFF) throw new OverflowException("Play rate adjustment caused a value overflow on 'go to next pattern' effect");
+                            if (scaledValue > 0xFF) throw new OverflowException("Play rate adjustment caused a value overflow on 'go to next pattern' effect: " + this
+                                + Environment.NewLine + "You can sidestep this by reorganizing your patterns to avoid a jump-to-row value that would exceed FF when multiplied by " + n
+                                + Environment.NewLine + "Sorry for the inconvenience...");
                             delayedEffects.Add(new Effect(effect.Type, (byte)scaledValue));
                             break;
                         case Effect.GoTo:
