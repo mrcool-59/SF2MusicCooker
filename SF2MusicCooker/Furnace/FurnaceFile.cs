@@ -122,7 +122,7 @@ namespace SF2MusicCooker.Furnace
             }
 
             FurnaceFile result = new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff, A4Tuning);
-            result.RemoveEffect(2, Effect.Legato); // FIXME: maybe add an option to skip this edit
+            result.RemoveEffect(Effect.Legato, 2); // FIXME: maybe add an option to skip this edit
             return result;
         }
 

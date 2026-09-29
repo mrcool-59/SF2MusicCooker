@@ -314,7 +314,7 @@
     <None Include="Test-Ext-Deluxe\%40music37-Funny Dwarfs.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\%40music39-Castle.fur">
+    <None Include="Test-Ext-Deluxe\%40music39-HQ.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\%40music40-Paradise City.fur">
