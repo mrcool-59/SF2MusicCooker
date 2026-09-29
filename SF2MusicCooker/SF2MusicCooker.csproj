@@ -326,6 +326,9 @@
     <None Include="Test-Ext-Deluxe\+music30-Seaside City.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test-Ext-Deluxe\+music31-Promoted Healing.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test-Ext-Deluxe\+music42-Newbie Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -350,7 +353,7 @@
     <None Include="Test-Ext-Deluxe\+music49%4035-Mysterious.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music50-Healing.fur">
+    <None Include="Test-Ext-Deluxe\+music50-Unpromoted Healing.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music51-Enemy Healing.fur">
