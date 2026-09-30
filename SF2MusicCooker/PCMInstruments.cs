@@ -404,7 +404,7 @@ namespace SF2MusicCooker
             int removed = 0;
             for (int i = 0; i < _slots.Length; i++)
             {
-                if (!set.Contains(i))
+                if (!set.Contains(i) && !_slots[i].Equals(PCMSample.Empty))
                 {
                     Remove(i);
                     removed++;

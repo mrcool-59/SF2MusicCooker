@@ -32,16 +32,17 @@ namespace SF2MusicCooker
                 List<Input> inputs = new List<Input>();
                 List<Sheet> sheets = new List<Sheet>();
                 string folder = arguments.InputFolder ?? "Input";
-                FileInfo[] musics = Tools.GetActiveFiles(folder, "*music*.fur");
-                FileInfo[] sfxs = Tools.GetActiveFiles(folder, "*sfx*.fur");
+                FileInfo[] musics = arguments.Vanilla ? Array.Empty<FileInfo>() : Tools.GetActiveFiles(folder, "*music*.fur");
+                FileInfo[] sfxs = arguments.Vanilla ? Array.Empty<FileInfo>() : Tools.GetActiveFiles(folder, "*sfx*.fur");
                 Dictionary<int, Options> overrides = Options.ReadOverrideOptions(folder);
 
                 // Process each supplied file
                 DoMusics(inputs, sheets, musics, output, arguments, overrides);
                 DoSFXs(inputs, sheets, sfxs, output, arguments, overrides);
 
-                // Warning if not input was provided
-                if (inputs.Count == 0) Console.WriteLine("WARNING: No recognized input .fur file found! The tool can still proceed anyway...");
+                // Warning if no input was provided (unless we do vanilla output)
+                if (arguments.Vanilla) Console.WriteLine("Reproducing vanilla music data...");
+                else if (inputs.Count == 0) Console.WriteLine("WARNING: No recognized input .fur file found! The tool can still proceed anyway...");
 
                 // Nuke vanilla
                 output.NukeVanilla(arguments.NukeMusic, arguments.NukeSFX);
