@@ -1,5 +1,34 @@
-﻿Version 1.2:
-- Drop Extended: remove legato on the edited channels
+﻿- Tester ROM avec Test-Ext
+- Régénérer les -standard.bin avec Test-Vanilla
+	=> en fait, ajouter une option --vanilla
+- Repasser sur la branche 'expanded_musics' et réorganiser le ROM layout pour faire tenir yminst.bin de taille doublée (8192)
+	=> puis l'appliquer sur 'music_demo'
+///
+- music_demo => changer title screen pour préciser "MUSIC SHOWCASE DELUXE"
+- music_demo => Tester mes modifs du CUBEWIZ driver (stashed) [titre: Cubewiz small improvements] [description: Force FADE_IN_PARAMS to be 0Fh when starting new music
+Quick hack to avoid playing new samples during fade in period
+Thanks wiz!]
+- music_demo => faire rentrer la SOUNDTRACK DELUXE (gros taf)
+- music_demo => escape du chateau par Slade: jouer son theme au moment où il dit 'wait!'
+- terminer de composer Saturos!! (et sauter des passages pour que ça enchaine + vite)
+	=> scène confrontation finale Ixen/Bowie/final boss => jouer la theme song de IXEN PROMOTED
+- music_demo => SFX customization for Dragon Breath (only)
+- playtest en étant vigilant:
+	=> renommer la branche en "music_showcase_hack"
+	=> aux ennemis avec flamebreath
+	=> à la pertinence du script modifié
+	=> à l'affichage ou non du message de learn spell (surtout avec Ixen: lv 15 25 40)
+///
+- Idée: option pour disable DAC mais aussi remplacer les notes par un instrument FM 'noise'
+- Release version 1.2 => it supports 256 YM instruments now
+- Créer la pull request pour 'expanded_musics'
+///
+- fix/astral_missing => playthrough bloqué au village avant le goliath: débloquer cette map et comprendre pourquoi la battle dans le desert ne trigger pas
+	=> Refaire un playthrough turbo level 40 all allies joined
+
+===================================================
+
+Version 1.3:
 - Option to force sustain on all DAC samples (?)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - [retest 'Test' folder beforehand] Rewriter tests/improvement with dump notes enabled
@@ -7,7 +36,7 @@
 - Generalize 'pairNumber' into array 'aliasNumbers', aliases must reside within the same bank or an error will occur, 'pairNumber' implicitly add an element to 'aliasNumbers'
 - Be extra cautious when a PSG channel uses an instrument that is not a PSG instrument, same remark for FM channels
 
-Version 1.3:
+Version 1.4:
 - Auto-bank assignment feature
 - Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
@@ -20,6 +49,7 @@ Version 1.3:
 	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
 		(?) All of this might be related to required but suboptimal bank switching (hopefully not)
 
-Version 1.4:
+Version 1.5:
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
 - Detection of (partially) reused sheets within the same music bank (don't bother for SFX)
+- I want a megadrive version of main theme of Zai Metajo pleaaaaase send me help (first 3 minutes of https://www.youtube.com/watch?v=VIAMf4I_gdA)

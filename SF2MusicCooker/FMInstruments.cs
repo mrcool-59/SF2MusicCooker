@@ -9,9 +9,9 @@ namespace SF2MusicCooker
 {
     public sealed class FMInstruments
     {
-        public const int LENGTH = 4096;
+        public const int DEFAULT_LENGTH = 4096;
 
-        public const byte MAX_SLOTS = LENGTH / Definition.LENGTH;
+        public const int MAX_LENGTH = 8192;
 
         private const byte UNUSED = 0xFF;
 
@@ -72,7 +72,17 @@ namespace SF2MusicCooker
         private readonly byte[] _buffer;
         private readonly byte[] _used;
 
-        private byte FindSafe(Definition definition)
+        /// <summary>
+        /// Number of FM slots.
+        /// </summary>
+        public int Slots { get { return _used.Length; } }
+
+        /// <summary>
+        /// Number of FM slots in use.
+        /// </summary>
+        public int UsedSlots { get { return _used.Count(u => u != 0); } }
+
+        private int FindSafe(Definition definition)
         {
             for (int i = 0; i < _used.Length; i++)
             {
@@ -81,7 +91,7 @@ namespace SF2MusicCooker
                 byte instrument = (byte)i;
                 if (definition.Equals(Definition.Read(_buffer, instrument))) return instrument;
             }
-            return 0xFF;
+            return -1;
         }
 
         private byte Allocate()
@@ -103,9 +113,9 @@ namespace SF2MusicCooker
                 if (instrument.Type == Instrument.FM)
                 {
                     Definition def = new Definition(FeatureInterpreter.TranslateFurnaceToCubeFMInstrument(instrument.Data));
-                    byte index = FindSafe(def);
+                    int index = FindSafe(def);
 
-                    if (index == 0xFF)
+                    if (index < 0)
                     {
                         index = Add(def);
                         if (print) Console.WriteLine("+ Added FM instrument '{0}' to instrument list! [{1}]", instrument.Name, index);
@@ -134,9 +144,9 @@ namespace SF2MusicCooker
         /// </summary>
         public byte Find(Definition definition)
         {
-            byte index = FindSafe(definition);
-            if (index == 0xFF) throw new KeyNotFoundException("Instrument couldn't be found in the instrument list, maybe it wasn't added...");
-            return index;
+            int index = FindSafe(definition);
+            if (index < 0) throw new KeyNotFoundException("Instrument couldn't be found in the instrument list, maybe it wasn't added...");
+            return (byte)index;
         }
 
         /// <summary>
@@ -166,7 +176,7 @@ namespace SF2MusicCooker
             int removed = 0;
             for (int i = 0; i < _used.Length; i++)
             {
-                if (_used[i] == 1 && !set.Contains(i))
+                if (_used[i] != 0 && !set.Contains(i))
                 {
                     Remove((byte)i);
                     removed++;
@@ -208,7 +218,7 @@ namespace SF2MusicCooker
             sb.Append("Used: ");
             for (int i = 0; i < _used.Length; i++)
             {
-                if (_used[i] == 1) { sb.Append(i); sb.Append(' '); }
+                if (_used[i] != 0) { sb.Append(i); sb.Append(' '); }
             }
             sb.AppendLine();
             sb.Append("Free: ");
@@ -235,21 +245,27 @@ namespace SF2MusicCooker
         /// </summary>
         public void Load(byte[] yminst)
         {
-            if (yminst == null || yminst.Length != LENGTH) throw new FormatException("Bad 'yminst' data: " + LENGTH + " bytes expected");
+            if (yminst == null)
+                throw new ArgumentNullException(nameof(yminst));
 
-            Buffer.BlockCopy(yminst, 0, _buffer, 0, _buffer.Length);
+            if (yminst.Length > _buffer.Length)
+                throw new FormatException("'yminst' data is too big: it has " + yminst.Length + " bytes but we can only store " + _buffer.Length + " bytes");
+
+            Buffer.BlockCopy(yminst, 0, _buffer, 0, yminst.Length);
             for (int i = 0; i < _used.Length; i++) _used[i] = (byte)(Definition.Read(_buffer, (byte)i).Equals(Definition.Unused) ? 0 : 1);
         }
 
-        public FMInstruments(int slots)
+        public FMInstruments(int length = DEFAULT_LENGTH)
         {
-            if (slots < 0)
-                throw new ArgumentOutOfRangeException(nameof(slots), "cannot be negative");
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), "cannot be negative");
 
-            if (slots > MAX_SLOTS)
-                throw new NotSupportedException(MAX_SLOTS + " instruments is the absolute maximum limit that can fit in " + LENGTH + " bytes");
+            if (length > MAX_LENGTH)
+                throw new NotSupportedException(MAX_LENGTH + " bytes is the maximum length allowed for 'yminst' data");
 
-            _buffer = new byte[LENGTH];
+            int slots = Math.Min(0x100, length / Definition.LENGTH);
+
+            _buffer = new byte[length];
             _used = new byte[slots];
 
             Tools.Fill(_buffer, UNUSED);

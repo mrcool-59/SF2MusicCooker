@@ -4,6 +4,6 @@
    phase    0
    include "..\macros.asm"
    include "..\enums.asm"
-   org 08000h+6000h
+   org 08000h+{{OFFSET}}
     
 pt_SFX:         

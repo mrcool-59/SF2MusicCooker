@@ -68,7 +68,9 @@
     "sfxBanks": [ // Vanilla SFX bank (only 1)
       {
         "name": "sfxbank",
-        "maxSize": 4096 // 0x1000
+        "maxSize": 4096, // 0x1000
+        "offset": 24576, // 0x6000
+        "extraOffsetWithMaxInstruments": 4096 // Extra offset if double-size 'yminst.bin' patch is enabled (see below)
       }
     ],
 
@@ -114,7 +116,7 @@
     "ymFrequenciesSlotsPatch": "EXPANDED_YM_FREQUENCIES", // (Optional) Name of the patch that, if present, will override the number of YM frequencies slots
     "ymFrequenciesSlots": 84, // (Optional) Number of vanilla YM frequencies slots, if omitted it will be deduced from ym_frequencies.asm file
 
-    "ymInstrumentSlots": 141, // (Optional) Number of YM instruments that can fit into yminst.bin, if omitted the maximum supported value is assumed (141)
+    "ymMaxInstrumentsPatch": "EXPANDED_YM_INSTRUMENTS", // (Optional) If this patch is enabled, then we will build a double-size 'yminst.bin' that can hold 256 YM instruments
 
     "musicPairs": [ 3, 4, 13, 14 ], // (Optional) Pairs of vanilla musics that depend on each other and cannot be replaced individually without affecting the other
 

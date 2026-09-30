@@ -49,8 +49,8 @@ namespace SF2MusicCooker
         [JsonProperty("ymFrequenciesSlots", Required = Required.Default)]
         private readonly int _ymFrequenciesSlots;
 
-        [JsonProperty("ymInstrumentSlots", Required = Required.Default)]
-        private readonly int? _ymInstrumentSlots;
+        [JsonProperty("ymMaxInstrumentsPatch", Required = Required.Default)]
+        private readonly string _ymMaxInstrumentsPatch;
 
         [JsonProperty("musicPairs", Required = Required.Default)]
         private readonly int[] _musicPairs;
@@ -62,7 +62,7 @@ namespace SF2MusicCooker
         public Layout(string name, string featureBranch, FilePaths paths,
             string musicBanksExtPatch, Bank[] musicBanksExt, Bank[] musicBanks, BankSFX[] sfxBanks,
             string pcmBanksExtPatch, PCMInstruments.BankDefinition[] pcmBanksExt, PCMInstruments.BankDefinition[] pcmBanks, string pcmSlotsPatch, int pcmSlots,
-            string ymFrequenciesSlotsPatch = null, int ymFrequenciesSlots = 0, int? ymInstrumentSlots = null, int[] musicPairs = null, string soundTestTemplate = null)
+            string ymFrequenciesSlotsPatch = null, int ymFrequenciesSlots = 0, string ymMaxInstrumentsPatch = null, int[] musicPairs = null, string soundTestTemplate = null)
         {
             _name = name ?? throw new ArgumentNullException(nameof(name));
             _featureBranch = featureBranch ?? throw new ArgumentNullException(nameof(featureBranch));
@@ -85,7 +85,7 @@ namespace SF2MusicCooker
             _ymFrequenciesSlotsPatch = ymFrequenciesSlotsPatch;
             _ymFrequenciesSlots = ymFrequenciesSlots;
 
-            _ymInstrumentSlots = ymInstrumentSlots;
+            _ymMaxInstrumentsPatch = ymMaxInstrumentsPatch;
 
             _musicPairs = musicPairs;
 
@@ -139,13 +139,18 @@ namespace SF2MusicCooker
             bool hasExtYmFrequencies = VerifyOptionalPatch(_ymFrequenciesSlotsPatch, out int extYmFrequencies);
             Console.WriteLine("> Expanded YM frequencies are {0} (value: {1})", hasExtYmFrequencies ? "ENABLED" : "DISABLED", extYmFrequencies);
 
+            bool hasMaxYmInstruments = VerifyOptionalPatch(_ymMaxInstrumentsPatch, out _);
+            Console.WriteLine("> Expanded YM instruments are {0}", hasMaxYmInstruments ? "ENABLED" : "DISABLED");
+
             Bank[] musicBanks = hasExtMusicBanks ? Tools.Combine(_musicBanks, _musicBanksExt) : _musicBanks;
             PCMInstruments.BankDefinition[] pcmBanks = hasExtPcmBanks ? Tools.Combine(_pcmBanksExt, _pcmBanks) : _pcmBanks;
             int pcmSlots = hasExtPcmBanks ? extPcmEntries : _pcmSlots;
             int ymFrequenciesSlots = hasExtYmFrequencies ? extYmFrequencies : _ymFrequenciesSlots;
-            int ymInstrumentSlots = _ymInstrumentSlots ?? FMInstruments.MAX_SLOTS;
+            int ymInstrumentsLength = hasMaxYmInstruments ? FMInstruments.MAX_LENGTH : FMInstruments.DEFAULT_LENGTH;
 
-            return new Output(_name, _paths, musicBanks, _sfxBanks, pcmBanks, pcmSlots, ymInstrumentSlots, ymFrequenciesSlots, _musicPairs, _soundTestTemplate);
+            foreach (BankSFX sfxBank in _sfxBanks) sfxBank.EnableExtraOffset = hasMaxYmInstruments;
+
+            return new Output(_name, _paths, musicBanks, _sfxBanks, pcmBanks, pcmSlots, ymInstrumentsLength, ymFrequenciesSlots, _musicPairs, _soundTestTemplate);
         }
 
         /// <summary>

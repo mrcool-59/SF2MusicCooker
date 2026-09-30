@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -210,6 +211,16 @@ namespace SF2MusicCooker
         /// Number of banks to store PCM samples.
         /// </summary>
         public int NumBanks { get { return _banks.Length; } }
+
+        /// <summary>
+        /// Number of PCM slots.
+        /// </summary>
+        public int Slots { get { return _slots.Length; } }
+
+        /// <summary>
+        /// Number of PCM slots in use.
+        /// </summary>
+        public int UsedSlots { get { return _slots.Count(slot => slot.Length != 0); } }
 
         /// <summary>
         /// Get remaining bytes available to store PCM samples in the specified bank.

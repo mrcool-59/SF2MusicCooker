@@ -57,7 +57,7 @@ namespace SF2MusicCooker
         /// </summary>
         public bool SupportCustomFrequencies { get; }
 
-        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots, int instrumentSlots = FMInstruments.MAX_SLOTS, int ymFrequenciesSlots = 0, int[] musicPairs = null, string soundTestTemplate = null)
+        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots, int ymInstrumentsLength, int ymFrequenciesSlots = 0, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
@@ -75,7 +75,7 @@ namespace SF2MusicCooker
 
             Name = name ?? throw new ArgumentNullException(nameof(name));
 
-            Instruments = new FMInstruments(instrumentSlots);
+            Instruments = new FMInstruments(ymInstrumentsLength);
 
             Samples = new PCMInstruments(pcmSlots, pcmBanks);
 

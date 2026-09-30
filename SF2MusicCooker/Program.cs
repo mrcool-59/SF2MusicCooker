@@ -64,6 +64,12 @@ namespace SF2MusicCooker
                 // Show time amount used to build musics
                 Console.WriteLine("-- TOTAL BUILD TIME: {0} sec --", stopwatch.Elapsed.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture));
 
+                // Show number of FM instruments in use
+                Console.WriteLine("> FM instruments used: {0}/{1}", output.Instruments.UsedSlots, output.Instruments.Slots);
+
+                // Show number of PCM slots in use
+                Console.WriteLine("> Sample slots used: {0}/{1}", output.Samples.UsedSlots, output.Samples.Slots);
+
                 // Show bank summary and ask if we should write to DISASM folder
                 bool writeToDISASM = VerifyBanksAndPrompt(arguments, output);
                 if (writeToDISASM)

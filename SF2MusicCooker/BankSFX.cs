@@ -29,6 +29,26 @@ namespace SF2MusicCooker
         public readonly int MaxSize;
 
         /// <summary>
+        /// Offset to reach the bank, from the start of the ROM bank.
+        /// </summary>
+        public readonly int Offset;
+
+        /// <summary>
+        /// Extra offset to apply, only if 'EnableExtraOffset' is true.
+        /// </summary>
+        public readonly int ExtraOffset;
+
+        /// <summary>
+        /// Set to true if the extra offset should be applied.
+        /// </summary>
+        public bool EnableExtraOffset { get; set; }
+
+        /// <summary>
+        /// The effective value for offset.
+        /// </summary>
+        public int EffectiveOffset { get { return Offset + (EnableExtraOffset ? ExtraOffset : 0); } }
+
+        /// <summary>
         /// List of custom SFXs in the bank.
         /// </summary>
         public IReadOnlyList<SFX> Custom { get { return _custom; } }
@@ -114,6 +134,7 @@ namespace SF2MusicCooker
         public void Write(string path)
         {
             StringBuilder output = new StringBuilder(File.ReadAllText("sfxbank.asm.tpl"));
+            output.Replace("{{OFFSET}}", Tools.Hex2ASM((ushort)EffectiveOffset));
 
             SFX[] allSFXs = _custom.Concat(_vanilla).ToArray();
             if (allSFXs.Length == 0) throw new InvalidOperationException(Name + " must contain at least 1 SFX.");
@@ -172,13 +193,15 @@ namespace SF2MusicCooker
         }
 
         [JsonConstructor]
-        public BankSFX(string name, int maxSize)
+        public BankSFX(string name, int maxSize, int offset, int extraOffsetWithMaxInstruments)
         {
             if (maxSize <= 0) throw new ArgumentOutOfRangeException(nameof(maxSize), "cannot be zero or negative");
 
             Name = name ?? throw new ArgumentNullException(nameof(name));
             FolderName = name + "-standard";
             MaxSize = maxSize;
+            Offset = offset;
+            ExtraOffset = extraOffsetWithMaxInstruments;
         }
     }
 }
