@@ -338,10 +338,10 @@
     <None Include="Test-Ext-Deluxe\+music44-New Continent To Discover.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music45-Ixen-Unpromoted.fur">
+    <None Include="Test-Ext-Deluxe\+music45-Ixen Unpromoted.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music46-Ixen-Promoted.fur">
+    <None Include="Test-Ext-Deluxe\+music46-Ixen Promoted.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music47-Boss Battle.fur">
