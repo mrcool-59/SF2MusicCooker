@@ -308,7 +308,7 @@
     <None Include="Test-Ext-Deluxe\%40music27-Jingle Item.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\%40music36-Final Battle %28todo uninterruptable, require slight tuning%29.fur">
+    <None Include="Test-Ext-Deluxe\%40music36-Final Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\%40music37-Funny Dwarfs.fur">
@@ -344,7 +344,7 @@
     <None Include="Test-Ext-Deluxe\+music46-Ixen-Promoted.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music47-Boss Battle %28todo uninterruptable%29.fur">
+    <None Include="Test-Ext-Deluxe\+music47-Boss Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music48%4038-Military.fur">
