@@ -389,6 +389,9 @@
     <None Include="Test-Ext-Deluxe\+music64-Choose a Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test-Ext-Deluxe\+sfx121-Fire.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test-Ext\%40music19-%28Dial Q o Mawase!%29 Jingle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
