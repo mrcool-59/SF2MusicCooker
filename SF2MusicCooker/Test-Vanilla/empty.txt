@@ -1,1 +1,0 @@
-﻿This input folder can be used to test the tool outputs correct results with 0 custom music
