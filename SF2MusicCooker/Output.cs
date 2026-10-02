@@ -354,17 +354,28 @@ namespace SF2MusicCooker
         }
 
         /// <summary>
-        /// Move-replace a song.
+        /// Move-replace or move-swap a song.
         /// </summary>
-        public void MoveReplace(Song song, int moveFromNumber, bool includeOriginalName = false)
+        public void MoveReplace(Song song, int moveFromNumber, bool isSwap, bool includeOriginalName = false)
         {
             Bank originalBank = SelectMusicBank(moveFromNumber);
             Song originalSong = originalBank.Remove(moveFromNumber, out _);
-
             Bank bank = SelectMusicBank(song.Number);
-            song = song.UpdateASMName(originalSong.ASMName);
-            if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name ?? originalSong.ASMName));
-            bank.Add(song);
+
+            if (isSwap)
+            {
+                Song movedOriginalSong = new Song(song.Number, originalSong.Name, originalSong.ASMName, originalSong.Sheet);
+                Song swappedCustomSong = new Song(originalSong.Number, song.Name, song.ASMName, song.Sheet);
+
+                bank.Add(movedOriginalSong);
+                originalBank.Add(swappedCustomSong);
+            }
+            else
+            {
+                song = song.UpdateASMName(originalSong.ASMName);
+                if (includeOriginalName) song = song.UpdateName(GetCombinedName(song.Name, originalSong.Name ?? originalSong.ASMName));
+                bank.Add(song);
+            }
         }
 
         /// <summary>

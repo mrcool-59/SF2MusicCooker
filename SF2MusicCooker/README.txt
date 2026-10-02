@@ -17,8 +17,9 @@ HOW TO USE
 	+musicXX-My new song title.fur		[ADD = XX is a music number NOT USED by vanilla SF2 songs, between 49-64 when using extra music banks]
 	@musicYY-My replacement song.fur	[REPLACE = YY is a music number USED by a vanilla SF2 song, please refer to "disasm/enum/musics.asm" for the available list]
 	+musicXX@YY-My moved song.fur		[MOVE-REPLACE = XX is a music number NOT USED by vanilla SF2 songs and YY is a music number USED by a vanilla SF2 song]
-- As shown above, you can ADD NEW MUSICS or REPLACE EXISTING MUSICS or MOVE-REPLACE EXISTING MUSICS depending on how you name your .fur file.
-- You can combine adding new musics, replacing existing musics and move-replacing existing musics together.
+	+musicXX%YY-My swapped song.fur		[MOVE-SWAP = XX is a music number NOT USED by vanilla SF2 songs and YY is a music number USED by a vanilla SF2 song]
+- As shown above, you can ADD NEW MUSICS or REPLACE EXISTING MUSICS or MOVE-REPLACE EXISTING MUSICS or MOVE-SWAP EXISTING MUSICS depending on how you name your .fur file.
+- You can combine adding new musics, replacing existing musics, move-replacing existing musics and move-swapping existing musics together.
 - To test quickly in emulator if a song sounds good in the game, you can replace music 9 (played during the game intro) or 33 (played in test menu).
 	@music9-Quick test.fur		or		@music33-Quick test.fur
 - Adding new musics is only useful if you modify map data or game code to use them (i.e: this use case is for the more ambitious projects).
@@ -39,7 +40,7 @@ HOW TO USE (SFX)
 - You can also replace SFXs (sound effects) by naming slightly differently your .fur files in the "Input" folder:
 	+sfxZZ-My new sound effect.fur			[ADD = ZZ is a SFX number NOT USED by vanilla SF2 SFXs, between 121-126] (yes it's quite tight)
 	@sfxWW-My replacement sound effect.fur	[REPLACE = WW is a SFX number USED by a vanilla SF2 SFXs, please refer to "disasm/enum/sfxs.asm" for the available list]
-- For SFXs, you cannot MOVE-REPLACE EXISTING SFXS. You can only ADD NEW SFXS or REPLACE EXISTING SFXS.
+- For SFXs, you cannot MOVE-REPLACE EXISTING SFXS or MOVE-SWAP EXISTING SFXS. You can only ADD NEW SFXS or REPLACE EXISTING SFXS.
 - SFXs can only use some of the sound channels. They can be one of these 2 types:
 	- Type 1: can use PSG tone 3 and Noise channels
 	- Type 2: can use FM 4, FM 5 and the 6th channel in DAC mode (samples)
@@ -77,6 +78,7 @@ Under this new Music Banks layout, you should especially put your largest musics
 Ultimately it is up to you how you want to distribute your musics across music banks, the only condition is that it fits!
 
 The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0, 1 or 2.
+The MOVE-SWAP EXISTING MUSIC feature allows you to add a custom music at the music number of a vanilla music, and move the vanilla music to the specified custom music number.
 
 For SFXs, it appears the SFX Bank from the vanilla game still has some space available, so space should (hopefully) not be a concern here.
 There is no Extra Bank feature for SFX Bank, you have to fit everything into a single bank.
@@ -98,7 +100,7 @@ To do that, you need to extend the 'layouts.json' file and make sure the target 
 To be considered mature, the DISASM should have:
 - A custom CUBE sound driver (such as 'Cubewiz' sound driver used in SF2DISASM) where YM/PSG note frequencies and PCM sample entries are defined in nice, separate .asm files
 - Music number/SFX number enums in their own .asm file
-- Code/data disassembly should be complete enough to reference music/SFX numbers through their respective enum instead of hardcoded values (otherwise MOVE-REPLACE won't work)
+- Code/data disassembly should be complete enough to reference music/SFX numbers through their respective enum instead of hardcoded values (otherwise MOVE-REPLACE/SWAP won't work)
 When in doubt, take a look at how SF2DISASM does it and update your DISASM to be closer to it.
 
 The layouts.json file must also be modified if you make critical changes to your local SF2DISASM folder, such as changing the sound driver or ROM layout.
@@ -204,4 +206,4 @@ Special caveat for replacing music pairs (3, 4) and (13, 14):
 - The same applies for "Promoted Attack" and "Promoted Attack Loop" (3, 4)
 - This makes it very inconvenient to replace each music separately without affecting the other
 - You CAN replace these musics, but if you don't provide a replacement for the other music in the pair, the music you provided will also replace the other music in the pair
-- You CANNOT move-replace paired musics
+- You CANNOT move-replace or move-swap paired musics

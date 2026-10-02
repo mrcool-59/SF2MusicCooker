@@ -12,42 +12,58 @@ namespace SF2MusicCooker
     {
         private static readonly Regex regex = new Regex("^([+@])music([0-9]+)(.+)");
         private static readonly Regex regexSfx = new Regex("^([+@])sfx([0-9]+)(.+)");
-        private static readonly Regex regexMove = new Regex("^\\+music([0-9]+)@([0-9]+)(.+)");
+        private static readonly Regex regexMoveReplace = new Regex("^\\+music([0-9]+)@([0-9]+)(.+)");
+        private static readonly Regex regexMoveSwap = new Regex("^\\+music([0-9]+)%([0-9]+)(.+)");
+
+        private static readonly char[] trimChars = new char[] { ' ', '-', '_', '.' };
 
         /// <summary>
         /// Parse 'filename' according to one of the valid patterns explained in the README file and return music/sfx number, move from number (0 for add) and music/sfx name.
         /// Throws an exception otherwise.
         /// </summary>
-        public static void ExtractNumberAndName(string filename, bool isMusic, out int number, out int moveFrom, out string name)
+        public static void ExtractNumberAndName(string filename, bool isMusic, out int number, out int moveFrom, out bool isSwap, out string name)
         {
-            Match matchMove = isMusic ? regexMove.Match(filename) : null;
-            if (matchMove != null && matchMove.Success)
+            isSwap = false;
+
+            Match matchMoveSwap = isMusic ? regexMoveSwap.Match(filename) : null;
+            if (matchMoveSwap != null)
             {
-                number = int.Parse(matchMove.Groups[1].Value);
-                moveFrom = int.Parse(matchMove.Groups[2].Value);
-                name = Path.GetFileNameWithoutExtension(matchMove.Groups[3].Value).Trim(' ', '-', '_', '.');
+                number = int.Parse(matchMoveSwap.Groups[1].Value);
+                moveFrom = int.Parse(matchMoveSwap.Groups[2].Value);
+                name = Path.GetFileNameWithoutExtension(matchMoveSwap.Groups[3].Value).Trim(trimChars);
+                isSwap = true;
+                return;
+            }
+
+            Match matchMoveReplace = isMusic ? regexMoveReplace.Match(filename) : null;
+            if (matchMoveReplace != null && matchMoveReplace.Success)
+            {
+                number = int.Parse(matchMoveReplace.Groups[1].Value);
+                moveFrom = int.Parse(matchMoveReplace.Groups[2].Value);
+                name = Path.GetFileNameWithoutExtension(matchMoveReplace.Groups[3].Value).Trim(trimChars);
+                return;
+            }
+
+            Match match = (isMusic ? regex : regexSfx).Match(filename);
+            if (match.Success)
+            {
+                number = int.Parse(match.Groups[2].Value);
+                moveFrom = match.Groups[1].Value == "@" ? number : 0;
+                name = Path.GetFileNameWithoutExtension(match.Groups[3].Value).Trim(trimChars);
+                return;
+            }
+
+            if (isMusic)
+            {
+                throw new FormatException("Furnace filename '" + filename + "' is incorrect" + Environment.NewLine
+                    + "The name should start with '+musicXX' (add) or '@musicYY' (replace) or '+musicXX@YY' (move-replace) or '+musicXX%YY' (move-swap)" + Environment.NewLine
+                    + "Please refer to README file for details");
             }
             else
             {
-                Match match = (isMusic ? regex : regexSfx).Match(filename);
-                if (!match.Success)
-                {
-                    if (isMusic)
-                    {
-                        throw new FormatException("Furnace filename '" + filename + "' is incorrect" + Environment.NewLine
-                            + "The name should start with '+musicXX' (add) or '@musicYY' (replace) or '+musicXX@YY' (move and replace)" + Environment.NewLine
-                            + "Please refer to README file for details");
-                    }
-                    else
-                    {
-                        throw new FormatException("Furnace filename '" + filename + "' is incorrect" + Environment.NewLine
-                            + "The name should start with '+sfxZZ' (add) or '@sfxWW' (replace)" + Environment.NewLine
-                            + "Please refer to README file for details");
-                    }
-                }
-                number = int.Parse(match.Groups[2].Value);
-                moveFrom = match.Groups[1].Value == "@" ? number : 0;
-                name = Path.GetFileNameWithoutExtension(match.Groups[3].Value).Trim(' ', '-', '_', '.');
+                throw new FormatException("Furnace filename '" + filename + "' is incorrect" + Environment.NewLine
+                    + "The name should start with '+sfxZZ' (add) or '@sfxWW' (replace)" + Environment.NewLine
+                    + "Please refer to README file for details");
             }
         }
 

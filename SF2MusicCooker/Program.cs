@@ -195,14 +195,14 @@ namespace SF2MusicCooker
 
             foreach (FileInfo fur in furs)
             {
-                Tools.ExtractNumberAndName(fur.Name, true, out int number, out _, out _);
+                Tools.ExtractNumberAndName(fur.Name, true, out int number, out _, out _, out _);
 
                 if (!provided.Add(number)) throw new InvalidOperationException("Cannot provide multiple .fur files for music " + number);
             }
 
             foreach (FileInfo fur in furs)
             {
-                Tools.ExtractNumberAndName(fur.Name, true, out int number, out int moveFrom, out string name);
+                Tools.ExtractNumberAndName(fur.Name, true, out int number, out int moveFrom, out bool isSwap, out string name);
 
                 if (arguments.Only >= 0 && number != arguments.Only) continue;
 
@@ -246,15 +246,15 @@ namespace SF2MusicCooker
                     }
                     else
                     {
-                        // Move-replace
+                        // Move-replace or move-swap
                         if (pairNumber > 0)
                         {
-                            throw new NotSupportedException("Sorry, MOVE-REPLACE cannot be used on music " + number + " because it is paired with music " + pairNumber + Environment.NewLine
-                                + "Please use REPLACE instead for these musics (keep in mind you can MOVE-REPLACE other musics to make room in Music Bank 0 if needed)");
+                            throw new NotSupportedException("Sorry, MOVE-REPLACE and MOVE-SWAP cannot be used on music " + number + " because it is paired with music " + pairNumber + Environment.NewLine
+                                + "Please use REPLACE instead for these musics (keep in mind you can MOVE-REPLACE or MOVE-SWAP other musics to make room in a specific overloaded Music Bank)");
                         }
                         else
                         {
-                            output.MoveReplace(song, moveFrom, arguments.IncludeOriginalNames);
+                            output.MoveReplace(song, moveFrom, isSwap, arguments.IncludeOriginalNames);
                         }
                     }
                 }
@@ -274,7 +274,7 @@ namespace SF2MusicCooker
 
             foreach (FileInfo fur in furs)
             {
-                Tools.ExtractNumberAndName(fur.Name, false, out int number, out int moveFrom, out string name);
+                Tools.ExtractNumberAndName(fur.Name, false, out int number, out int moveFrom, out _, out string name);
 
                 if (arguments.Only >= 0 && number != arguments.Only) continue;
 
