@@ -78,6 +78,11 @@
     "pcmBanksExt": [ // Expanded PCM banks
       {
         "length": 32768,
+        "name": "pcmbankext4",
+        "number": 7
+      },
+      {
+        "length": 32768,
         "name": "pcmbankext3",
         "number": 6
       },

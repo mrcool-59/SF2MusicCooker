@@ -82,8 +82,8 @@ For SFXs, it appears the SFX Bank from the vanilla game still has some space ava
 There is no Extra Bank feature for SFX Bank, you have to fit everything into a single bank.
 
 For musics and SFXs that use samples, the vanilla game comes with 2 PCM banks (PCM Bank 0 and PCM Bank 1) that are pretty much full.
-Four Extra PCM banks (PCM Bank Ext 0, 1, 2, 3) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
-Additionally, the sound driver has been modified to support 60 different samples, up from original 17.
+Five Extra PCM banks (PCM Bank Ext 0, 1, 2, 3, 4) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
+Additionally, the sound driver has been modified to support 72 different samples, up from original 17.
 
 
 
