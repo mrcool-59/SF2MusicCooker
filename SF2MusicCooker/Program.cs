@@ -57,7 +57,26 @@ namespace SF2MusicCooker
                 output.PlanExtendedNotes(inputs.ToArray(), !arguments.DisableExtendedNotes, true);
 
                 // Build sheets that have been deferred
-                foreach (Sheet sheet in sheets) sheet.Build();
+                int done = 0;
+                try
+                {
+                    foreach (Sheet sheet in sheets)
+                    {
+                        sheet.Build();
+                        done++;
+                    }
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("/!\\ A serious error occured while building a sheet that prevents the tool from proceeding further.");
+                    if (done < inputs.Count - 1)
+                    {
+                        Console.WriteLine("/!\\ The following inputs would have followed if no occur had occured:");
+                        for (int i = done + 1; i < inputs.Count; i++) Console.WriteLine("    {0}", inputs[i].Fur.Name);
+                    }
+                    PrintSlots(output);
+                    throw;
+                }
 
                 // Verify SFXs are in a valid state (should always be successful)
                 output.VerifyAndUpdateSFXDependencies();
@@ -65,11 +84,8 @@ namespace SF2MusicCooker
                 // Show time amount used to build musics
                 Console.WriteLine("-- TOTAL BUILD TIME: {0} sec --", stopwatch.Elapsed.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture));
 
-                // Show number of FM instruments in use
-                Console.WriteLine("> FM instruments used: {0}/{1}", output.Instruments.UsedSlots, output.Instruments.Slots);
-
-                // Show number of PCM slots in use
-                Console.WriteLine("> Sample slots used: {0}/{1}", output.Samples.UsedSlots, output.Samples.Slots);
+                // Show important info
+                PrintSlots(output);
 
                 // Show bank summary and ask if we should write to DISASM folder
                 bool writeToDISASM = VerifyBanksAndPrompt(arguments, output);
@@ -110,6 +126,15 @@ namespace SF2MusicCooker
                     Arguments = postBuild
                 });
             }
+        }
+
+        static void PrintSlots(Output output)
+        {
+            // Show number of FM instruments in use
+            Console.WriteLine("> FM instruments used: {0}/{1}", output.Instruments.UsedSlots, output.Instruments.Slots);
+
+            // Show number of PCM slots in use
+            Console.WriteLine("> Sample slots used: {0}/{1}", output.Samples.UsedSlots, output.Samples.Slots);
         }
 
         static bool VerifyBanksAndPrompt(Arguments arguments, Output output)
