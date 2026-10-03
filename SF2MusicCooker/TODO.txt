@@ -1,32 +1,17 @@
-﻿- Maintenant que ça PASSE, refaire mon dossier Test-Ext-Deluxe à partir de ce qu'il y a dans C:\Temp\Release_MusicHackShowcase\Issue Fitting Musics
-///
-- Il y a clairement un bug avec les PCM banks!!! Des musiques qui marchaient nickel ne marchent plus avec ce nouveau set de musiques => bug sneaky
-- Funny Dwarfs: envisager de disable le DAC (si jamais mon bug fix sample ne corrige en rien les samples baveux que ça crache)
-- Intro: broken PSG envelopes, l'aider un peu je pense! Et d'autres glitch aussi à corriger. L'alternative c'est de garder l'intro du jeu original
-- Ixen Promoted: peut être du volume rebalancing à faire, il y a une note de guitar suspecte aussi juste avant la 2ème moitié de la 1ère partie
-- New Continent To Discover: pas mal mais il y a quelques trucs suspects à check (surtout les clicks au début)
-- BIG TROUBLE: léger défaut à cut off
-- Final Battle: je crois que le noise channel est actif ? Et d'autres problèmes significatifs à fix (les notes de synth ne jouent pas)
-- Town Deluxe Theme: il se peut qu'au moment de franchir la main loop, une des canaux est à zéro de volume (le piano je crois)
-	+ des clicks audibles à un moment
-- Sadly Joined the Party: tempo suspect
+﻿- [retester] Intro: broken PSG envelopes, l'aider un peu je pense! Et d'autres glitch aussi à corriger. L'alternative c'est de garder l'intro du jeu original
+	-> [retester again] une note qui hold un peu trop longtemps à mon goût mais sinon ça va!
+- [retester] New Continent To Discover: pas mal mais il y a quelques trucs suspects à check (surtout les clicks au début)
+	-> toujours les clicks du début!
+- [retester] Final Battle: je crois que le noise channel est actif ? Et d'autres problèmes significatifs à fix (les notes de synth ne jouent pas)
+	-> du noise à virer
+	-> les notes aigues font un instru complétement incorrect
+- HQ: moment suspect juste la main loop
+	-> Portamento!
 - SFX "Fire" met en PLS le jeu avec le sound driver qui est fucked sur plusieurs canaux
-- Volume rebalancing: intro Important Battle à baisser un peu je pense, peut être légèrement baisser le volume PSG aussi
-	- Ixen Promoted trop fort probablement
-	- ...
-///
-- music_demo => faire rentrer la SOUNDTRACK DELUXE (gros taf) et ses divers cas particuliers
-	=> vérifier que final battle sounds good dans le sound test, sinon faire des fix manuels
-	=> tester le rendu du SFX "fire" et l'utiliser dans 'flamebreath' pour voir le résultat (d'abord solo puis combiné avec le SFX vanilla)
-		=> si ça pue on peut aussi faire un SFX avec 2 canaux FM
-	----
-- [OK] music_demo => escape du chateau par Slade: jouer son theme au moment où il dit 'wait!'
-- [OK] music_demo => scène d'intro d'Ixen: jouer son unpromoted theme pendant la scène des enfants relous
-- [OK] music_demo => scène confrontation finale Ixen/Bowie/final boss => jouer la theme song de IXEN PROMOTED
-- [OK] music_demo => ascention de la tour => message + jouer la theme song de IXEN PROMOTED
-- [OK] music_demo => line ajoutée dans sa scène d'introduction sur son fire breathing
 ///
 - Playtest music_demo en étant vigilant:
+	=> tester 'flamebreath' pour voir le résultat (d'abord solo puis combiné avec le SFX vanilla)
+		=> si ça pue on peut aussi faire un SFX avec 2 canaux FM
 	=> renommer la branche en "music_showcase_deluxe"
 	=> aux ennemis avec flamebreath
 	=> à la pertinence du script modifié
@@ -37,6 +22,9 @@
 - (low priority) à priori les tiles de la window en combat sont avec PRIORITY, mais vérifier dans un émulateur qui sait afficher ça... [mais pourquoi flamebreath est devant la window du coup?]
 	=> attention certains spell effects comptent sur la top window qui ne masque pas les graphismes (comme la fée de soin...)
 - (low priority) utiliser le canal FM 6 sur Final Battle
+///
+- Le bug de l'effet ..0E avec Ixen Promoted me fait penser qu'il faudrait agressivement supprimer les effets unsupported (ou en tout cas le corriger vraiment!!)
+	- Voir les impacts avec un diff git
 ///
 - Release version 1.2 => it supports 256 YM instruments now
 - Créer la pull request pour 'expanded_musics'
