@@ -115,6 +115,7 @@ SF2 Music Cooker can be run with the following option switches to alter its beha
 
 --includeoriginalnames		or		-ion	Include original names of replaced musics (in the sound test)
 --disableextendednotes		or		-det	Prevents the tool from recycling unused SF2 sound driver notes (unsupported notes will use the closest vanilla SF2 note instead)
+--bettercompression			or		-bt		Improve slightly compression at the cost of increased generation time
 --vanilla					or		-v		Do not read input files and generate an output that should perfectly replicate vanilla musics/SFXs
 --nukemusic					or		-nm		Replace musics from vanilla game by empty musics (can be useful as a temporary bank size issue workaround)
 --nukesfx					or		-ns		Replace SFXs from vanilla game by empty SFXs (can be useful as a temporary bank size issue workaround)

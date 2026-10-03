@@ -36,6 +36,7 @@ namespace SF2MusicCooker
         public readonly int[] MuteInstruments;
         public readonly bool MuteSamples;
         public readonly bool EnableRewrite;
+        public readonly bool BetterCompression;
         public readonly bool PreserveRate;
         public readonly bool RemoveRelease;
         public readonly bool RemoveOff;
@@ -96,6 +97,7 @@ namespace SF2MusicCooker
                                Tools.Combine(other.MuteInstruments, MuteInstruments),
                                other.MuteSamples || MuteSamples,
                                other.EnableRewrite || EnableRewrite,
+                               other.BetterCompression || BetterCompression,
                                other.PreserveRate || PreserveRate,
                                other.RemoveRelease || RemoveRelease,
                                other.RemoveOff || RemoveOff,
@@ -126,7 +128,7 @@ namespace SF2MusicCooker
             string path = Path.Combine(folder, filename);
             if (File.Exists(path))
             {
-                foreach (var pair in Tools.ReadNumberStringMap(path))
+                foreach (var pair in Tools.ReadNumberStringMap(path, jokerValue: short.MinValue))
                 {
                     string[] args = pair.Value.Split(' ');
                     map.Add(pair.Key, new Options(args));
@@ -140,6 +142,7 @@ namespace SF2MusicCooker
         /// </summary>
         public static Options GetFinalOptions(int number, Options options, Dictionary<int, Options> overrides)
         {
+            if (overrides.TryGetValue(short.MinValue, out Options globalOverride)) options = options.Override(globalOverride);
             if (overrides.TryGetValue(number, out Options @override)) options = options.Override(@override);
             return options;
         }
@@ -152,6 +155,7 @@ namespace SF2MusicCooker
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
             MuteInstruments = Tools.ParseMultiArg(args, muteInstrumentLongRegex, muteInstrumentShortRegex, Tools.ConvertASMValue);
             EnableRewrite = Exists("--enablerewrite") || Exists("-er");
+            BetterCompression = Exists("--bettercompression") || Exists("-bc");
             PreserveRate = Exists("--preserverate") || Exists("-pr");
             RemoveRelease = Exists("--removerelease") || Exists("-rr");
             RemoveOff = Exists("--removeoff") || Exists("-ro");
@@ -174,7 +178,7 @@ namespace SF2MusicCooker
             else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, bool preserveRate,
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, bool betterCompression, bool preserveRate,
             bool removeRelease, bool removeOff, bool removeVol, bool removePan, bool removeLegato,
             bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG,
             float sampleRateCoeff, float volumeCoeff, float volumeFMCoeff, float volumePSGCoeff, float volumeSampleCoeff, string volumeMode)
@@ -184,6 +188,7 @@ namespace SF2MusicCooker
             MuteSamples = muteSamples;
             MuteInstruments = muteInstruments;
             EnableRewrite = enableRewrite;
+            BetterCompression = betterCompression;
             PreserveRate = preserveRate;
             RemoveRelease = removeRelease;
             RemoveOff = removeOff;
@@ -208,6 +213,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, 1f, 1f, 1f, null);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, 1f, 1f, 1f, null);
     }
 }

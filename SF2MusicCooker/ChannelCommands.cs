@@ -292,7 +292,7 @@ namespace SF2MusicCooker
             string[] finalCommands = commands.ToArray();
 
             // Apply optimization (only if dumping is disabled)
-            if (!options.NoOptimize && !options.DumpNotes) finalCommands = optimizer.Optimize(finalCommands);
+            if (!options.NoOptimize && !options.DumpNotes) finalCommands = MakeOptimizer(options).Optimize(finalCommands);
 
             // Get the assembly
             string asm = string.Join(_separator, finalCommands);
@@ -768,8 +768,10 @@ namespace SF2MusicCooker
             }
         }
 
-        private static readonly LoopOptimizer optimizer = new LoopOptimizer(repeats => "countedLoopStart " + (repeats - 1), _ => "countedLoopEnd",
-            7, 512, int.MaxValue, 32, Tools.RemoveASMComment, null, Weighter);
+        private static LoopOptimizer MakeOptimizer(Options options)
+        {
+            return new LoopOptimizer(repeats => "countedLoopStart " + (repeats - 1), _ => "countedLoopEnd", 7, options.BetterCompression ? 2048 : 512, int.MaxValue, 32, Tools.RemoveASMComment, null, Weighter);
+        }
 
         private static int Weighter(string commandAndArguments)
         {

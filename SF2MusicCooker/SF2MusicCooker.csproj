@@ -281,9 +281,6 @@
     <None Include="Test-Ext-Deluxe\%40music05-Enemy Attack.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\%40music06-BIG TROUBLE.fur">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Test-Ext-Deluxe\%40music09-Intro.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -308,7 +305,7 @@
     <None Include="Test-Ext-Deluxe\%40music27-Jingle Item.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\%40music36-Final Battle.fur">
+    <None Include="Test-Ext-Deluxe\%40music34-Dungeon.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\%40music37-Funny Dwarfs.fur">
@@ -335,16 +332,13 @@
     <None Include="Test-Ext-Deluxe\+music43-Entering North Parmecia.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music44-New Continent To Discover.fur">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Test-Ext-Deluxe\+music45-Ixen Unpromoted.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music46-Ixen Promoted.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music47-Boss Battle.fur">
+    <None Include="Test-Ext-Deluxe\+music47-Airship.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music48%4038-Military.fur">
@@ -368,10 +362,16 @@
     <None Include="Test-Ext-Deluxe\+music54-Enemy Spell.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test-Ext-Deluxe\+music56-New Continent To Discover.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Ext-Deluxe\+music57%406-BIG TROUBLE.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test-Ext-Deluxe\+music58%4033-Important Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music59%4034-Dungeon.fur">
+    <None Include="Test-Ext-Deluxe\+music59%4036-Final Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music60%408-Town Theme Deluxe.fur">
@@ -380,13 +380,13 @@
     <None Include="Test-Ext-Deluxe\+music61%401-Doomed Continent.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music62-Airship.fur">
+    <None Include="Test-Ext-Deluxe\+music62-Boss Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+music63-Vapor Trail.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\+music64-Choose a Path.fur">
+    <None Include="Test-Ext-Deluxe\+music64%2541-Choose a Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Ext-Deluxe\+sfx121-Fire.fur">

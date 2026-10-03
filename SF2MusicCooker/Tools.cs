@@ -105,7 +105,7 @@ namespace SF2MusicCooker
         /// <summary>
         /// Read a map of number=string lines from file. Lines can be ignored by prefixing them with ';'.
         /// </summary>
-        public static Dictionary<int, string> ReadNumberStringMap(string filename, char separator = '=')
+        public static Dictionary<int, string> ReadNumberStringMap(string filename, char separator = '=', int? jokerValue = null)
         {
             string[] lines = File.ReadAllLines(filename);
             Dictionary<int, string> map = new Dictionary<int, string>(lines.Length);
@@ -120,6 +120,8 @@ namespace SF2MusicCooker
 
                     string key = line.Substring(0, index).Trim();
                     string value = line.Substring(index + 1).Trim();
+
+                    if (jokerValue != null && key == "*") key = jokerValue.Value.ToString();
                     map.Add(int.Parse(key), value);
                 }
             }

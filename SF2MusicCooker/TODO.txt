@@ -1,25 +1,43 @@
-﻿- Tester ROM avec Test-Ext
-- Régénérer les -standard.bin avec Test-Vanilla
-	=> en fait, ajouter une option --vanilla
-- Repasser sur la branche 'expanded_musics' et réorganiser le ROM layout pour faire tenir yminst.bin de taille doublée (8192)
-	=> puis l'appliquer sur 'music_demo'
+﻿- Maintenant que ça PASSE, refaire mon dossier Test-Ext-Deluxe à partir de ce qu'il y a dans C:\Temp\Release_MusicHackShowcase\Issue Fitting Musics
 ///
-- music_demo => changer title screen pour préciser "MUSIC SHOWCASE DELUXE"
-- music_demo => Tester mes modifs du CUBEWIZ driver (stashed) [titre: Cubewiz small improvements] [description: Force FADE_IN_PARAMS to be 0Fh when starting new music
-Quick hack to avoid playing new samples during fade in period
-Thanks wiz!]
-- music_demo => faire rentrer la SOUNDTRACK DELUXE (gros taf)
-- music_demo => escape du chateau par Slade: jouer son theme au moment où il dit 'wait!'
-- terminer de composer Saturos!! (et sauter des passages pour que ça enchaine + vite)
-	=> scène confrontation finale Ixen/Bowie/final boss => jouer la theme song de IXEN PROMOTED
-- music_demo => SFX customization for Dragon Breath (only)
-- playtest en étant vigilant:
-	=> renommer la branche en "music_showcase_hack"
+- Il y a clairement un bug avec les PCM banks!!! Des musiques qui marchaient nickel ne marchent plus avec ce nouveau set de musiques => bug sneaky
+- Funny Dwarfs: envisager de disable le DAC (si jamais mon bug fix sample ne corrige en rien les samples baveux que ça crache)
+- Intro: broken PSG envelopes, l'aider un peu je pense! Et d'autres glitch aussi à corriger. L'alternative c'est de garder l'intro du jeu original
+- Ixen Promoted: peut être du volume rebalancing à faire, il y a une note de guitar suspecte aussi juste avant la 2ème moitié de la 1ère partie
+- New Continent To Discover: pas mal mais il y a quelques trucs suspects à check (surtout les clicks au début)
+- BIG TROUBLE: léger défaut à cut off
+- Final Battle: je crois que le noise channel est actif ? Et d'autres problèmes significatifs à fix (les notes de synth ne jouent pas)
+- Town Deluxe Theme: il se peut qu'au moment de franchir la main loop, une des canaux est à zéro de volume (le piano je crois)
+	+ des clicks audibles à un moment
+- Sadly Joined the Party: tempo suspect
+- SFX "Fire" met en PLS le jeu avec le sound driver qui est fucked sur plusieurs canaux
+- Volume rebalancing: intro Important Battle à baisser un peu je pense, peut être légèrement baisser le volume PSG aussi
+	- Ixen Promoted trop fort probablement
+	- ...
+///
+- music_demo => faire rentrer la SOUNDTRACK DELUXE (gros taf) et ses divers cas particuliers
+	=> vérifier que final battle sounds good dans le sound test, sinon faire des fix manuels
+	=> tester le rendu du SFX "fire" et l'utiliser dans 'flamebreath' pour voir le résultat (d'abord solo puis combiné avec le SFX vanilla)
+		=> si ça pue on peut aussi faire un SFX avec 2 canaux FM
+	----
+- [OK] music_demo => escape du chateau par Slade: jouer son theme au moment où il dit 'wait!'
+- [OK] music_demo => scène d'intro d'Ixen: jouer son unpromoted theme pendant la scène des enfants relous
+- [OK] music_demo => scène confrontation finale Ixen/Bowie/final boss => jouer la theme song de IXEN PROMOTED
+- [OK] music_demo => ascention de la tour => message + jouer la theme song de IXEN PROMOTED
+- [OK] music_demo => line ajoutée dans sa scène d'introduction sur son fire breathing
+///
+- Playtest music_demo en étant vigilant:
+	=> renommer la branche en "music_showcase_deluxe"
 	=> aux ennemis avec flamebreath
 	=> à la pertinence du script modifié
 	=> à l'affichage ou non du message de learn spell (surtout avec Ixen: lv 15 25 40)
+		- Jouer le SFX LANDSTALKER_ITEM quand un perso learn un spell
+	=> au bon déclenchement des musiques dans tous les cas particuliers
+- Private sharing Wiz et Iavathor
+- (low priority) à priori les tiles de la window en combat sont avec PRIORITY, mais vérifier dans un émulateur qui sait afficher ça... [mais pourquoi flamebreath est devant la window du coup?]
+	=> attention certains spell effects comptent sur la top window qui ne masque pas les graphismes (comme la fée de soin...)
+- (low priority) utiliser le canal FM 6 sur Final Battle
 ///
-- Idée: option pour disable DAC mais aussi remplacer les notes par un instrument FM 'noise'
 - Release version 1.2 => it supports 256 YM instruments now
 - Créer la pull request pour 'expanded_musics'
 ///
@@ -30,6 +48,7 @@ Thanks wiz!]
 
 Version 1.3:
 - Option to force sustain on all DAC samples (?)
+- Option to replace DAC by an auto-generated FM channels with 'noise' FM instrument (? might be overkill...)
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
 - [retest 'Test' folder beforehand] Rewriter tests/improvement with dump notes enabled
 - Fix the vanilla YM/PSG note counting logic when 'shifting' is involved

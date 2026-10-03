@@ -1,3 +1,4 @@
+; * = --bettercompression
 09 = -m9 -m10
 36 = -m9 -m10
 44 = -m9 -m10
