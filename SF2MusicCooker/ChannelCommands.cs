@@ -454,15 +454,6 @@ namespace SF2MusicCooker
 
             void WriteNoteOrSample(string value, int release, int length, bool sustain, string command, string commandL)
             {
-                if (length == 943 && release == 186) // note release in = 186, note length = 943
-                    ;
-
-                if (length == 146 && release == 145) // note release in = 145, note length = 146
-                    ;
-
-                if (length == 340 && release == 340) // note release in = 340, note length = 340
-                    ;
-
                 int extraSustain = sustain ? 0 : Math.Max(release - 0xFF, Math.Min(release - 0x80, length - release - 0x7F));
                 if (extraSustain > 0)
                 {
