@@ -970,6 +970,10 @@ namespace SF2MusicCooker.Furnace
                                                 }
                                             }
                                         }
+                                        else if (effectValuePresent[e])
+                                        {
+                                            _ = reader.ReadByte(); // Bug fix - We must not forget to advance the cursor if a value was present!
+                                        }
                                     }
 
                                     pattern.Set(currentRow, new PatternCell(note, instrument, volume, effects?.ToArray()));
