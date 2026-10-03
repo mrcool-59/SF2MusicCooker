@@ -272,6 +272,12 @@
     <None Include="Test-4\%40music35-Jingle VII.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Test-Diagnostic\+music60-New Continent To Discover %28simplified%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Diagnostic\+music63-New Continent To Discover %28clicks%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Test-Diagnostic\+music64-Intro.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -279,9 +285,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Diagnostic\+music49-Ixen Promoted.fur">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Test-Diagnostic\+music63-New Continent To Discover.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Diagnostic\+sfx121-Fire.fur">

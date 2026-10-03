@@ -454,31 +454,30 @@ namespace SF2MusicCooker
 
             void WriteNoteOrSample(string value, int release, int length, bool sustain, string command, string commandL)
             {
+                if (length == 943 && release == 186) // note release in = 186, note length = 943
+                    ;
+
+                if (length == 146 && release == 145) // note release in = 145, note length = 146
+                    ;
+
+                if (length == 340 && release == 340) // note release in = 340, note length = 340
+                    ;
+
+                int extraSustain = sustain ? 0 : Math.Max(release - 0xFF, Math.Min(release - 0x80, length - release - 0x7F));
+                if (extraSustain > 0)
+                {
+                    WriteSetReleaseOrSustain(-1);
+                    WriteCommand(value, extraSustain, commandL, command);
+
+                    length -= extraSustain;
+                    release -= extraSustain;
+                }
+
                 int cappedLength = sustain ? length : Math.Min(length, release + 0x7F); // After releasing a command, we can't have it play for more than 0x7F ticks
                 int extraSilence = length - cappedLength;
 
-                length = cappedLength;
-
-                while (length > 0)
-                {
-                    if (sustain || length >= 0x100)
-                        WriteSetReleaseOrSustain(-1); // Sustained note happens when legato is active or note is longer than max length of a single note command
-                    else
-                        WriteSetReleaseOrSustain(length - release); // This command will end, we can also set when it should be released
-
-                    byte newLength = (byte)Math.Min(0xFF, length);
-                    if (currentLength != newLength)
-                    {
-                        currentLength = newLength;
-                        commands.Add(commandL + value + "," + BYTE(currentLength));
-                    }
-                    else
-                    {
-                        commands.Add(command + value);
-                    }
-                    release -= newLength;
-                    length -= newLength;
-                }
+                WriteSetReleaseOrSustain(sustain ? -1 : (cappedLength - release));
+                WriteCommand(value, cappedLength, commandL, command);
 
                 WriteSilence(extraSilence);
             }
@@ -493,6 +492,24 @@ namespace SF2MusicCooker
                         commands.Add("sustain"); // 'setRelease 80h' would be equivalent, but less clear
                     else
                         commands.Add("setRelease " + BYTE(currentRelease));
+                }
+            }
+
+            void WriteCommand(string value, int length, string commandL, string command)
+            {
+                while (length > 0)
+                {
+                    byte newLength = (byte)Math.Min(0xFF, length);
+                    if (currentLength != newLength)
+                    {
+                        currentLength = newLength;
+                        commands.Add(commandL + value + "," + BYTE(currentLength));
+                    }
+                    else
+                    {
+                        commands.Add(command + value);
+                    }
+                    length -= newLength;
                 }
             }
 
