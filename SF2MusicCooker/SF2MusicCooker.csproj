@@ -299,9 +299,6 @@
     <None Include="Test-Ext-Deluxe\%40music05-Enemy Attack.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Ext-Deluxe\%40music09-Intro.fur">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Test-Ext-Deluxe\%40music14-Goddess.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
