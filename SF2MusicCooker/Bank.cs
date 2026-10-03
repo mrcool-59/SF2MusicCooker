@@ -162,7 +162,7 @@ namespace SF2MusicCooker
             {
                 Song song = Find(number, out _);
                 output.Append("\t\tdw Music_");
-                output.Append(song == null ? to : number);
+                output.Append(song == null ? to : song.PointerNumber);
                 output.AppendLine();
             }
 

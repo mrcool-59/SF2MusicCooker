@@ -26,7 +26,7 @@ namespace SF2MusicCooker
             isSwap = false;
 
             Match matchMoveSwap = isMusic ? regexMoveSwap.Match(filename) : null;
-            if (matchMoveSwap != null)
+            if (matchMoveSwap != null && matchMoveSwap.Success)
             {
                 number = int.Parse(matchMoveSwap.Groups[1].Value);
                 moveFrom = int.Parse(matchMoveSwap.Groups[2].Value);

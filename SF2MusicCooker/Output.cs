@@ -364,10 +364,8 @@ namespace SF2MusicCooker
 
             if (isSwap)
             {
-                Song movedOriginalSong = new Song(song.Number, originalSong.Name, originalSong.ASMName, originalSong.Sheet);
-                Song swappedCustomSong = new Song(originalSong.Number, song.Name, song.ASMName, song.Sheet);
-
-                bank.Add(movedOriginalSong);
+                Song.CreateSwap(originalSong, song, out Song movedVanillaSong, out Song swappedCustomSong);
+                bank.Add(movedVanillaSong);
                 originalBank.Add(swappedCustomSong);
             }
             else

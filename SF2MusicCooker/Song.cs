@@ -9,6 +9,10 @@ namespace SF2MusicCooker
         public readonly string ASMName;
         public readonly Sheet Sheet;
 
+        private readonly int _musicNumberPointerOverride;
+
+        public int PointerNumber { get { return _musicNumberPointerOverride > 0 ? _musicNumberPointerOverride : Number; } }
+
         public Song(int number, string name, string asmName, Sheet sheet)
         {
             if (number < 1 || number > 64)
@@ -21,6 +25,11 @@ namespace SF2MusicCooker
             Name = name;
             ASMName = asmName;
             Sheet = sheet;
+        }
+
+        private Song(int number, string name, string asmName, Sheet sheet, int musicNumberPointerOverride) : this(number, name, asmName, sheet)
+        {
+            _musicNumberPointerOverride = musicNumberPointerOverride;
         }
 
         public Song UpdateName(string newName)
@@ -36,6 +45,12 @@ namespace SF2MusicCooker
         public Song UpdateSheet(Sheet sheet)
         {
             return new Song(Number, Name, ASMName, sheet);
+        }
+
+        public static void CreateSwap(Song vanillaSong, Song customSong, out Song movedVanillaSong, out Song swappedCustomSong)
+        {
+            movedVanillaSong = new Song(customSong.Number, vanillaSong.Name, vanillaSong.ASMName, vanillaSong.Sheet, vanillaSong.Number);
+            swappedCustomSong = new Song(vanillaSong.Number, customSong.Name, customSong.ASMName, customSong.Sheet, customSong.Number);
         }
     }
 }
