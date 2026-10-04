@@ -330,6 +330,7 @@ namespace SF2MusicCooker
                     {
                         file = newFile;
                         Console.WriteLine("! YM is in Extended Channel 3 mode, it is unsupported and the extra channels will be ignored");
+                        Console.WriteLine("! You should edit your file to get rid of Extended Channel 3 and make a regular Channel 3 version instead");
                     }
 
                     // Remove notes we don't support in the note bible
