@@ -275,13 +275,16 @@
     <None Include="Test-Diagnostic\+music51-HQ %28workaround%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Diagnostic\+music60-New Continent To Discover %28simplified%29.fur">
+    <None Include="Test-Diagnostic\+music48-New Continent To Discover %28simplified%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Diagnostic\+music63-New Continent To Discover %28clicks%29.fur">
+    <None Include="Test-Diagnostic\+music64-Music Showcase Deluxe.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test-Diagnostic\+music64-Intro.fur">
+    <None Include="Test-Diagnostic\+music47-New Continent To Discover %28clicks%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test-Diagnostic\+music58-Intro.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test-Diagnostic\+music50-HQ.fur">

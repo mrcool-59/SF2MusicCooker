@@ -211,7 +211,7 @@ namespace SF2MusicCooker
                 if (provided.Contains(pairNumber)) pairNumber = 0; // Both elements of the pair have been provided, no need to use this hack
 
                 // Prepare the options
-                Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
+                Options options = Options.GetFinalOptions(number, true, arguments.Options, overrides);
 
                 // If only processing one music, set number to 33 so it can play immediately in test menu
                 if (arguments.Only >= 0) number = moveFrom = 33;
@@ -282,7 +282,7 @@ namespace SF2MusicCooker
                 string pointerName = "CSFX_" + sfxs.Count;
 
                 // Prepare the options
-                Options options = Options.GetFinalOptions(number, arguments.Options, overrides);
+                Options options = Options.GetFinalOptions(number, false, arguments.Options, overrides);
 
                 // Build the input
                 Input input = new Input(fur, number, pointerName, options, name);

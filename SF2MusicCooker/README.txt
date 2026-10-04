@@ -156,9 +156,12 @@ The following options can be specified globally or per-music/per-SFX:
 --volume:nearest			or		-v:n	Use nearest instead of truncating when mapping YM volume to SF2 sound driver volume (gives subtly different results)
 
 To apply options per-music/per-SFX, provide an "options.txt" file in the "Input" folder.
-Example file (dump notes of music 33 and mute samples of music 41):
+Example file:
+	* = --mutesamples	; * joker applies to everything
+	*m = -m9 -10		; *m joker applies to all musics
+	*s = --volume=1.2	; *s joker applies to all SFXs
 	33 = --dumpnotes
-	41 = --mutesamples
+	41 = --transposefm=2
 
 
 

@@ -119,6 +119,18 @@ namespace SF2MusicCooker
                                other.VolumeMode ?? VolumeMode);
         }
 
+        private static readonly Dictionary<string, int> specialKeys = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "*", ALL },
+            { "m*", ALL_MUSICS },
+            { "*m", ALL_MUSICS },
+            { "s*", ALL_SFXS },
+            { "*s", ALL_SFXS },
+        };
+        private const int ALL = short.MinValue;
+        private const int ALL_MUSICS = short.MinValue + 1;
+        private const int ALL_SFXS = short.MinValue + 2;
+
         /// <summary>
         /// Read a text file that contains specific options to apply to particular musics/SFXs.
         /// </summary>
@@ -128,7 +140,7 @@ namespace SF2MusicCooker
             string path = Path.Combine(folder, filename);
             if (File.Exists(path))
             {
-                foreach (var pair in Tools.ReadNumberStringMap(path, jokerValue: short.MinValue))
+                foreach (var pair in Tools.ReadNumberStringMap(path, specialKeys: specialKeys))
                 {
                     string[] args = pair.Value.Split(' ');
                     map.Add(pair.Key, new Options(args));
@@ -140,9 +152,11 @@ namespace SF2MusicCooker
         /// <summary>
         /// Apply options overrides to generate the final options to use for a given music/SFX.
         /// </summary>
-        public static Options GetFinalOptions(int number, Options options, Dictionary<int, Options> overrides)
+        public static Options GetFinalOptions(int number, bool isMusic, Options options, Dictionary<int, Options> overrides)
         {
-            if (overrides.TryGetValue(short.MinValue, out Options globalOverride)) options = options.Override(globalOverride);
+            if (overrides.TryGetValue(ALL, out Options globalOverride)) options = options.Override(globalOverride);
+            if (isMusic && overrides.TryGetValue(ALL_MUSICS, out Options musicOverride)) options = options.Override(musicOverride);
+            if (!isMusic && overrides.TryGetValue(ALL_SFXS, out Options sfxOverride)) options = options.Override(sfxOverride);
             if (overrides.TryGetValue(number, out Options @override)) options = options.Override(@override);
             return options;
         }
