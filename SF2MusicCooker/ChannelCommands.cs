@@ -15,7 +15,7 @@ namespace SF2MusicCooker
         private readonly string _separator;
 
         public const uint Mask_Music = 0b1111111111;
-        public const uint Mask_SFX_1 = 0b1100000000; // Read from right to left!
+        public const uint Mask_SFX_1 = 0b1111111111; // Read from right to left!
         public const uint Mask_SFX_2 = 0b0000111000;
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace SF2MusicCooker
             byte nextVibrato = 0x00;
             byte currentRelease = 0xFF; // Will force the first note to set release
             byte currentLength = 0x00; // Will force the first note or silence to set length
-            byte noiseMode = 0x00;
+            byte noiseMode = 0x11;
 
             // PSG channel: ensure the channel starts OFF
             if (psg && firstEventTicks > 1) commands.Add("psgInst 0");
