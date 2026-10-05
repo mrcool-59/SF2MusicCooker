@@ -112,8 +112,10 @@ namespace SF2MusicCooker
                 }
             }
 
-            bank = Tools.SelectMax(_sfxBanks, b => b.MaxSize - b.GetEstimatedSize()); // Overkill as there is usually only 1 SFX bank
-            if (bank == null) throw new NotSupportedException("No SFX bank is present!");
+            if (_sfxBanks.Length > 1)
+                throw new NotSupportedException("This tool doesn't support (yet) adding SFXs to layouts that have more than 1 SFX bank");
+
+            bank = _sfxBanks[0];
             return null; // SFX not found (but we have a bank)
         }
 

@@ -1,30 +1,34 @@
-﻿- [retester] Intro: broken PSG envelopes, l'aider un peu je pense! Et d'autres glitch aussi à corriger. L'alternative c'est de garder l'intro du jeu original
-	-> [retester again] une note qui hold un peu trop longtemps à mon goût mais sinon ça va!
-- [retester] New Continent To Discover: pas mal mais il y a quelques trucs suspects à check (surtout les clicks au début)
-	-> toujours les clicks du début!
-- [retester] Final Battle: je crois que le noise channel est actif ? Et d'autres problèmes significatifs à fix (les notes de synth ne jouent pas)
-	-> du noise à virer
-	-> les notes aigues font un instru complétement incorrect
-- HQ: moment suspect juste la main loop
-	-> Portamento!
-- SFX "Fire" met en PLS le jeu avec le sound driver qui est fucked sur plusieurs canaux
-///
-- Playtest music_demo en étant vigilant:
+﻿retester: light magic rebalancing
+retester: gift de 1000 coins maintenant avec 2 dialog lines modifiées!
+retester: raft scene with Luke: MAIN_THEME plays instead of Alisia Dragoon
+retester: bad newbie music starting overworld
+retester: ixen intro fire-breathing line: weird window behavior!!
+retester: "i'm the great thief slade" => déclencher sa musique, puis cut off ou fade out quand Sarah le confronte
+retester: unpromoted spell un peu trop fort à mon goût niveau volume
+retester: npc qui parle de "The legend of the keepers" avec un choix YES/NO => à remplacer par "Are you here to see Volcanon?"
+	YES: "Please be very respectful, he seemed very angry lately..."  NO: "I would have thought this joke funny, but I'm not in the mood with how angry Volcannon seemed lately..."
+retester: ligne de dialogue Volcanon qui mentionne la protection accordée à Ixen
+retester: Mayor scene de retour au village: il faut aussi compléter "Please, take him! (If they try to TALK TO ME one more time I will... I will...)"
+
+[DONE] "stuffed animal" => "scales"
+[DONE] typo "I met a lot [OF] people that live on the ground."
+[DONE] typo "Everybody who lives on the ground is responsibile."
+[DONE] Polca village battle doesn't play the proper music! => ça veut dire que ya un problème avec ExplorationtoBattleMusic
+	=> Pareil: military bgm for battle after jail escape
+	=> Fix à appliquer dans add_battlescene_musics d'abord, puis merge!
+
+- Playtest music_showcase_deluxe en étant vigilant:
 	=> tester 'flamebreath' pour voir le résultat (d'abord solo puis combiné avec le SFX vanilla)
 		=> si ça pue on peut aussi faire un SFX avec 2 canaux FM
-	=> renommer la branche en "music_showcase_deluxe"
 	=> aux ennemis avec flamebreath
 	=> à la pertinence du script modifié
-	=> à l'affichage ou non du message de learn spell (surtout avec Ixen: lv 15 25 40)
-		- Jouer le SFX LANDSTALKER_ITEM quand un perso learn un spell
 	=> au bon déclenchement des musiques dans tous les cas particuliers
+	=> voir si la scène odd-eye rend bien!
 - Private sharing Wiz et Iavathor
-- (low priority) à priori les tiles de la window en combat sont avec PRIORITY, mais vérifier dans un émulateur qui sait afficher ça... [mais pourquoi flamebreath est devant la window du coup?]
-	=> attention certains spell effects comptent sur la top window qui ne masque pas les graphismes (comme la fée de soin...)
 - (low priority) utiliser le canal FM 6 sur Final Battle
-///
-- Le bug de l'effet ..0E avec Ixen Promoted me fait penser qu'il faudrait agressivement supprimer les effets unsupported (ou en tout cas le corriger vraiment!!)
-	- Voir les impacts avec un diff git
+- (low priority) shaking tower escape: faire prolonger BIG TROUBLE
+- (very low priority) à priori les tiles de la window en combat sont avec PRIORITY, mais vérifier dans un émulateur qui sait afficher ça...
+	=> attention certains spell effects comptent sur la top window qui ne masque pas les graphismes (comme la fée de soin...)
 ///
 - Release version 1.2 => it supports 256 YM instruments now
 - Créer la pull request pour 'expanded_musics'
@@ -35,9 +39,9 @@
 ===================================================
 
 Version 1.3:
-- Option to force sustain on all DAC samples (?)
-- Option to replace DAC by an auto-generated FM channels with 'noise' FM instrument (? might be overkill...)
-- Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz"]
+- Pitch table: hardcoded offset should be changeable through layouts.json
+- Option to force sustain on all DAC samples
+- Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz (or 16 kHz actually I got told on Discord)]
 - [retest 'Test' folder beforehand] Rewriter tests/improvement with dump notes enabled
 - Fix the vanilla YM/PSG note counting logic when 'shifting' is involved
 - Generalize 'pairNumber' into array 'aliasNumbers', aliases must reside within the same bank or an error will occur, 'pairNumber' implicitly add an element to 'aliasNumbers'
@@ -45,18 +49,19 @@ Version 1.3:
 
 Version 1.4:
 - Auto-bank assignment feature
-- Continue to browse CubeAssets... + compare Shop from vgm2fur to Shop from CubeAssets + finish 'The Makers Ruin' custom .fur
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
 	=> Audible clicks when music fades in (especially when resuming), is DAC channel to blame?
+	=> Music resuming is does weird things randomly in SF2DISASM Cubewiz driver
 	=> Vapor Trail: ugly samples
-	=> Choose a Path: weird sample output for intro
-	=> Maker's Ruin: long notes
-	=> Test-3 Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
-	=> Test-3 Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
-	=> Test-3 Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
-		(?) All of this might be related to required but suboptimal bank switching (hopefully not)
+	=> Choose a Path: ugly samples output (especially noticeable for intro)
+	=> Test-3, Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
+	=> Test-3, Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
+	=> Test-3, Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)
 
-Version 1.5:
+Version 1.5: (this version should be considered as "will probably never happen" ;-) )
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
+- Stacked single tick pitch up/down effects can be auto-detected as a "vibrato" or a "portamento" in some cases...
+- Maybe also implement a bank of custom vibrato...
+- Option to replace DAC by an auto-generated FM channel with 'noise' FM instrument (? might be a lot of headaches for a bad result artistically speaking...)
 - Detection of (partially) reused sheets within the same music bank (don't bother for SFX)
 - I want a megadrive version of main theme of Zai Metajo pleaaaaase send me help (first 3 minutes of https://www.youtube.com/watch?v=VIAMf4I_gdA)
