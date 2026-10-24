@@ -1,14 +1,16 @@
 ﻿Version 1.3:
+- Nouvelle gestion des music banks custom de Cubewiz
+- Mentionner que Music Showcase Deluxe est le ROM hack d'illustration de cet outil.
 - Pitch table: hardcoded offset should be changeable through layouts.json
 - Option to force sustain on all DAC samples
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz (or 16 kHz actually I got told on Discord)]
-- [retest 'Test' folder beforehand] Rewriter tests/improvement with dump notes enabled
-- Fix the vanilla YM/PSG note counting logic when 'shifting' is involved
 - Generalize 'pairNumber' into array 'aliasNumbers', aliases must reside within the same bank or an error will occur, 'pairNumber' implicitly add an element to 'aliasNumbers'
 - Be extra cautious when a PSG channel uses an instrument that is not a PSG instrument, same remark for FM channels
 
 Version 1.4:
 - Auto-bank assignment feature
+- Fix the vanilla YM/PSG note counting logic when 'shifting' is involved
+- [retest 'Test' folder beforehand] Rewriter tests/improvement with dump notes enabled
 - Issues on some musics that might be worthwhile to investigate, especially once sample resampling is implemented:
 	=> Audible clicks when music fades in (especially when resuming), is DAC channel to blame?
 	=> Music resuming is does weird things randomly in SF2DISASM Cubewiz driver
@@ -22,6 +24,5 @@ Version 1.5: (this version should be considered as "will probably never happen" 
 - Support for "nice to have" effects (marked with '+' in ChannelCommands.cs)
 - Stacked single tick pitch up/down effects can be auto-detected as a "vibrato" or a "portamento" in some cases...
 - Maybe also implement a bank of custom vibrato...
-- Option to replace DAC by an auto-generated FM channel with 'noise' FM instrument (? might be a lot of headaches for a bad result artistically speaking...)
 - Detection of (partially) reused sheets within the same music bank (don't bother for SFX)
 - I want a megadrive version of main theme of Zai Metajo pleaaaaase send me help (first 3 minutes of https://www.youtube.com/watch?v=VIAMf4I_gdA)
