@@ -49,6 +49,11 @@ namespace SF2MusicCooker.Furnace
         public float PlayRate { get { return TickRate * RateCoeff; } }
 
         /// <summary>
+        /// Multiplier to apply to row value when executing a "go to next pattern" command. This is 1 unless the Multiply method is called!
+        /// </summary>
+        public readonly int RowMultiplier;
+
+        /// <summary>
         /// A-4 tuning value.
         /// </summary>
         public readonly int A4Tuning;
@@ -121,7 +126,7 @@ namespace SF2MusicCooker.Furnace
                 }
             }
 
-            return new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff, A4Tuning);
+            return new FurnaceFile(keyByChannelAndOrder, PatternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff, RowMultiplier, A4Tuning);
         }
 
         /// <summary>
@@ -408,7 +413,8 @@ namespace SF2MusicCooker.Furnace
                         SampleMap.Entry entry = map.Read(cell.Note);
                         if (!entry.Invalid)
                         {
-                            int key = iterateOncePerSample ? entry.Sample : InstrumentMap.GetInstrumentAndNoteKey(currentInstrument, cell.Note);
+                            int key = iterateOncePerSample ? InstrumentMap.GetInstrumentAndNoteKey((ushort)entry.Sample, (byte)entry.Note)
+                                : InstrumentMap.GetInstrumentAndNoteKey(currentInstrument, cell.Note);
                             if (gatekeeper.Add(key))
                             {
                                 callback(Samples[entry.Sample], entry.Note, key);
@@ -471,7 +477,7 @@ namespace SF2MusicCooker.Furnace
 
             Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
             foreach (var pair in PatternByKey) patternByKey.Add(pair.Key, pair.Value.Multiply(n));
-            return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff * n, A4Tuning);
+            return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff * n, RowMultiplier * n, A4Tuning);
         }
 
         /// <summary>
@@ -579,7 +585,7 @@ namespace SF2MusicCooker.Furnace
             return false;
         }
 
-        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float masterVolume, float tickRate, float rateCoeff, int a4tuning)
+        public FurnaceFile(int[,] keyByChannelAndOrder, Dictionary<int, Pattern> patternByKey, Instrument[] instruments, Sample[] samples, float masterVolume, float tickRate, float rateCoeff, int rowMultiplier, int a4tuning)
         {
             KeyByChannelAndOrder = keyByChannelAndOrder;
             PatternByKey = patternByKey;
@@ -588,6 +594,7 @@ namespace SF2MusicCooker.Furnace
             MasterVolume = masterVolume;
             TickRate = tickRate;
             RateCoeff = rateCoeff;
+            RowMultiplier = rowMultiplier;
             A4Tuning = a4tuning;
 
             // Default safe values, until Calculate is called
@@ -600,7 +607,7 @@ namespace SF2MusicCooker.Furnace
         /// <summary>
         /// Gives an empty file.
         /// </summary>
-        public static readonly FurnaceFile Empty = new FurnaceFile(new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 1f, 59, 1f, StandardA4Tuning);
+        public static readonly FurnaceFile Empty = new FurnaceFile(new int[10, 0], new Dictionary<int, Pattern>(), new Instrument[0], new Sample[0], 1f, 59, 1f, 1, StandardA4Tuning);
 
         private static int ComputeKey(byte channel, short index)
         {
@@ -1051,8 +1058,8 @@ namespace SF2MusicCooker.Furnace
                             else
                             {
                                 throw new NotSupportedException("Unsupported instrument #" + i + " type: " + type + Environment.NewLine +
-                                    "You may only use: FM instruments, DAC instruments (sample maps), PSG instruments (useless)" + Environment.NewLine +
-                                    "Please note that macros are not supported in instruments (that's why PSG instruments have pretty much no use).");
+                                    "You may only use: FM instruments, DAC instruments (sample maps), PSG instruments (with volume macro)" + Environment.NewLine +
+                                    "Please note that macros (outside of PSG volume macro) are not supported in instruments.");
                             }
 
                             while (true)
@@ -1072,7 +1079,7 @@ namespace SF2MusicCooker.Furnace
                                     }
                                     else
                                     {
-                                        throw new NotSupportedException("Please do not use macros in your instruments (except for PSG instruments)");
+                                        throw new NotSupportedException("Please do not use macros in your instruments (except for PSG instruments), offending instrument is: #" + i + " / " + name);
                                     }
                                 }
                                 else if (featureCode == "NA")
@@ -1173,7 +1180,7 @@ namespace SF2MusicCooker.Furnace
                     float rateCoeff = (float)virtualTempoNumerator / (virtualTempoDenominator * speed1);
                     int a4tuningRounded = (int)Math.Round(a4tuning);
 
-                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, masterVolume, ticksPerSecond, rateCoeff, a4tuningRounded);
+                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, masterVolume, ticksPerSecond, rateCoeff, 1, a4tuningRounded);
                 }
             }
             catch (Exception ex)

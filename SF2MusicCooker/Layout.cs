@@ -16,6 +16,9 @@ namespace SF2MusicCooker
         [JsonProperty("paths", Required = Required.Always)]
         private FilePaths _paths;
 
+        [JsonProperty("pitch", Required = Required.Always)]
+        private readonly PitchTable.PitchOffsets _pitch;
+
         [JsonProperty("musicBanksExtPatch", Required = Required.Always)]
         private readonly string _musicBanksExtPatch;
 
@@ -43,6 +46,9 @@ namespace SF2MusicCooker
         [JsonProperty("pcmSlots", Required = Required.Always)]
         private readonly int _pcmSlots;
 
+        [JsonProperty("pcmNameFormat", Required = Required.Always)]
+        private readonly string _pcmNameFormat;
+
         [JsonProperty("ymFrequenciesSlotsPatch", Required = Required.Default)]
         private readonly string _ymFrequenciesSlotsPatch;
 
@@ -59,15 +65,17 @@ namespace SF2MusicCooker
         private readonly string _soundTestTemplate;
 
         [JsonConstructor]
-        public Layout(string name, string featureBranch, FilePaths paths,
+        public Layout(string name, string featureBranch, FilePaths paths, PitchTable.PitchOffsets pitch,
             string musicBanksExtPatch, Bank[] musicBanksExt, Bank[] musicBanks, BankSFX[] sfxBanks,
-            string pcmBanksExtPatch, PCMInstruments.BankDefinition[] pcmBanksExt, PCMInstruments.BankDefinition[] pcmBanks, string pcmSlotsPatch, int pcmSlots,
+            string pcmBanksExtPatch, PCMInstruments.BankDefinition[] pcmBanksExt, PCMInstruments.BankDefinition[] pcmBanks, string pcmSlotsPatch, int pcmSlots, string pcmNameFormat,
             string ymFrequenciesSlotsPatch = null, int ymFrequenciesSlots = 0, string ymMaxInstrumentsPatch = null, int[] musicPairs = null, string soundTestTemplate = null)
         {
             _name = name ?? throw new ArgumentNullException(nameof(name));
             _featureBranch = featureBranch ?? throw new ArgumentNullException(nameof(featureBranch));
 
             _paths = paths ?? throw new ArgumentNullException(nameof(paths));
+
+            _pitch = pitch;
 
             _musicBanksExtPatch = musicBanksExtPatch ?? throw new ArgumentNullException(nameof(musicBanksExtPatch));
             _musicBanksExt = musicBanksExt ?? throw new ArgumentNullException(nameof(musicBanksExt));
@@ -81,6 +89,8 @@ namespace SF2MusicCooker
 
             _pcmSlotsPatch = pcmSlotsPatch ?? throw new ArgumentNullException(nameof(pcmSlotsPatch));
             _pcmSlots = pcmSlots;
+
+            _pcmNameFormat = pcmNameFormat;
 
             _ymFrequenciesSlotsPatch = ymFrequenciesSlotsPatch;
             _ymFrequenciesSlots = ymFrequenciesSlots;
@@ -150,7 +160,7 @@ namespace SF2MusicCooker
 
             foreach (BankSFX sfxBank in _sfxBanks) sfxBank.EnableExtraOffset = hasMaxYmInstruments;
 
-            return new Output(_name, _paths, musicBanks, _sfxBanks, pcmBanks, pcmSlots, ymInstrumentsLength, ymFrequenciesSlots, _musicPairs, _soundTestTemplate);
+            return new Output(_name, _paths, _pitch, musicBanks, _sfxBanks, pcmBanks, pcmSlots, _pcmNameFormat, ymInstrumentsLength, ymFrequenciesSlots, _musicPairs, _soundTestTemplate);
         }
 
         /// <summary>

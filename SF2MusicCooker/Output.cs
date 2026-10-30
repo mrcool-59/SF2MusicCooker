@@ -57,7 +57,7 @@ namespace SF2MusicCooker
         /// </summary>
         public bool SupportCustomFrequencies { get; }
 
-        public Output(string name, FilePaths paths, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots, int ymInstrumentsLength, int ymFrequenciesSlots = 0, int[] musicPairs = null, string soundTestTemplate = null)
+        public Output(string name, FilePaths paths, PitchTable.PitchOffsets pitch, Bank[] banks, BankSFX[] sfxBanks, PCMInstruments.BankDefinition[] pcmBanks, int pcmSlots, string pcmNameFormat, int ymInstrumentsLength, int ymFrequenciesSlots = 0, int[] musicPairs = null, string soundTestTemplate = null)
         {
             if (pcmBanks == null)
                 throw new ArgumentNullException(nameof(pcmBanks));
@@ -77,11 +77,11 @@ namespace SF2MusicCooker
 
             Instruments = new FMInstruments(ymInstrumentsLength);
 
-            Samples = new PCMInstruments(pcmSlots, pcmBanks);
+            Samples = new PCMInstruments(pcmSlots, pcmNameFormat, pcmBanks);
 
             Envelopes = new PSGInstruments(paths.PsgInstruments);
 
-            Pitch = new PitchTable(paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames, ymFrequenciesSlots);
+            Pitch = new PitchTable(pitch, paths.YmFrequencies, paths.PsgFrequencies, paths.NoteNames, ymFrequenciesSlots);
 
             SupportSamples = File.Exists(Tools.Rename(paths.PcmSamples, "pcm_samples-standard.asm"));
 
@@ -146,7 +146,7 @@ namespace SF2MusicCooker
             Dictionary<int, string> number2enum = Tools.ReadASMEnumReverseMap(_paths.MusicNumbersAndAsmNames); // Load numbers and ASM names
             Dictionary<int, string> sfx_number2enum = Tools.ReadASMEnumReverseMap(_paths.SfxNumbersAndAsmNames); // Load numbers and ASM names for SFXs
             Regex regex = new Regex("^music([0-9]+)\\.asm$");
-            Regex sfxPointerNameRegex = new Regex("dw[ \t]+(Sfx_[0-9]+)[ \t\r\n]");
+            Regex regexSfx = new Regex("^([0-9]+)\\.asm$");
             Regex sfxPointerNameLabelRegex = new Regex("(Sfx_[0-9]+):");
 
             // Load music sheets from music banks
@@ -160,13 +160,13 @@ namespace SF2MusicCooker
                         int number = int.Parse(match.Groups[1].Value);
                         number2name.TryGetValue(number, out string name);
                         number2enum.TryGetValue(number, out string asmName);
-                        string asm = File.ReadAllText(filename);
 
                         // Don't add unreachable musics (i.e: those who don't have a defined ASM name)
                         // These pseudo-musics are probably used for adding sentinel values in case sound driver reads out of bounds data
                         // We are going to add our own sentinel music anyway
                         if (asmName == null) continue;
 
+                        string asm = File.ReadAllText(filename);
                         Song song = new Song(number, name, asmName, new Sheet(asm));
                         Bank bank = SelectMusicBank(song.Number);
                         bank.Add(song, true);
@@ -188,30 +188,28 @@ namespace SF2MusicCooker
 
             // Load SFX banks (usually only 1)
             int currentBank = 0;
-            int currentSfx = SFX.FIRST;
             foreach (string folder in _paths.SfxBankFolders)
             {
-                string filename = Path.Combine(folder, Path.GetFileName(folder) + ".asm");
-                string compositeAsm = File.ReadAllText(filename);
-                string[] pointerNames = Tools.GetAllStringElements(compositeAsm, sfxPointerNameRegex);
                 BankSFX bank = _sfxBanks[currentBank];
-
-                foreach (string pointerName in pointerNames)
+                foreach (string filename in Directory.GetFiles(folder, "*.asm", SearchOption.TopDirectoryOnly))
                 {
-                    int number = currentSfx;
-                    sfx_number2enum.TryGetValue(number, out string asmName);
+                    Match match = regexSfx.Match(Path.GetFileName(filename));
+                    if (match.Success)
+                    {
+                        int number = SFX.FIRST - 1 + int.Parse(match.Groups[1].Value);
+                        sfx_number2enum.TryGetValue(number, out string asmName);
 
-                    // Don't add unreachable SFXs (i.e: those who don't have a defined ASM name)
-                    if (asmName == null) continue;
+                        // Don't add unreachable SFXs (i.e: those who don't have a defined ASM name)
+                        if (asmName == null) continue;
 
-                    string asm = AsmSheetToolkit.SplitByLabel(compositeAsm, sfxPointerNameLabelRegex, pointerName);
-
-                    SFX sfx = new SFX(number, null, asmName, pointerName, new Sheet(asm));
-                    bank.Add(sfx, true);
-
-                    currentSfx++;
+                        string asm = File.ReadAllText(filename);
+                        string[] pointerNames = Tools.GetAllStringElements(asm, sfxPointerNameLabelRegex);
+                        if (pointerNames.Length != 1) throw new FormatException("Only 1 SFX per file is expected! (" + filename + ")");
+                        string pointerName = pointerNames[0];
+                        SFX sfx = new SFX(number, null, asmName, pointerName, new Sheet(asm));
+                        bank.Add(sfx, true);
+                    }
                 }
-
                 currentBank++;
             }
 
@@ -468,6 +466,7 @@ namespace SF2MusicCooker
                 string bankPath = Path.Combine(path, bank.FolderName);
                 DeleteAndCreateFolder(bankPath);
                 bank.Write(bankPath);
+                bank.WriteSheets(bankPath);
             }
             WriteASMMusicEnum(path);
             WriteASMSfxEnum(path);
@@ -504,6 +503,7 @@ namespace SF2MusicCooker
                 string bankPath = Path.Combine(sfxBanksFolder, bank.FolderName);
                 DeleteAndCreateFolder(bankPath);
                 bank.Write(bankPath);
+                bank.WriteSheets(bankPath);
             }
             WriteASMMusicEnum(musicEnumFolder);
             WriteASMSfxEnum(sfxEnumFolder);
@@ -528,6 +528,8 @@ namespace SF2MusicCooker
         {
             StringBuilder sb = new StringBuilder();
 
+            sb.AppendLine("; enum Music");
+            sb.AppendLine();
             sb.AppendFormat("{0}: equ {1}", "MUSIC_NOTHING", 0);
             sb.AppendLine();
 
@@ -540,13 +542,20 @@ namespace SF2MusicCooker
                 }
             }
 
-            File.WriteAllText(Path.Combine(path, "musics-standard.asm"), sb.ToString());
-            Console.WriteLine("> Wrote 'musics-standard.asm' file!");
+            sb.AppendLine();
+            sb.AppendLine("; ----------------------------------------------");
+
+            string filename = Path.GetFileNameWithoutExtension(_paths.MusicNumbersAndAsmNames) + "-standard.asm";
+            File.WriteAllText(Path.Combine(path, filename), sb.ToString());
+            Console.WriteLine("> Wrote '{0}' file!", filename);
         }
 
         private void WriteASMSfxEnum(string path)
         {
             StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine("; enum Sfx");
+            sb.AppendLine();
 
             foreach (SFX sfx in GetAllSFXs(false))
             {
@@ -556,9 +565,14 @@ namespace SF2MusicCooker
 
             sb.AppendLine();
             sb.AppendFormat("{0}: equ {1}", "SFX_NONE", SFX.NONE);
+            sb.AppendLine();
 
-            File.WriteAllText(Path.Combine(path, "sfxs-standard.asm"), sb.ToString());
-            Console.WriteLine("> Wrote 'sfxs-standard.asm' file!");
+            sb.AppendLine();
+            sb.AppendLine("; ----------------------------------------------");
+
+            string filename = Path.GetFileNameWithoutExtension(_paths.SfxNumbersAndAsmNames) + "-standard.asm";
+            File.WriteAllText(Path.Combine(path, filename), sb.ToString());
+            Console.WriteLine("> Wrote '{0}' file!", filename);
         }
 
         private void WriteASMSoundTest(string path)

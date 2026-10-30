@@ -1,7 +1,5 @@
 ﻿Version 1.3:
-- Nouvelle gestion des music banks custom de Cubewiz
-- Mentionner que Music Showcase Deluxe est le ROM hack d'illustration de cet outil.
-- Pitch table: hardcoded offset should be changeable through layouts.json
+- Play rate adjust: cibler le plus proche de 60 Hz
 - Option to force sustain on all DAC samples
 - Sample resampling [I set up some code in another project + YM PCM sampling rate should be between 8–22 kHz (or 16 kHz actually I got told on Discord)]
 - Generalize 'pairNumber' into array 'aliasNumbers', aliases must reside within the same bank or an error will occur, 'pairNumber' implicitly add an element to 'aliasNumbers'
@@ -16,6 +14,8 @@ Version 1.4:
 	=> Music resuming is does weird things randomly in SF2DISASM Cubewiz driver
 	=> Vapor Trail: ugly samples
 	=> Choose a Path: ugly samples output (especially noticeable for intro)
+	=> Guardia Castle: PSG vibrato "worked", but was WAY TOO EXTREME and I had to remove it, and put a vibrato on a YM channel instead
+	=> Battle for Tomorrow: PSG vibrato "worked", but was WAY TOO EXTREME, and samples sound terrible sadly + maybe add back a string YM instrument to support the PSG tones
 	=> Test-3, Travel: annoying clicks on the second part of the song when both FM inst / PCM samples are enabled and play
 	=> Test-3, Battlefield: similar as above, some clicks when FM / PCM samples are both enabled and play
 	=> Test-3, Chill City: similar as above, but also has a pretty high pitched sample as well (but it sounds fine)

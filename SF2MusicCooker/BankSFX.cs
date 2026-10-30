@@ -144,7 +144,6 @@ namespace SF2MusicCooker
             const int firstNumber = SFX.FIRST;
             int maxNumber = allSFXs.Max(s => s.Number);
 
-            // Write pointers
             for (int number = firstNumber; number <= maxNumber; number++)
             {
                 SFX sfx = Find(number, out bool vanilla) ?? lastSfx;
@@ -153,15 +152,41 @@ namespace SF2MusicCooker
                 output.AppendLine();
             }
 
-            // Write sheets (inline)
-            foreach (SFX sfx in allSFXs)
+            for (int number = firstNumber; number <= maxNumber; number++)
             {
-                output.Append(sfx.Sheet);
+                SFX sfx = Find(number, out bool vanilla);
+                if (sfx != null)
+                {
+                    output.Append("\t\tinclude \"");
+                    output.Append(GetSfxFilename(number));
+                    output.Append("\"");
+                    if (!vanilla) output.AppendFormat("\t; [CUSTOM] {0}", sfx.Name);
+                    output.AppendLine();
+                }
             }
 
             string filename = Name + ".asm";
             File.WriteAllText(Path.Combine(path, filename), output.ToString());
             Console.WriteLine("> Wrote '{0}' file!", filename);
+        }
+
+        /// <summary>
+        /// Generate ASM files for SFXs contained in this bank.
+        /// </summary>
+        public void WriteSheets(string path)
+        {
+            WriteSheets(_vanilla, path);
+            WriteSheets(_custom, path);
+        }
+
+        private void WriteSheets(List<SFX> sfxs, string path)
+        {
+            foreach (SFX sfx in sfxs)
+            {
+                string filename = GetSfxFilename(sfx.Number);
+                File.WriteAllText(Path.Combine(path, filename), sfx.Sheet);
+                Console.WriteLine("> Wrote '" + filename + "' file!");
+            }
         }
 
         /// <summary>
@@ -202,6 +227,14 @@ namespace SF2MusicCooker
             MaxSize = maxSize;
             Offset = offset;
             ExtraOffset = extraOffsetWithMaxInstruments;
+        }
+
+        /// <summary>
+        /// Get the sheet filename that should be used for a given SFX number.
+        /// </summary>
+        public static string GetSfxFilename(int number)
+        {
+            return (number - SFX.FIRST + 1).ToString("000") + ".asm";
         }
     }
 }

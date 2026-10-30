@@ -38,7 +38,7 @@
             {
                 if (cells[i] != null)
                 {
-                    PatternCell newCell = cells[i].Multiply(n, out PatternCell beforeNextCell);
+                    PatternCell newCell = cells[i].ExtractNavigationEffects(out PatternCell beforeNextCell);
                     pattern.Set(i * n, newCell);
                     pattern.Set((i + 1) * n - 1, beforeNextCell);
                 }

@@ -13,9 +13,9 @@ namespace SF2MusicCooker
 {
     public sealed class PCMInstruments
     {
-        private const int MAX_SAMPLE_LENGTH = 0x3000; // This is not really a hard limit, more like a "insanity" limit
+        private const int MAX_SAMPLE_LENGTH = 0x7FF0; // This is almost the real limit, such a sample would take a whole bank by itself!
 
-        public const int MAX_SLOTS = 0x7F; // Sample commands have 7 bits, so this is the absolute limit
+        public const int MAX_SLOTS = 0x80; // Sample commands have 7 bits, so this is the absolute limit
 
         private const byte UNUSED = 0xFF;
 
@@ -46,22 +46,22 @@ namespace SF2MusicCooker
             /// <summary>
             /// Get ASM line to declare this PCM sample.
             /// </summary>
-            public string ToAsmLine(int[] numbers)
+            public string ToAsmLine(int[] numbers, string format)
             {
                 ushort offset = (ushort)(Offset + BASE_OFFSET);
-                string pointer = string.Format("DAC_BANK_{0}", numbers[Bank]);
+                string pointer = string.Format(format, numbers[Bank]);
                 return string.Format("dw {0}, {1}, {2}, {3}", ((ushort)Period).ToString().PadLeft(2), pointer, Tools.Hex2ASM((ushort)Length).PadLeft(6), Tools.Hex2ASM(offset));
             }
 
             /// <summary>
             /// Get the ASM label of a bank.
             /// </summary>
-            public static int ParseBankString(string x, int max)
+            public static int ParseBankString(string x, string format, int max)
             {
-                for (int i = 1; i <= max; i++)
+                for (int i = 0; i < max; i++)
                 {
-                    if (x.Equals("DAC_BANK_" + i, StringComparison.OrdinalIgnoreCase))
-                        return i - 1;
+                    if (x.Equals(string.Format(format, i), StringComparison.OrdinalIgnoreCase))
+                        return i;
                 }
                 throw new FormatException("Invalid bank string: " + x);
             }
@@ -130,6 +130,7 @@ namespace SF2MusicCooker
         private readonly int[] _cursors;
         private readonly string[] _names;
         private readonly int[] _numbers;
+        private readonly string _nameFormat; // Typically "PCM_BANK_{0}_INDEX" with starting index 0 (previously was "DAC_BANK_{0}" with starting index 1)
 
         private static void Prepare(Sample sample, int a4tuning, int note, out byte[] data, out int period)
         {
@@ -309,7 +310,8 @@ namespace SF2MusicCooker
 
             if (FindOrAllocate(data, false, out int bank, out int offset))
             {
-                return Array.FindIndex(_slots, slot => slot.Period == period && slot.Bank == bank && slot.Offset == offset && slot.Length == data.Length);
+                int index = Array.FindIndex(_slots, slot => slot.Period == period && slot.Bank == bank && slot.Offset == offset && slot.Length == data.Length);
+                if (index >= 0) return index; // Sanity check (should never fail)
             }
             throw new KeyNotFoundException("Sample couldn't be found in the sample slots, maybe it wasn't added...");
         }
@@ -432,7 +434,7 @@ namespace SF2MusicCooker
                 if (values.Length == 4)
                 {
                     int period = Tools.ConvertASMValue(values[0].Trim());
-                    int vanillaBank = PCMSample.ParseBankString(values[1].Trim(), banks.Length);
+                    int vanillaBank = PCMSample.ParseBankString(values[1].Trim(), _nameFormat, banks.Length);
                     int bank = indexes[vanillaBank];
                     int length = Tools.ConvertASMValue(values[2].Trim());
                     int offset = Tools.ConvertASMValue(values[3].Trim()) - BASE_OFFSET;
@@ -505,7 +507,7 @@ namespace SF2MusicCooker
             foreach (PCMSample sample in _slots)
             {
                 sb.Append("    ");
-                sb.AppendLine(sample.ToAsmLine(_numbers));
+                sb.AppendLine(sample.ToAsmLine(_numbers, _nameFormat));
             }
             File.WriteAllText(Path.Combine(pcmSamplesPath, "pcm_samples-standard.asm"), sb.ToString().TrimEnd());
             Console.WriteLine("> Wrote 'pcm_samples-standard.asm' file!");
@@ -520,15 +522,16 @@ namespace SF2MusicCooker
             _ = file.IterateDACNotes(false, (sample, note, key) =>
             {
                 int index = Find(sample, file.A4Tuning, note);
-                if (index >= 0x100) throw new OverflowException("Cannot have more than 255 samples");
+                if (index >= 0x100) throw new OverflowException("Cannot have more than 255 samples"); // Can never happen since we are limited to 128 samples anyway
 
                 lookup.Add(key, (byte)index);
             });
             return lookup;
         }
 
-        public PCMInstruments(int slots, BankDefinition[] definitions)
+        public PCMInstruments(int slots, string nameFormat, BankDefinition[] definitions)
         {
+            if (nameFormat == null || !nameFormat.Contains("{0}")) throw new ArgumentException("must contain a '{0}' token", nameof(nameFormat));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             if (slots <= 0) throw new ArgumentOutOfRangeException(nameof(slots), "cannot be zero or negative");
             if (slots > MAX_SLOTS) throw new NotSupportedException(MAX_SLOTS + " sample slots is the absolute maximum limit");
@@ -538,6 +541,7 @@ namespace SF2MusicCooker
             _cursors = new int[definitions.Length];
             _names = new string[definitions.Length];
             _numbers = new int[definitions.Length];
+            _nameFormat = nameFormat;
 
             for (int i = 0; i < definitions.Length; i++)
             {

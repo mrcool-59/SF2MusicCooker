@@ -485,37 +485,37 @@
     <None Include="Test\%40music08-Test PSG.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music19-Airship.fur">
+    <None Include="Test\+music51-Airship.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Test\%40music20-Obviously Town Theme.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music21-Choose a Path.fur">
+    <None Include="Test\+music56-Choose a Path.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music22-Maker%27s Ruin.fur">
+    <None Include="Test\%40music21-Maker%27s Ruin.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music23-L1 Battle.fur">
+    <None Include="Test\%40music22-L1 Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music24-SF1 Attack.fur">
+    <None Include="Test\%40music23-SF1 Attack.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music25-First Area.fur">
+    <None Include="Test\%40music24-First Area.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music37-Self Discipline.fur">
+    <None Include="Test\+music47-Self Discipline.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music38-Final.fur">
+    <None Include="Test\+music48-Final.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music39-Last Area %28Abridged%29.fur">
+    <None Include="Test\+music49-Last Area %28Abridged%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music40-Shop.fur">
+    <None Include="Test\+music50-Shop.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="sfxbank.asm.tpl">
@@ -527,7 +527,31 @@
     <None Include="Test\%40music06-Test Sample.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music34-Silence.fur">
+    <None Include="Test\+music46-Silence.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music57-Guardia%28na%29 Castle.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music58-Battle for Tomorrow.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music59-Cha-La.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music60-Yoyo %28Sad%29.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music61-Yoyo.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music62-Cozy Cave.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music63-Magus.fur">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Test\+music64-Magus %28Abridged%29.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="__Run.bat">
@@ -539,7 +563,7 @@
     <None Include="musicbank.asm.tpl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Test\%40music33-The First Battle.fur">
+    <None Include="Test\+music45-The First Battle.fur">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="Test-3\options.txt">

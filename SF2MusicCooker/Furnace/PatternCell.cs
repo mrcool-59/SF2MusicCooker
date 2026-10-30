@@ -90,10 +90,10 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
-        /// Multiply pattern cell by N and return the resulting cell as well as the last padding cell (that will hold effects related to navigation).
-        /// This method only does something when a navigation effect is present on the pattern cell.
+        /// Return a new cell that is a copy of the current cell, except with navigation effects removed (go to next, go to pattern, end).
+        /// If a navigation effect was effectively removed, 'beforeNextCell' will return a cell that only contains these navigation effects.
         /// </summary>
-        public PatternCell Multiply(int n, out PatternCell beforeNextCell)
+        public PatternCell ExtractNavigationEffects(out PatternCell beforeNextCell)
         {
             beforeNextCell = null;
             if (Effects.Length > 0)
@@ -105,11 +105,7 @@ namespace SF2MusicCooker.Furnace
                     switch (effect.Type)
                     {
                         case Effect.GoNext:
-                            int scaledValue = effect.Value * n;
-                            if (scaledValue > 0xFF) throw new OverflowException("Play rate adjustment caused a value overflow on 'go to next pattern' effect: " + this
-                                + Environment.NewLine + "You can sidestep this by reorganizing your patterns to avoid a jump-to-row value that would exceed FF when multiplied by " + n
-                                + Environment.NewLine + "Sorry for the inconvenience...");
-                            delayedEffects.Add(new Effect(effect.Type, (byte)scaledValue));
+                            delayedEffects.Add(effect); // Note: the row value is automatically scaled through the RowMultiplier property of the FurnaceFile!
                             break;
                         case Effect.GoTo:
                         case Effect.End:

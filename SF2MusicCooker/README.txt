@@ -71,21 +71,22 @@ The vanilla game comes with Music Bank 0 (musics 1 to 32) and Music Bank 1 (musi
 For this reason, REPLACE EXISTING MUSICS feature can be pretty limited if you try to import songs that take more space than their vanilla music counterpart.
 
 Thanks to the people at SF2Central that worked on expanding game ROM patches, it is now possible to add extra Music Banks inside the expanded ROM space.
-If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 3 extra, fully available Music Banks to host all your custom music needs.
-These are called Music Bank Ext 0 (musics 49 to 56), Music Bank Ext 1 (musics 57 to 60) and Music Bank Ext 2 (musics 61 to 64).
-As you can see, the Music Bank 1 range was cut down compared to the vanilla game. Its range is now 33 to 48.
+If you enable the 'EXPANDED_MUSIC_BANKS' patch, you will have access to 4 extra, fully available Music Banks to host all your custom music needs.
+These are called Music Bank Ext 0 (musics 45 to 50), Music Bank Ext 1 (musics 51 to 56), Music Bank Ext 2 (musics 57 to 60) and Music Bank Ext 3 (musics 61 to 64).
+As you can see, the Music Bank 1 range was cut down compared to the vanilla game. Its range is now 33 to 44.
 Under this new Music Banks layout, you should especially put your largest musics into 57 to 64 range, and keep the smaller musics for 1 to 32 range.
 Ultimately it is up to you how you want to distribute your musics across music banks, the only condition is that it fits!
 
-The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0, 1 or 2.
+The MOVE-REPLACE EXISTING MUSIC feature allows you to replace a vanilla music by a custom music, while putting the new music into Music Bank Ext 0, 1, 2 or 3.
 The MOVE-SWAP EXISTING MUSIC feature allows you to add a custom music at the music number of a vanilla music, and move the vanilla music to the specified custom music number.
 
 For SFXs, it appears the SFX Bank from the vanilla game still has some space available, so space should (hopefully) not be a concern here.
 There is no Extra Bank feature for SFX Bank, you have to fit everything into a single bank.
 
 For musics and SFXs that use samples, the vanilla game comes with 2 PCM banks (PCM Bank 0 and PCM Bank 1) that are pretty much full.
-Five Extra PCM banks (PCM Bank Ext 0, 1, 2, 3, 4) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
-Additionally, the sound driver has been modified to support 72 different samples, up from original 17.
+Eight Extra PCM banks (PCM Bank Ext 0, 1, 2, 3, 4, 5, 6, 7) have been implemented with 'EXPANDED_PCM_BANKS' patch to provide some much needed breathing room.
+Additionally, the sound driver has been modified to support 128 different samples, up from original 17.
+Sadly, the PCM quality is... not very good in the sound driver. Please do not rely too much on PCM samples.
 
 
 
@@ -189,7 +190,7 @@ SF2 Music Cooker currently supports:
 - New songs will appear in the Sound Test; the Sound Test is also improved with better SFX names and circular navigation
 
 SF2 Music Cooker doesn't plan to support (unless there is an *overwhelming* demand for the feature):
-- Custom vibrato shapes / depth
+- Custom vibrato shapes / depth (please note: PSG vibratos are WILDLY INACCURATE ingame compared to how they sound in Furnace, sorry I don't plan to fix this!)
 - Custom PSG envelopes
 - Additional song size reduction by detecting voltas (repeats with different endings)
 - Furnace features such as "macros" (only exception is volume macros for PSG instruments), "groove", "speed 2" and other gimmicks/effects/compatibility flags (sorry)

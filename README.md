@@ -30,3 +30,8 @@ This tool is programmed using C# language and runs on .NET 4.8.1 framework.
 Simply open the .sln file in Visual Studio 2022 or 2026 (Community Edition will do).  
 The project has minimal dependencies and can be immediately built.  
 It has only been built and tested on Windows, but it should run on other .NET platforms without too much trouble.
+
+## Music Showcase Deluxe
+Music Showcase Deluxe is my Shining Force 2 ROM hack that demonstrates the full capabilities of this tool.
+Learn more (and download it!) here: https://forums.shiningforcecentral.com/viewtopic.php?p=849192#p849192
+Alternative link: https://drive.google.com/file/d/1m42ZKuvWC4g1UVWj_O2VwPUAurb1_2bS/view?usp=sharing

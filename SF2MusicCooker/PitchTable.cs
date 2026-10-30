@@ -1,4 +1,6 @@
-﻿using SF2MusicCooker.Furnace;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using SF2MusicCooker.Furnace;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -66,10 +68,29 @@ namespace SF2MusicCooker
         };
         */
 
-        private const int YM_OFFSET = 24; // This is the hardcoded offset in macros.asm
-        private const int YM_SHIFT = 7; // 3 was the original note shift I attempted when reading Furnace source code but I guess something escaped me #D
-        private const int PSG_OFFSET = 21; // This is the hardcoded offset in parse_tone_data.asm (sub 15h in $$newNote routine)
-        private const int PSG_SHIFT = -33; // I didn't investigate why there is -1 octave (-12) in addition to the offset
+        public readonly struct PitchOffsets
+        {
+            [JsonProperty("ymOffset", Required = Required.Always)]
+            public readonly int YMOffset;
+
+            [JsonProperty("ymShift", Required = Required.Always)]
+            public readonly int YMShift;
+
+            [JsonProperty("psgOffset", Required = Required.Always)]
+            public readonly int PSGOffset;
+
+            [JsonProperty("psgShift", Required = Required.Always)]
+            public readonly int PSGShift;
+
+            [JsonConstructor]
+            public PitchOffsets(int ymOffset, int ymShift, int psgOffset, int psgShift)
+            {
+                YMOffset = ymOffset;
+                YMShift = ymShift;
+                PSGOffset = psgOffset;
+                PSGShift = psgShift;
+            }
+        }
 
         private readonly struct Entry
         {
@@ -85,6 +106,7 @@ namespace SF2MusicCooker
             }
         }
 
+        private readonly PitchOffsets _offsets;
         private readonly Entry[] _notes;
         private readonly Entry[] _psgNotes;
         private readonly Dictionary<int, string> _names;
@@ -148,9 +170,9 @@ namespace SF2MusicCooker
             if (disableNoteMacros)
             {
                 if (psg)
-                    return tunedPsg.F2C(note) - PSG_OFFSET + "+" + PSG_OFFSET;
+                    return tunedPsg.F2C(note).ToString();
                 else
-                    return tuned.F2C(note) - YM_OFFSET + "+" + YM_OFFSET;
+                    return tuned.F2C(note).ToString();
             }
             else
             {
@@ -218,7 +240,7 @@ namespace SF2MusicCooker
         /// </summary>
         public TunedMap CreateTunedMap(int a4tuning)
         {
-            return CreateTunedMap(_notes, a4tuning, YM_SHIFT, YM_OFFSET);
+            return CreateTunedMap(_notes, a4tuning, _offsets.YMShift, _offsets.YMOffset);
         }
 
         /// <summary>
@@ -226,7 +248,7 @@ namespace SF2MusicCooker
         /// </summary>
         public TunedMap CreatePSGTunedMap(int a4tuning)
         {
-            return CreateTunedMap(_psgNotes, a4tuning, PSG_SHIFT, PSG_OFFSET);
+            return CreateTunedMap(_psgNotes, a4tuning, _offsets.PSGShift, _offsets.PSGOffset);
         }
 
         /// <summary>
@@ -311,8 +333,8 @@ namespace SF2MusicCooker
 
             Regex regex = new Regex("noteL?[ \t]+([a-zA-Z0-9]+)");
             Regex regexPsg = new Regex("psgNoteL?[ \t]+([a-zA-Z0-9]+)");
-            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), YM_OFFSET), IsNotNoiseChannel);
-            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), PSG_OFFSET), IsNotNoiseChannel);
+            byte[] usedNotes = Tools.GetAllElements(asm, regex, x => OffsetAndCast(ToNote(x), _offsets.YMOffset), IsNotNoiseChannel);
+            byte[] usedPsgNotes = Tools.GetAllElements(asm, regexPsg, x => OffsetAndCast(ToNote(x), _offsets.PSGOffset), IsNotNoiseChannel);
 
             cubeCounter.Add(usedNotes, usedPsgNotes);
         }
@@ -333,13 +355,15 @@ namespace SF2MusicCooker
 
                 using (FileStream stream = fur.OpenRead())
                 {
+                    Console.WriteLine("Counting notes from '{0}' input file...", fur.Name);
+
                     FurnaceFile file = FurnaceFile.ProbeUncompressed(stream) ? FurnaceFile.Load(stream) : FurnaceFile.LoadCompressed(stream, null);
                     file = file.DropExtended();
                     file.RemoveUnsupportedNotes();
                     file.Calculate();
 
-                    TunedMap tuned = CreateTunedMap(_notes, file.A4Tuning, YM_SHIFT, 0);
-                    TunedMap tunedPsg = CreateTunedMap(_psgNotes, file.A4Tuning, PSG_SHIFT, 0);
+                    TunedMap tuned = CreateTunedMap(_notes, file.A4Tuning, _offsets.YMShift, 0);
+                    TunedMap tunedPsg = CreateTunedMap(_psgNotes, file.A4Tuning, _offsets.PSGShift, 0);
 
                     for (int channel = 0; channel <= 8; channel++) // Skip noise generator
                     {
@@ -382,7 +406,7 @@ namespace SF2MusicCooker
             if (sortedFurnaceNotes == null) throw new ArgumentNullException(nameof(unusedCubeNotes));
 
             bool psg = notes == _psgNotes;
-            int shift = psg ? PSG_SHIFT : YM_SHIFT;
+            int shift = psg ? _offsets.PSGShift : _offsets.YMShift;
             TunedMap map = CreateTunedMap(notes, FurnaceFile.StandardA4Tuning, shift, 0);
             RegisterValueLookup lookup = new RegisterValueLookup(psg);
             Func<int, int> freqFn = GetFreqFn(psg);
@@ -436,8 +460,9 @@ namespace SF2MusicCooker
             return entries;
         }
 
-        public PitchTable(string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath, int ymFrequenciesSlots)
+        public PitchTable(PitchOffsets offsets, string ymFrequenciesPath, string psgFrequenciesPath, string notesNamePath, int ymFrequenciesSlots)
         {
+            _offsets = offsets;
             _notes = ReadFrequencies(ymFrequenciesPath, false);
             _psgNotes = ReadFrequencies(psgFrequenciesPath, true);
             _names = Tools.ReadASMEnumReverseMap(notesNamePath);

@@ -174,7 +174,7 @@ namespace SF2MusicCooker.Furnace
                 }
                 else if (goTo != Effect.Absent && goNext != Effect.Absent)
                 {
-                    row = Math.Min(rows - 1, goNext.Value); // If row overflows, clamp to last valid row
+                    row = Math.Min(rows - 1, goNext.Value * file.RowMultiplier); // If row overflows, clamp to last valid row
                     order = goTo.Value >= orders ? 0 : goTo.Value; // If order overflows, we go to order 0 instead
                 }
                 else if (goTo != Effect.Absent)
@@ -184,7 +184,7 @@ namespace SF2MusicCooker.Furnace
                 }
                 else if (goNext != Effect.Absent)
                 {
-                    row = Math.Min(rows - 1, goNext.Value); // If row overflows, clamp to last valid row
+                    row = Math.Min(rows - 1, goNext.Value * file.RowMultiplier); // If row overflows, clamp to last valid row
                     order++;
                     if (order == orders) order = 0; // If order overflows, we go to order 0 instead
                 }
