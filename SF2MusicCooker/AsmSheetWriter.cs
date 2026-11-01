@@ -122,7 +122,7 @@ namespace SF2MusicCooker
                 float max = sfx ? 62.001f : 3329.001f;
 
                 // Basically we try to find the N that put us above min, below max and that gives the lowest SFX speed alteration
-                // SFXs seem to play correctly when music play rate is between 30 and 60 hz
+                // SFXs seem to play correctly when music play rate is close to 60 hz
 
                 int[] candidateN = new int[49];
                 for (int i = 0; i < candidateN.Length; i++) candidateN[i] = i + 1;
@@ -134,10 +134,10 @@ namespace SF2MusicCooker
                         return 3000 + n;
                     else if (rate < min)
                         return 2000 + n;
-                    else if (D(rate, 30f) == 0 || D(rate, 60f) == 0)
+                    else if (D(rate, 60f) == 0)
                         return 0; // Perfect
                     else
-                        return D(rate, sfx ? 60f : 45f); // Pretty good
+                        return D(rate, 60f); // Pretty good
                 });
             }
 
@@ -164,11 +164,6 @@ namespace SF2MusicCooker
 
                 if (file.PlayRate > 3329.001f)
                     Console.WriteLine("! Play rate of music is above maximum of 3329 hz, it will play slower ingame");
-
-                // Verify new rate will result in SFXs playing at the correct speed
-
-                if (file.PlayRate < 29.999f || file.PlayRate > 60.001f)
-                    Console.WriteLine("! Play rate of music is outside 30~60 hz range, SFXs might play slower/faster ingame");
             }
         }
 
