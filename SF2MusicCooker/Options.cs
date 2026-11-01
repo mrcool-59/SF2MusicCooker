@@ -10,6 +10,9 @@ namespace SF2MusicCooker
         private static readonly Regex muteInstrumentLongRegex = new Regex("^--muteinstrument=([a-fA-F0-9hH]+)$");
         private static readonly Regex muteInstrumentShortRegex = new Regex("^-mi=([a-fA-F0-9hH]+)$");
 
+        private static readonly Regex divideLongRegex = new Regex("^--divide=([0-9]+)$");
+        private static readonly Regex divideShortRegex = new Regex("^-d=([0-9]+)$");
+
         private static readonly Regex sampleRateCoeffLongRegex = new Regex("^--sampleratecoeff=([0-9.]+)$");
         private static readonly Regex sampleRateCoeffShortRegex = new Regex("^-src=([0-9.]+)$");
 
@@ -36,6 +39,7 @@ namespace SF2MusicCooker
         public readonly int[] MuteInstruments;
         public readonly bool MuteSamples;
         public readonly bool EnableRewrite;
+        public readonly int DivideRows;
         public readonly bool BetterCompression;
         public readonly bool PreserveRate;
         public readonly bool RemoveRelease;
@@ -97,6 +101,7 @@ namespace SF2MusicCooker
                                Tools.Combine(other.MuteInstruments, MuteInstruments),
                                other.MuteSamples || MuteSamples,
                                other.EnableRewrite || EnableRewrite,
+                               other.DivideRows != 0 ? other.DivideRows : DivideRows,
                                other.BetterCompression || BetterCompression,
                                other.PreserveRate || PreserveRate,
                                other.RemoveRelease || RemoveRelease,
@@ -169,6 +174,7 @@ namespace SF2MusicCooker
             MuteSamples = Exists("--mutesamples") || Exists("-ms");
             MuteInstruments = Tools.ParseMultiArg(args, muteInstrumentLongRegex, muteInstrumentShortRegex, Tools.ConvertASMValue);
             EnableRewrite = Exists("--enablerewrite") || Exists("-er");
+            DivideRows = Tools.ParseIntArg(args, divideLongRegex, divideShortRegex, 0);
             BetterCompression = Exists("--bettercompression") || Exists("-bc");
             PreserveRate = Exists("--preserverate") || Exists("-pr");
             RemoveRelease = Exists("--removerelease") || Exists("-rr");
@@ -192,7 +198,7 @@ namespace SF2MusicCooker
             else if (Exists("--volume:nearest") || Exists("-v:n")) VolumeMode = "nearest";
         }
 
-        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, bool betterCompression, bool preserveRate,
+        private Options(int mute, int isolate, int[] muteInstruments, bool muteSamples, bool enableRewrite, int divideRows, bool betterCompression, bool preserveRate,
             bool removeRelease, bool removeOff, bool removeVol, bool removePan, bool removeLegato,
             bool noEnvelopeGuessing, bool noNoteMacros, bool noOptimize, bool dumpNotes, bool dumpUncompressed, int transposeFM, int transposePSG,
             float sampleRateCoeff, float volumeCoeff, float volumeFMCoeff, float volumePSGCoeff, float volumeSampleCoeff, string volumeMode)
@@ -202,6 +208,7 @@ namespace SF2MusicCooker
             MuteSamples = muteSamples;
             MuteInstruments = muteInstruments;
             EnableRewrite = enableRewrite;
+            DivideRows = divideRows;
             BetterCompression = betterCompression;
             PreserveRate = preserveRate;
             RemoveRelease = removeRelease;
@@ -227,6 +234,6 @@ namespace SF2MusicCooker
         /// <summary>
         /// The default options.
         /// </summary>
-        public static readonly Options Default = new Options(0, 0, new int[0], false, false, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, 1f, 1f, 1f, null);
+        public static readonly Options Default = new Options(0, 0, new int[0], false, false, 0, false, false, false, false, false, false, false, false, false, false, false, false, 0, 0, 1f, 1f, 1f, 1f, 1f, null);
     }
 }

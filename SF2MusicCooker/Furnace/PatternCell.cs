@@ -126,6 +126,36 @@ namespace SF2MusicCooker.Furnace
         }
 
         /// <summary>
+        /// Helper for divide operation.
+        /// </summary>
+        public static PatternCell Aggregate(PatternCell[] cells)
+        {
+            byte note = NoteAbsent;
+            ushort instrument = InstrumentAbsent;
+            byte volume = VolumeAbsent;
+            List<Effect> effects = new List<Effect>();
+
+            foreach (PatternCell cell in cells)
+            {
+                if (cell != null)
+                {
+                    if (cell.Note != NoteAbsent)
+                        note = cell.Note;
+
+                    if (cell.Instrument != InstrumentAbsent)
+                        instrument = cell.Instrument;
+
+                    if (cell.Volume != VolumeAbsent)
+                        volume = cell.Volume;
+
+                    effects.AddRange(cell.Effects);
+                }
+            }
+
+            return new PatternCell(note, instrument, volume, effects.ToArray());
+        }
+
+        /// <summary>
         /// Represents the empty cell.
         /// </summary>
         public static readonly PatternCell Empty = new PatternCell();

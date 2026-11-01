@@ -45,5 +45,24 @@
             }
             return pattern;
         }
+
+        /// <summary>
+        /// Divide pattern rows by N and return the resulting pattern.
+        /// </summary>
+        public Pattern Divide(int n)
+        {
+            PatternCell[] source = new PatternCell[n];
+            Pattern pattern = new Pattern(Rows / n);
+            for (int i = 0; i < pattern.Rows; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    int k = i * n + j;
+                    source[j] = k < cells.Length ? cells[k] : null;
+                }
+                pattern.Set(i, PatternCell.Aggregate(source));
+            }
+            return pattern;
+        }
     }
 }

@@ -49,7 +49,8 @@ namespace SF2MusicCooker.Furnace
         public float PlayRate { get { return TickRate * RateCoeff; } }
 
         /// <summary>
-        /// Multiplier to apply to row value when executing a "go to next pattern" command. This is 1 unless the Multiply method is called!
+        /// Multiplier to apply to row value when executing a "go to next pattern" command, in 8 bit fixed-point (256 is 1x).
+        /// This is 256 unless the Multiply/Divide methods are called!
         /// </summary>
         public readonly int RowMultiplier;
 
@@ -478,6 +479,19 @@ namespace SF2MusicCooker.Furnace
             Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
             foreach (var pair in PatternByKey) patternByKey.Add(pair.Key, pair.Value.Multiply(n));
             return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff * n, RowMultiplier * n, A4Tuning);
+        }
+
+        /// <summary>
+        /// Generate a new Furnace file that only has 1 pattern every N patterns. May or may not play identically depending on the song content. Return the original Furnace file if divider is 1.
+        /// </summary>
+        public FurnaceFile Divide(int n)
+        {
+            if (n <= 0) throw new ArgumentOutOfRangeException(nameof(n), "cannot be zero or negative");
+            if (n == 1) return this;
+
+            Dictionary<int, Pattern> patternByKey = new Dictionary<int, Pattern>();
+            foreach (var pair in PatternByKey) patternByKey.Add(pair.Key, pair.Value.Divide(n));
+            return new FurnaceFile(KeyByChannelAndOrder, patternByKey, Instruments, Samples, MasterVolume, TickRate, RateCoeff / n, RowMultiplier / n, A4Tuning);
         }
 
         /// <summary>
@@ -1180,7 +1194,7 @@ namespace SF2MusicCooker.Furnace
                     float rateCoeff = (float)virtualTempoNumerator / (virtualTempoDenominator * speed1);
                     int a4tuningRounded = (int)Math.Round(a4tuning);
 
-                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, masterVolume, ticksPerSecond, rateCoeff, 1, a4tuningRounded);
+                    return new FurnaceFile(keyByChannelAndOrder, patternByKey, instruments, samples, masterVolume, ticksPerSecond, rateCoeff, 256, a4tuningRounded);
                 }
             }
             catch (Exception ex)

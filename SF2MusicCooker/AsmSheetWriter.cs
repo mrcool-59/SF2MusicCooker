@@ -108,10 +108,20 @@ namespace SF2MusicCooker
         /// <summary>
         /// Adjust the play rate of the Furnace file for optimal compatibility and return adjusted Furnace file.
         /// </summary>
-        public static void AdjustPlayRate(ref FurnaceFile file, bool sfx, bool enabled)
+        public static void AdjustPlayRate(ref FurnaceFile file, bool sfx, bool enabled, int divider)
         {
             int R(float x) => (int)Math.Round(x);
             int D(float x, float y) => R(Math.Abs(x - y));
+
+            if (divider > 1)
+            {
+                if (file.Rows / divider * divider != file.Rows)
+                    throw new InvalidOperationException("Divider " + divider + " is not allowed because it is not a multiple of " + file.Rows + " (number of rows per pattern)");
+
+                file = file.Divide(divider);
+
+                Console.WriteLine("> Applied {0} divider to pattern rows", divider);
+            }
 
             float originalPlayRate = file.PlayRate;
             int N = 1;

@@ -135,6 +135,7 @@ The following options can be specified globally or per-music/per-SFX:
 --muteinstrument=x			or		-mi=x	Mute Furnace instrument x in the output (can be stacked multiple times with different values)
 --mutesamples				or		-ms		Disable output of channel 6 if it plays samples (useful to work around issues with samples)
 --enablerewrite				or		-er		(Experimental feature) Enable tricks to support volume/panning changes between notes, will increase size of output and alter the results
+--divide=x					or		-d=x	(Experimental feature) Divide the number of rows of each pattern by x and try to fit notes the best we can (number of rows must be dividable by x)
 --preserverate				or		-pr		Disable tricks to support properly musics below 13 hz and fix SFXs play speed (see caveat below for explanations)
 --removerelease				or		-rr		Remove all note release commands (===) in all channels
 --removeoff					or		-ro		Remove all note off commands (OFF) in all channels

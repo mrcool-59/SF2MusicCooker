@@ -378,9 +378,9 @@ namespace SF2MusicCooker
                         file.MuteSamples();
                         Console.WriteLine("> Muted {0} samples (--mutesamples) and disabled DAC channel", numSamples);
                     }
-
+                    
                     // Adjust the playback rate to play nice with YM timer and SFXs play speed
-                    AsmSheetWriter.AdjustPlayRate(ref file, input.PointerName != null, !options.PreserveRate);
+                    AsmSheetWriter.AdjustPlayRate(ref file, input.PointerName != null, !options.PreserveRate, options.DivideRows);
 
                     // We are done with first pass of edits
                     file.Calculate();
